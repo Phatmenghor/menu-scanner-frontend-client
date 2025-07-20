@@ -1,0 +1,12 @@
+{
+  "user": {
+    "search": "搜索用户...",
+    "table-header": {
+      "email": "电子邮件",
+      "role": "角色",
+      "status": "状态",
+      "createdAt": "创建于",
+      "actions": "操作"
+    }
+  }
+}

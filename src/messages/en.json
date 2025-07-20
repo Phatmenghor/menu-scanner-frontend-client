@@ -1,0 +1,12 @@
+{
+  "user": {
+    "search": "Search users...",
+    "table-header": {
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "createdAt": "Created At",
+      "actions": "Actions"
+    }
+  }
+}
