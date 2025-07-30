@@ -12,7 +12,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { getUserInfo } from "@/utils/local-storage/userInfo";
 import Image from "next/image";
 import { AuthResponse } from "@/models/auth/auth.response";
-import { ROUTES, sidebarItems } from "@/constants/app-routed/routes";
+import { ROUTES } from "@/constants/app-routed/routes";
+import { sidebarItems } from "@/constants/app-routed/navigation-config";
 
 interface SidebarProps {
   isOpen: boolean;
