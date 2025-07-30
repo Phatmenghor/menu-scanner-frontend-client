@@ -1,24 +1,45 @@
-import { List, User2 } from "lucide-react";
+import { Home, LucideIcon, User } from "lucide-react";
 
+const ADMIN = "/admin";
 export const ROUTES = {
   AUTH: {
     LOGIN: "/login",
   },
   DASHBOARD: {
-    INDEX: "/user",
-    PRODUCT: "/product",
+    INDEX: `${ADMIN}/user`,
+    PROFILE: `${ADMIN}/profile`,
   },
 };
 
-export const navItems = [
+type Subroute = {
+  title: string;
+  href: string;
+};
+
+type SidebarItem = {
+  title: string;
+  href?: string;
+  icon?: LucideIcon;
+  image?: string;
+  section?: string;
+  subroutes?: Subroute[];
+};
+
+export const sidebarItems: SidebarItem[] = [
   {
-    title: "Users",
+    title: "Dashboard",
     href: ROUTES.DASHBOARD.INDEX,
-    icon: User2,
+    icon: Home,
   },
   {
-    title: "Products",
-    href: ROUTES.DASHBOARD.PRODUCT,
-    icon: List,
+    title: "Manage",
+    section: "Manage User",
+    icon: User,
+    subroutes: [
+      {
+        title: "users",
+        href: ROUTES.DASHBOARD.INDEX,
+      },
+    ],
   },
 ];

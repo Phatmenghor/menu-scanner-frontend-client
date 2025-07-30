@@ -16,9 +16,9 @@ import {
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { logoutToken } from "@/utils/local-storage/token";
-import { logoutRole } from "@/utils/local-storage/roles";
-import { ThemeToggle } from "./theme-toggle";
 import LanguageSwitcher from "../common/language-switcher";
+import { clearRoles } from "@/utils/local-storage/roles";
+import { ROUTES } from "@/constants/AppRoutes/routes";
 
 interface TopBarProps {
   onMenuClick: () => void;
@@ -31,9 +31,9 @@ export function TopBar({ onMenuClick }: TopBarProps) {
 
   const handleLogout = () => {
     logoutToken();
-    logoutRole();
+    clearRoles();
 
-    router.replace("/login");
+    router.replace(ROUTES.AUTH.LOGIN);
   };
 
   return (

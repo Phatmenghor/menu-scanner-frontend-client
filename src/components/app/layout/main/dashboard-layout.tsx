@@ -22,7 +22,7 @@ export default function DashboardLayout({
   }, [pathname, isMobile]);
 
   return (
-    <div className="dashboard-fixed-height flex bg-background">
+    <div className="flex overflow-x-hidden h-screen w-full bg-background">
       <DashboardSidebar
         isOpen={isSidebarOpen}
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -30,7 +30,7 @@ export default function DashboardLayout({
       <div
         className={cn(
           "dashboard-content flex-1 transition-all duration-300",
-          isMobile ? "w-full" : isSidebarOpen ? "ml-64" : "ml-[70px]"
+          isMobile ? "w-full" : isSidebarOpen ? "ml-56" : "ml-[60px]"
         )}
       >
         <TopBar onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />

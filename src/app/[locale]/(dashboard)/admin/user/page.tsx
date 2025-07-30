@@ -31,7 +31,6 @@ import { cn } from "@/lib/utils";
 import {
   getUsersService,
   PaginatedUsersResponse,
-  User,
 } from "@/services/dashboard/user/user.service";
 import { indexDisplay } from "@/utils/common/common";
 import { DateTimeFormat } from "@/utils/date/date-time-format";
@@ -297,7 +296,7 @@ export default function UserPage() {
                               )}
                             >
                               {user.status === "ACTIVE" && (
-                                <Check className="h-3 w-3 m-auto text-orange-600 dark:text-orange-300" />
+                                <Check className="h-3 w-3 m-auto" />
                               )}
                             </div>
                           </Switch>

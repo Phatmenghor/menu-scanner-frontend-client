@@ -19,9 +19,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/constants/AppRoutes/routes";
+import { AppToast } from "@/components/app/components/app-toast";
+import { useTranslations } from "next-intl";
 
 const formSchema = z.object({
-  username: z.string().email({ message: "Please enter a valid email address" }),
+  email: z.string().email({ message: "Please enter a valid email address" }),
   password: z.string().min(8, {
     message: "Password must be at least 8 characters",
   }),
@@ -34,13 +36,15 @@ export default function LoginPage() {
   const [isPending, startTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
 
+  const t = useTranslations("auth");
+
   const router = useRouter();
 
   const form = useForm<formData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "admin@example.com",
-      password: "admin123",
+      email: "makarakara79@gmail.com",
+      password: "88889999",
     },
   });
 
@@ -48,14 +52,19 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const response = await loginService({
-        username: values.username,
+        email: values.email,
         password: values.password,
       });
 
       if (response) {
         router.replace(ROUTES.DASHBOARD.INDEX);
         startTransition(() => {
-          toast.success("Welcome back to User management system");
+          AppToast({
+            type: "success",
+            message: response?.welcomeMessage || t("messages.login-success"),
+            duration: 3000,
+            position: "top-right",
+          });
         });
       }
     } catch (error: any) {
@@ -74,7 +83,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex h-screen items-center justify-center bg-background">
+    <main className="flex min-h-screen justify-center bg-background">
       <section className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[400px]">
         <article className="relative group">
           {/* Gradient border animation */}
@@ -106,10 +115,12 @@ export default function LoginPage() {
                 )}
                 <FormField
                   control={form.control}
-                  name="username"
+                  name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Username</FormLabel>
+                      <FormLabel>
+                        Email<span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Input
                           placeholder="name@example.com"
@@ -127,7 +138,9 @@ export default function LoginPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel>
+                        Password<span className="text-red-500">*</span>
+                      </FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Input

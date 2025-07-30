@@ -14,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Languages, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { localeConfig } from "@/constants/AppResource/status/status";
+import { localeConfig } from "@/constants/AppResource/language/language";
 
 interface LanguageSwitcherProps {
   variant?: "default" | "compact" | "flag-only";
@@ -128,7 +128,11 @@ export default function LanguageSwitcher({
             {isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <span className="text-lg">{currentLocaleConfig.flag}</span>
+              <img
+                src={currentLocaleConfig.flag}
+                alt={`${currentLocaleConfig.nativeName} flag`}
+                className="w-5 h-4 object-cover rounded-sm"
+              />
             )}
           </Button>
         </DropdownMenuTrigger>
@@ -147,7 +151,11 @@ export default function LanguageSwitcher({
                 )}
               >
                 <div className="flex items-center gap-2">
-                  <span>{config.flag}</span>
+                  <img
+                    src={config.flag}
+                    alt={`${config.nativeName} flag`}
+                    className="w-5 h-4 object-cover rounded-sm"
+                  />
                   <span className="font-medium">{config.nativeName}</span>
                 </div>
                 {isSelected && <Check className="h-4 w-4" />}
