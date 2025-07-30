@@ -253,7 +253,7 @@ export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
         {/* Modern Footer with user info */}
         {!collapsed && authUser && (
           <div className="border-t border-border/50 p-4">
-            <Link href={ROUTES.DASHBOARD.PROFILE}>
+            <Link href={ROUTES.ADMIN.PROFILE}>
               <div className="flex items-center gap-3 p-3 rounded-xl bg-accent/30 hover:bg-accent/50 transition-colors duration-300 cursor-pointer group">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white text-sm font-bold shadow-sm">
                   {authUser.fullName?.charAt(0) || "U"}

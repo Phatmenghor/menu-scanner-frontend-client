@@ -1,16 +1,38 @@
-import { BarChart3, Home, LucideIcon, Settings, Users } from "lucide-react";
+// src/constants/app-routed/navigation-config.tsx
+import {
+  BarChart3,
+  Home,
+  LucideIcon,
+  Settings,
+  Users,
+  Shield,
+  Database,
+  FileText,
+  Mail,
+  Phone,
+  Globe,
+  UserCheck,
+  Calendar,
+  CreditCard,
+  Package,
+  ShoppingCart,
+} from "lucide-react";
 import { ROUTES } from "./routes";
+
+export interface NavItem {
+  title: string;
+  href?: string;
+  icon: LucideIcon;
+  description?: string;
+  subroutes?: NavItem[];
+  section?: string;
+  badge?: string | number;
+  disabled?: boolean;
+}
 
 interface NavSection {
   title: string;
   items: NavItem[];
-}
-
-interface NavItem {
-  title: string;
-  href: string;
-  icon: LucideIcon;
-  description?: string;
 }
 
 export const navigationConfig: NavSection[] = [
@@ -24,16 +46,113 @@ export const navigationConfig: NavSection[] = [
         description: "Overview and statistics",
       },
       {
-        title: "Users",
-        href: ROUTES.ADMIN.USERS,
+        title: "User Management",
         icon: Users,
+        section: "users",
         description: "Manage system users",
+        subroutes: [
+          {
+            title: "All Users",
+            href: ROUTES.ADMIN.USERS,
+            icon: Users,
+            description: "View all users",
+          },
+          {
+            title: "User Roles",
+            href: ROUTES.ADMIN.USER_ROLES,
+            icon: Shield,
+            description: "Manage user roles",
+          },
+          {
+            title: "Permissions",
+            href: ROUTES.ADMIN.PERMISSIONS,
+            icon: UserCheck,
+            description: "Set user permissions",
+          },
+        ],
+      },
+      {
+        title: "Content Management",
+        icon: FileText,
+        section: "content",
+        description: "Manage application content",
+        subroutes: [
+          {
+            title: "Pages",
+            href: ROUTES.ADMIN.PAGES,
+            icon: FileText,
+            description: "Manage pages",
+          },
+          {
+            title: "Media Library",
+            href: ROUTES.ADMIN.MEDIA,
+            icon: Database,
+            description: "Manage media files",
+          },
+        ],
       },
       {
         title: "Analytics",
         href: ROUTES.ADMIN.ANALYTICS,
         icon: BarChart3,
         description: "View analytics and reports",
+        badge: "New",
+      },
+    ],
+  },
+  {
+    title: "E-Commerce",
+    items: [
+      {
+        title: "Products",
+        icon: Package,
+        section: "products",
+        description: "Product management",
+        subroutes: [
+          {
+            title: "All Products",
+            href: ROUTES.ADMIN.PRODUCTS,
+            icon: Package,
+            description: "View all products",
+          },
+          {
+            title: "Categories",
+            href: ROUTES.ADMIN.CATEGORIES,
+            icon: Database,
+            description: "Manage categories",
+          },
+        ],
+      },
+      {
+        title: "Orders",
+        href: ROUTES.ADMIN.ORDERS,
+        icon: ShoppingCart,
+        description: "Order management",
+        badge: 5,
+      },
+      {
+        title: "Payments",
+        href: ROUTES.ADMIN.PAYMENTS,
+        icon: CreditCard,
+        description: "Payment transactions",
+      },
+    ],
+  },
+  {
+    title: "Communication",
+    items: [
+      {
+        title: "Messages",
+        href: ROUTES.ADMIN.MESSAGES,
+        icon: Mail,
+        description: "User messages",
+        badge: 12,
+      },
+      {
+        title: "Notifications",
+        href: ROUTES.ADMIN.NOTIFICATIONS,
+        icon: Phone,
+        description: "System notifications",
       },
     ],
   },
@@ -42,9 +161,35 @@ export const navigationConfig: NavSection[] = [
     items: [
       {
         title: "Settings",
-        href: ROUTES.ADMIN.SETTINGS,
         icon: Settings,
+        section: "settings",
         description: "System configuration",
+        subroutes: [
+          {
+            title: "General",
+            href: ROUTES.ADMIN.SETTINGS.GENERAL,
+            icon: Settings,
+            description: "General settings",
+          },
+          {
+            title: "Security",
+            href: ROUTES.ADMIN.SETTINGS.SECURITY,
+            icon: Shield,
+            description: "Security settings",
+          },
+          {
+            title: "Integration",
+            href: ROUTES.ADMIN.SETTINGS.INTEGRATION,
+            icon: Globe,
+            description: "Third-party integrations",
+          },
+        ],
+      },
+      {
+        title: "Logs",
+        href: ROUTES.ADMIN.LOGS,
+        icon: FileText,
+        description: "System logs",
       },
     ],
   },
