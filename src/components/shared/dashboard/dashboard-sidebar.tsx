@@ -1,3 +1,4 @@
+// src/components/shared/dashboard/dashboard-sidebar.tsx
 "use client";
 
 import Link from "next/link";
@@ -40,8 +41,6 @@ export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
           businessId: user?.businessId || "",
           userType: user?.userType || "",
         });
-        // const response = await getUsersProfileService();
-        // setAuthUser(response || null);
       } catch (error) {
         return;
       } finally {
@@ -137,7 +136,7 @@ export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
                         )}
                       >
                         <Link
-                          href={subroute.href}
+                          href={subroute.href || "#"}
                           className="flex items-center gap-2"
                         >
                           <span className="truncate">{subroute.title}</span>
