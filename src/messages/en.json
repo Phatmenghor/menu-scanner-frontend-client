@@ -1,12 +1,70 @@
 {
+  "common": {
+    "language": "Language",
+    "selectLanguage": "Select Language",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "search": "Search...",
+    "filter": "Filter",
+    "export": "Export",
+    "settings": "Settings",
+    "profile": "Profile",
+    "logout": "Logout",
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "users": "Users"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign In",
+    "welcome": "Welcome",
+    "welcomeBack": "Welcome Back",
+    "loginSuccess": "Login successful!",
+    "loginError": "Login failed. Please try again.",
+    "invalidCredentials": "Invalid email or password",
+    "messages": {
+      "login-success": "Successfully logged in!",
+      "login-error": "Login failed. Please check your credentials."
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "overview": "Overview",
+    "analytics": "Analytics",
+    "recentActivity": "Recent Activity",
+    "totalUsers": "Total Users",
+    "activeUsers": "Active Users",
+    "systemHealth": "System Health"
+  },
   "user": {
     "search": "Search users...",
+    "addUser": "Add User",
+    "editUser": "Edit User",
+    "deleteUser": "Delete User",
+    "userManagement": "User Management",
     "table-header": {
       "email": "Email",
       "role": "Role",
       "status": "Status",
       "createdAt": "Created At",
-      "actions": "Actions"
+      "actions": "Actions",
+      "name": "Name"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "roles": {
+      "admin": "Administrator",
+      "user": "User",
+      "developer": "Developer"
     }
   }
 }

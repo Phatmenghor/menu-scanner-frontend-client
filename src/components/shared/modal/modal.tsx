@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
-import { Status } from "@/constants/AppResource/status/status";
+import { Status } from "@/constants/app-resource/status/status";
 
 // Configuration - Customize these for your needs
 export const STATUS_USER_OPTIONS = [

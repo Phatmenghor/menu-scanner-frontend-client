@@ -1,69 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
-import createMiddleware from "next-intl/middleware";
-import { defaultLocale, locales } from "@/i18n";
-
-// Create the intl middleware
-const intlMiddleware = createMiddleware({
-  locales,
-  defaultLocale, // Force zh-CN as default
-  localePrefix: "always", // This ensures locale is always in URL
-});
 
 export default function middleware(req: NextRequest) {
-  console.log("Middleware called for:", req.nextUrl.pathname); // Debug log
-
+  const { pathname } = req.nextUrl;
   const token = req.cookies.get("auth-token")?.value;
-  const pathname = req.nextUrl.pathname;
 
-  // Extract locale from pathname or default to zh-CN
-  const segments = pathname.split("/").filter(Boolean);
-  const currentLocale =
-    segments[0] && locales.includes(segments[0] as any) ? segments[0] : "zh-CN";
+  console.log(`Middleware: ${pathname}, Token: ${token ? "exists" : "none"}`);
 
-  // Define public paths that don't require authentication
-  const publicPaths = [`/${currentLocale}/login`];
-  const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
-
-  // Handle root path - force redirect to zh-CN
-  // if (pathname === "/") {
-  //   console.log("Root path accessed, redirecting to zh-CN");
-  //   return NextResponse.redirect(new URL(`/${currentLocale}/user/`, req.url));
-  // }
-
-  // If no token and trying to access protected route, redirect to login
-  if (!token && !isPublicPath && pathname !== "/") {
-    console.log("Redirecting to login for locale:", currentLocale);
-    const loginUrl = new URL(`/${currentLocale}/login`, req.url);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // If user has token and trying to access login page, redirect to dashboard
-  if (token && pathname === "/") {
-    console.log("Redirecting to dashboard for locale:", currentLocale);
-    const dashboardUrl = new URL(`/${currentLocale}/user/`, req.url);
-    return NextResponse.redirect(dashboardUrl);
-  }
-
-  // For all other cases, apply intl middleware for locale handling
-  const response = intlMiddleware(req);
-  console.log(
-    "Intl middleware response:",
-    response?.headers.get("location") || "no redirect"
+  // Public paths that don't require authentication
+  const publicPaths = ["/", "/login", "/api", "/_next", "/favicon.ico"];
+  const isPublicPath = publicPaths.some(
+    (path) => pathname === path || pathname.startsWith(path)
   );
-  return response;
+
+  // Redirect root to login if no token, admin if has token
+  if (pathname === "/") {
+    if (token) {
+      console.log("Root access with token -> redirecting to /admin");
+      return NextResponse.redirect(new URL("/admin", req.url));
+    } else {
+      console.log("Root access without token -> redirecting to /login");
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+  }
+
+  // Protect admin routes
+  if (pathname.startsWith("/admin")) {
+    if (!token) {
+      console.log("Admin access without token -> redirecting to /login");
+      const loginUrl = new URL("/login", req.url);
+      loginUrl.searchParams.set("redirect", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // Redirect to admin if accessing login with token
+  if (pathname === "/login" && token) {
+    console.log("Login access with token -> redirecting to /admin");
+    return NextResponse.redirect(new URL("/admin", req.url));
+  }
+
+  console.log("Middleware: allowing request to proceed");
+  return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    // Enable a redirect to a matching locale at the root
-    "/",
-
-    // Set a cookie to remember the previous locale for
-    // all requests that have a locale prefix
-    "/(kh|en)/:path*",
-
-    // Enable redirects that add missing locales
-    // (e.g. `/pathnames` -> `/en/pathnames`)
-    "/((?!_next|_vercel|.*\\..*).*)",
+    // Skip all internal paths (_next)
+    "/((?!_next/static|_next/image|favicon.ico|api).*)",
   ],
 };

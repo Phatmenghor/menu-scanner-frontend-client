@@ -22,11 +22,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { STATUS_FILTER } from "@/constants/AppResource/status/status";
+import { STATUS_FILTER } from "@/constants/app-resource/status/status";
 import {
   getUserTableHeaders,
   UserTableHeaders,
-} from "@/constants/AppResource/table/table";
+} from "@/constants/app-resource/table/table";
 import { cn } from "@/lib/utils";
 import {
   getUsersService,

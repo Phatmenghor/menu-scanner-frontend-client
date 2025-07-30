@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation";
 import { logoutToken } from "@/utils/local-storage/token";
 import LanguageSwitcher from "../common/language-switcher";
 import { clearRoles } from "@/utils/local-storage/roles";
-import { ROUTES } from "@/constants/AppRoutes/routes";
+import { ROUTES } from "@/constants/app-routed/routes";
 
 interface TopBarProps {
   onMenuClick: () => void;
