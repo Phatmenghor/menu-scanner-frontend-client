@@ -81,8 +81,8 @@ export function LocaleProvider({
 
     setIsLoading(true);
     try {
-      // Dynamic import of messages
-      const newMessages = await import(`../../messages/${newLocale}.json`);
+      // Fixed import path - changed from ../../messages to ../messages
+      const newMessages = await import(`../messages/${newLocale}.json`);
 
       setMessages(newMessages.default);
       setLocaleState(newLocale);

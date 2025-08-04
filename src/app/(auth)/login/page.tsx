@@ -25,7 +25,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Badge } from "@/components/ui/badge";
 import LanguageSwitcher from "@/components/shared/common/language-switcher";
 import { loginService } from "@/services/auth/login.service";
 import { useTranslations } from "next-intl";
@@ -82,6 +81,9 @@ export default function LoginPage() {
     }
   };
 
+  // Show loading state during login or navigation transition
+  const isSubmitting = isLoading || isPending;
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">
       <div className="w-full max-w-md space-y-6">
@@ -111,7 +113,7 @@ export default function LoginPage() {
                           type="email"
                           placeholder={t("emailPlaceholder")}
                           autoComplete="email"
-                          disabled={isLoading}
+                          disabled={isSubmitting}
                           {...field}
                         />
                       </FormControl>
@@ -132,7 +134,7 @@ export default function LoginPage() {
                             type={showPassword ? "text" : "password"}
                             placeholder={t("passwordPlaceholder")}
                             autoComplete="current-password"
-                            disabled={isLoading}
+                            disabled={isSubmitting}
                             {...field}
                           />
                           <Button
@@ -141,7 +143,7 @@ export default function LoginPage() {
                             size="sm"
                             className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                             onClick={() => setShowPassword(!showPassword)}
-                            disabled={isLoading}
+                            disabled={isSubmitting}
                           >
                             {showPassword ? (
                               <EyeOff className="h-4 w-4 text-muted-foreground" />
@@ -156,11 +158,20 @@ export default function LoginPage() {
                   )}
                 />
 
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isSubmitting}
+                >
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       {t("signingIn")}
+                    </>
+                  ) : isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Redirecting...
                     </>
                   ) : (
                     <>

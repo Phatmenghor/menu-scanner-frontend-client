@@ -18,6 +18,22 @@
     "dashboard": "Dashboard",
     "users": "Users"
   },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome to your dashboard",
+    "overview": "Overview"
+  },
+  "user": {
+    "title": "Users",
+    "search": "Search users...",
+    "table-header": {
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "createdAt": "Created At",
+      "actions": "Actions"
+    }
+  },
   "auth": {
     "login": "Login",
     "logout": "Logout",
