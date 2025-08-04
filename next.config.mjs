@@ -57,6 +57,12 @@ const nextConfig = {
       },
     ];
   },
+
+  // Experimental features for better i18n support without routing
+  experimental: {
+    // Enable if you need server actions
+    serverActions: true,
+  },
 };
 
 export default withNextIntl(nextConfig);

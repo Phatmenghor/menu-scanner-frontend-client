@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import { ClientProviders } from "@/context/provider/client-provider";
-import { NextIntlClientProvider } from "next-intl";
-import { getMessages } from "next-intl/server";
-import { cookies } from "next/headers";
+import { getMessages, getLocale } from "next-intl/server";
 import PageProgressBar from "@/components/shared/progressbar/Nprogressbar/global-n-progress";
 import localFont from "next/font/local";
 import "@/styles/globals.css";
-import { locales, defaultLocale, type Locale } from "@/i18n/request";
+import { LocaleProvider } from "@/components/providers/locale-provider";
+import { type Locale } from "@/i18n/request";
 
 const geistSans = localFont({
   src: "../../public/fonts/GeistVF.woff",
@@ -25,50 +24,35 @@ export const metadata: Metadata = {
   description: "Admin panel for Menu Scanner application",
 };
 
-// Helper function to detect locale from cookies
-function getLocaleFromCookies(): Locale {
-  try {
-    const cookieStore = cookies();
-    const localeCookie = cookieStore.get("locale")?.value as Locale;
-
-    if (localeCookie && locales.includes(localeCookie)) {
-      return localeCookie;
-    }
-  } catch (error) {
-    console.log("Could not read locale cookie:", error);
-  }
-
-  return defaultLocale;
-}
-
 export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // FIXED: Get locale from cookies instead of URL or headers
-  const locale = getLocaleFromCookies();
+  // Get initial server-side locale and messages (always default for clean URLs)
+  const serverLocale = (await getLocale()) as Locale;
+  const serverMessages = await getMessages();
 
-  console.log("Layout locale detection:", locale);
-
-  // Get messages for the detected locale
-  const messages = await getMessages({ locale });
+  console.log("Layout - Server locale:", serverLocale);
 
   return (
     <html
-      lang={locale}
+      lang={serverLocale}
       className={`${geistSans.variable} ${geistMono.variable}`}
     >
       <head>
         <link rel="icon" href="/favicon.ico" />
       </head>
       <body className="antialiased">
-        <NextIntlClientProvider messages={messages} locale={locale}>
+        <LocaleProvider
+          initialLocale={serverLocale}
+          initialMessages={serverMessages}
+        >
           <ClientProviders>
             <PageProgressBar />
             {children}
           </ClientProviders>
-        </NextIntlClientProvider>
+        </LocaleProvider>
       </body>
     </html>
   );

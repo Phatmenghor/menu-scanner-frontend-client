@@ -6,12 +6,6 @@ export default function middleware(req: NextRequest) {
 
   console.log(`Middleware: ${pathname}, Token: ${token ? "exists" : "none"}`);
 
-  // Public paths that don't require authentication
-  const publicPaths = ["/", "/login", "/api", "/_next", "/favicon.ico"];
-  const isPublicPath = publicPaths.some(
-    (path) => pathname === path || pathname.startsWith(path)
-  );
-
   // Redirect root to login if no token, admin if has token
   if (pathname === "/") {
     if (token) {

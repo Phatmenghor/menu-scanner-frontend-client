@@ -1,8 +1,8 @@
 "use client";
 
 import { locales, type Locale } from "@/i18n/request";
-import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Languages, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { localeConfig } from "@/constants/app-resource/language/language";
+import { useClientLocale } from "@/components/providers/locale-provider";
 
 interface LanguageSwitcherProps {
   variant?: "default" | "compact" | "flag-only";
@@ -21,42 +22,23 @@ interface LanguageSwitcherProps {
   className?: string;
 }
 
-// Helper function to store locale preference
-function storeLocalePreference(locale: Locale) {
-  // Store in localStorage
-  if (typeof window !== "undefined") {
-    localStorage.setItem("locale", locale);
-  }
-
-  // Store in cookie
-  document.cookie = `locale=${locale}; path=/; max-age=${365 * 24 * 60 * 60}`; // 1 year
-}
-
 export default function LanguageSwitcher({
   variant = "default",
   showBadge = false,
   className,
 }: LanguageSwitcherProps) {
-  const currentLocale = useLocale() as Locale;
+  const { locale: currentLocale, setLocale, isLoading } = useClientLocale();
   const t = useTranslations("common");
   const [isClient, setIsClient] = useState(false);
-  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
   const handleLanguageChange = (newLocale: Locale) => {
-    if (newLocale === currentLocale) return;
-
-    startTransition(() => {
-      // Store the new locale preference
-      storeLocalePreference(newLocale);
-
-      // Reload the page to apply the new locale
-      // This will pick up the new locale from localStorage/cookies
-      window.location.reload();
-    });
+    if (newLocale !== currentLocale && !isLoading) {
+      setLocale(newLocale);
+    }
   };
 
   // Don't render until client-side to avoid hydration mismatch
@@ -80,9 +62,9 @@ export default function LanguageSwitcher({
             variant="ghost"
             size="sm"
             className={cn("h-8 px-2", className)}
-            disabled={isPending}
+            disabled={isLoading}
           >
-            {isPending ? (
+            {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <>
@@ -105,9 +87,10 @@ export default function LanguageSwitcher({
                 onClick={() => handleLanguageChange(locale)}
                 className={cn(
                   "flex items-center justify-between cursor-pointer",
-                  isSelected && "bg-accent"
+                  isSelected && "bg-accent",
+                  isLoading && "opacity-50"
                 )}
-                disabled={isPending}
+                disabled={isLoading}
               >
                 <div className="flex items-center gap-2">
                   <span>{config.flag}</span>
@@ -131,9 +114,9 @@ export default function LanguageSwitcher({
             variant="ghost"
             size="sm"
             className={cn("h-8 w-8 p-0", className)}
-            disabled={isPending}
+            disabled={isLoading}
           >
-            {isPending ? (
+            {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <img
@@ -155,9 +138,10 @@ export default function LanguageSwitcher({
                 onClick={() => handleLanguageChange(locale)}
                 className={cn(
                   "flex items-center justify-between cursor-pointer",
-                  isSelected && "bg-accent"
+                  isSelected && "bg-accent",
+                  isLoading && "opacity-50"
                 )}
-                disabled={isPending}
+                disabled={isLoading}
               >
                 <div className="flex items-center gap-2">
                   <img
@@ -168,6 +152,9 @@ export default function LanguageSwitcher({
                   <span className="font-medium">{config.nativeName}</span>
                 </div>
                 {isSelected && <Check className="h-4 w-4" />}
+                {isLoading && locale === currentLocale && (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                )}
               </DropdownMenuItem>
             );
           })}
@@ -191,9 +178,9 @@ export default function LanguageSwitcher({
             variant="outline"
             size="sm"
             className="h-9 px-3"
-            disabled={isPending}
+            disabled={isLoading}
           >
-            {isPending ? (
+            {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : (
               <Languages className="h-4 w-4 mr-2" />
@@ -224,9 +211,10 @@ export default function LanguageSwitcher({
                 onClick={() => handleLanguageChange(locale)}
                 className={cn(
                   "flex items-center justify-between cursor-pointer py-2",
-                  isSelected && "bg-accent"
+                  isSelected && "bg-accent",
+                  isLoading && "opacity-50"
                 )}
-                disabled={isPending}
+                disabled={isLoading}
               >
                 <div className="flex items-center gap-3">
                   <span className="text-lg">{config.flag}</span>
@@ -237,7 +225,12 @@ export default function LanguageSwitcher({
                     </span>
                   </div>
                 </div>
-                {isSelected && <Check className="h-4 w-4 text-primary" />}
+                <div className="flex items-center gap-1">
+                  {isSelected && <Check className="h-4 w-4 text-primary" />}
+                  {isLoading && locale === currentLocale && (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  )}
+                </div>
               </DropdownMenuItem>
             );
           })}
