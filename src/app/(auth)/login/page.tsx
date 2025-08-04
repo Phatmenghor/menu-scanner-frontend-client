@@ -30,7 +30,7 @@ import { useTranslations } from "next-intl";
 import { AppToast } from "@/components/app/components/app-toast";
 
 const loginSchema = z.object({
-  userIdentifier: z.string().email("Please enter a valid email address"),
+  userIdentifier: z.string(),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
@@ -116,7 +116,7 @@ export default function LoginPage() {
                       <FormLabel>{t("emailAddress")}</FormLabel>
                       <FormControl>
                         <Input
-                          type="email"
+                          type="text"
                           placeholder={t("emailPlaceholder")}
                           autoComplete="email"
                           disabled={isSubmitting}

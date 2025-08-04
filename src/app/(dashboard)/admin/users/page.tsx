@@ -44,7 +44,6 @@ import { getUserInfo } from "@/utils/local-storage/userInfo";
 import { Check, Edit, Eye, Search, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
-import { userInfo } from "os";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
