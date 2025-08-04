@@ -27,11 +27,11 @@ import {
   getUserTableHeaders,
   UserTableHeaders,
 } from "@/constants/app-resource/table/table";
+import { ROUTES } from "@/constants/app-routed/routes";
+import { usePagination } from "@/hooks/use-pagination";
 import { cn } from "@/lib/utils";
-import {
-  getUsersService,
-  PaginatedUsersResponse,
-} from "@/services/dashboard/user/user.service";
+import { AllUserResponse } from "@/models/user/user.response.model";
+import { getAllUserService } from "@/services/dashboard/user/user.service";
 import { indexDisplay } from "@/utils/common/common";
 import { DateTimeFormat } from "@/utils/date/date-time-format";
 import { useDebounce } from "@/utils/debounce/debounce";
@@ -40,15 +40,17 @@ import {
   ExcelExporter,
   ExcelSheet,
 } from "@/utils/export-file/excel";
+import { getUserInfo } from "@/utils/local-storage/userInfo";
 import { Check, Edit, Eye, Search, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
+import { userInfo } from "os";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export default function UserPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [users, setUsers] = useState<PaginatedUsersResponse | null>(null);
+  const [users, setUsers] = useState<AllUserResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExportingToExcel, setIsExportingToExcel] = useState(false);
@@ -59,6 +61,13 @@ export default function UserPage() {
   const locale = useLocale();
   const pathname = usePathname();
 
+  const user = getUserInfo();
+  const { currentPage, updateUrlWithPage, handlePageChange, getDisplayIndex } =
+    usePagination({
+      baseRoute: ROUTES.ADMIN.USERS,
+      defaultPageSize: 10,
+    });
+
   console.log("Page Debug:", { locale, pathname });
 
   // Debounced search query - Optimized api performance when search
@@ -67,14 +76,20 @@ export default function UserPage() {
   const loadUsers = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await getUsersService();
+      const response = await getAllUserService({
+        search: debouncedSearchQuery,
+        pageNo: currentPage,
+        businessId: user?.businessId,
+        pageSize: 10,
+      });
+      console.log("Fetched users:", response);
       setUsers(response);
     } catch (error: any) {
       console.log("Failed to fetch users: ", error);
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedSearchQuery, statusFilter]);
+  }, [debouncedSearchQuery, statusFilter, currentPage]);
 
   useEffect(() => {
     loadUsers();
@@ -85,7 +100,7 @@ export default function UserPage() {
     setSearchQuery(e.target.value);
   };
 
-  const handleExportToPdf = async (data: PaginatedUsersResponse | null) => {
+  const handleExportToPdf = async (data: AllUserResponse | null) => {
     setIsExportingToExcel(true);
     try {
       const columns: ExcelColumn[] = [
@@ -195,6 +210,9 @@ export default function UserPage() {
               </SelectContent>
             </Select>
           </div>
+          <div>
+            <Button>New</Button>
+          </div>
         </div>
 
         <div className="w-full">
@@ -271,22 +289,26 @@ export default function UserPage() {
 
                         {/* Role */}
                         <TableCell className="text-xs text-muted-foreground">
-                          <RoleBadge role={user?.role} />
+                          {user.roles?.length > 0
+                            ? user.roles.map((role: string) => (
+                                <RoleBadge key={role} role={role} />
+                              ))
+                            : "---"}
                         </TableCell>
 
                         {/* Status Switch */}
                         <TableCell>
                           <Switch
-                            checked={user?.status === "ACTIVE"}
+                            checked={user?.accountStatus === "ACTIVE"}
                             // onCheckedChange={() => handleCanToggle(user, canModify)}
                             // disabled={isSubmitting || !canModify}
                             aria-label="Toggle user status"
                             className={cn(
-                              "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                              "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
                               // canModify
                               1
-                                ? "bg-gray-300 dark:bg-gray-600 data-[state=checked]:bg-orange-500 dark:data-[state=checked]:bg-orange-400"
-                                : "bg-gray-300 dark:bg-orange-600 opacity-50 cursor-not-allowed"
+                                ? "bg-gray-300 dark:bg-gray-600 data-[state=checked]:bg-primary dark:data-[state=checked]:bg-primary"
+                                : "bg-gray-300 dark:bg-primary opacity-50 cursor-not-allowed"
                             )}
                           >
                             <div
@@ -295,7 +317,7 @@ export default function UserPage() {
                                 "translate-x-1 data-[state=checked]:translate-x-5"
                               )}
                             >
-                              {user.status === "ACTIVE" && (
+                              {user.accountStatus === "ACTIVE" && (
                                 <Check className="h-3 w-3 m-auto" />
                               )}
                             </div>

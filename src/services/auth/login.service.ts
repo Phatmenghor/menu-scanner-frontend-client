@@ -14,6 +14,8 @@ export async function loginService(credentials: LoginCredentials) {
     storeToken(userData.accessToken);
     storeUserInfo({
       userId: userData.userId || "",
+      userIdentifier: userData || "",
+      profileImageUrl: userData.profileImageUrl || "",
       email: userData.email || "",
       fullName: userData.fullName || "",
       businessId: userData.businessId || "",

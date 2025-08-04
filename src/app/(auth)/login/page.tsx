@@ -7,7 +7,6 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Eye, EyeOff, Loader2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -28,9 +27,10 @@ import {
 import LanguageSwitcher from "@/components/shared/common/language-switcher";
 import { loginService } from "@/services/auth/login.service";
 import { useTranslations } from "next-intl";
+import { AppToast } from "@/components/app/components/app-toast";
 
 const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
+  userIdentifier: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
@@ -49,8 +49,8 @@ export default function LoginPage() {
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "admin@example.com",
-      password: "password123",
+      userIdentifier: "phatmenghor19@gmail.com",
+      password: "88889999",
     },
   });
 
@@ -59,13 +59,19 @@ export default function LoginPage() {
 
     try {
       const response = await loginService({
-        email: data.email,
+        userIdentifier: data.userIdentifier,
         password: data.password,
       });
 
       if (response) {
         startTransition(() => {
-          toast.success(t("loginSuccess"));
+          AppToast({
+            type: "success",
+            message: response?.welcomeMessage || "Welcome to the dashboard!",
+            duration: 3000,
+            position: "top-right",
+          });
+
           router.push(redirectTo);
         });
       }
@@ -104,7 +110,7 @@ export default function LoginPage() {
               >
                 <FormField
                   control={form.control}
-                  name="email"
+                  name="userIdentifier"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t("emailAddress")}</FormLabel>
