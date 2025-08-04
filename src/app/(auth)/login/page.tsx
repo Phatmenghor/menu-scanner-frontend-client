@@ -66,15 +66,15 @@ export default function LoginPage() {
 
       if (response) {
         startTransition(() => {
-          toast.success(response.welcomeMessage || "Login successful!");
+          toast.success(t("loginSuccess"));
           router.push(redirectTo);
         });
       }
     } catch (error: any) {
       const errorMessage =
         error?.errorMessage === "An unexpected error occurred: Bad credentials"
-          ? "Invalid email or password"
-          : error?.errorMessage || "Login failed. Please try again.";
+          ? t("invalidCredentials")
+          : error?.errorMessage || t("loginError");
 
       toast.error(errorMessage);
     } finally {
@@ -85,21 +85,13 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">
       <div className="w-full max-w-md space-y-6">
-        {/* Header with Language Switcher */}
-        <div className="flex justify-between items-center">
-          <Badge variant="secondary" className="text-xs">
-            Menu Scanner Admin
-          </Badge>
-          <LanguageSwitcher variant="compact" />
-        </div>
-
         {/* Login Card */}
         <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm dark:bg-gray-800/80">
           <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-            <CardDescription>
-              Sign in to your admin account to continue
-            </CardDescription>
+            <CardTitle className="text-2xl font-bold">
+              {t("loginTitle")}
+            </CardTitle>
+            <CardDescription>{t("loginSubtitle")}</CardDescription>
           </CardHeader>
 
           <CardContent>
@@ -113,11 +105,11 @@ export default function LoginPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email Address</FormLabel>
+                      <FormLabel>{t("emailAddress")}</FormLabel>
                       <FormControl>
                         <Input
                           type="email"
-                          placeholder="admin@example.com"
+                          placeholder={t("emailPlaceholder")}
                           autoComplete="email"
                           disabled={isLoading}
                           {...field}
@@ -133,12 +125,12 @@ export default function LoginPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel>{t("password")}</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Input
                             type={showPassword ? "text" : "password"}
-                            placeholder="Enter your password"
+                            placeholder={t("passwordPlaceholder")}
                             autoComplete="current-password"
                             disabled={isLoading}
                             {...field}
@@ -168,11 +160,11 @@ export default function LoginPage() {
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Signing in...
+                      {t("signingIn")}
                     </>
                   ) : (
                     <>
-                      Sign In
+                      {t("signIn")}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </>
                   )}
@@ -183,7 +175,7 @@ export default function LoginPage() {
             {/* Demo Credentials */}
             <div className="mt-6 p-3 bg-muted/50 rounded-lg">
               <p className="text-xs text-muted-foreground text-center">
-                Demo credentials are pre-filled for testing
+                {t("demoCredentials")}
               </p>
             </div>
           </CardContent>
@@ -191,7 +183,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="text-center text-xs text-muted-foreground">
-          © 2024 Menu Scanner. All rights reserved.
+          {t("copyright")}
         </p>
       </div>
     </div>

@@ -20,6 +20,10 @@ export default getRequestConfig(async () => {
     return {
       messages,
       locale,
+      // Add timezone configuration to prevent hydration mismatches
+      timeZone: "Asia/Phnom_Penh", // Cambodia timezone
+      // Alternative: Use UTC for consistency across environments
+      // timeZone: "UTC",
     };
   } catch (error) {
     console.error("Failed to load messages for locale:", locale, error);
@@ -28,6 +32,7 @@ export default getRequestConfig(async () => {
     return {
       locale: defaultLocale,
       messages: {},
+      timeZone: "Asia/Phnom_Penh", // Add timezone to fallback as well
     };
   }
 });

@@ -19,52 +19,17 @@
     "users": "អ្នកប្រើប្រាស់"
   },
   "auth": {
-    "login": "ចូល",
-    "logout": "ចាកចេញ",
-    "email": "អ៊ីមែល",
+    "emailAddress": "អាសយដ្ឋានអ៊ីមែល",
     "password": "ពាក្យសម្ងាត់",
     "signIn": "ចូល",
-    "welcome": "សូមស្វាគមន៍",
-    "welcomeBack": "សូមស្វាគមន៍ការវិលត្រឡប់",
+    "signingIn": "កំពុងចូល...",
+    "loginTitle": "សូមស្វាគមន៍ការវិលត្រឡប់",
+    "loginSubtitle": "ចូលទៅក្នុងគណនីអ្នកគ្រប់គ្រងរបស់អ្នកដើម្បីបន្ត",
+    "emailPlaceholder": "admin@example.com",
+    "passwordPlaceholder": "បញ្ចូលពាក្យសម្ងាត់របស់អ្នក",
     "loginSuccess": "ចូលដោយជោគជ័យ!",
     "loginError": "ចូលបរាជ័យ។ សូមព្យាយាមម្តងទៀត។",
-    "invalidCredentials": "អ៊ីមែល ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវ",
-    "messages": {
-      "login-success": "ចូលដោយជោគជ័យ!",
-      "login-error": "ចូលបរាជ័យ។ សូមពិនិត្យមើលអត្តសញ្ញាណរបស់អ្នក។"
-    }
-  },
-  "dashboard": {
-    "title": "ផ្ទាំងគ្រប់គ្រង",
-    "overview": "ទិដ្ឋភាពទូទៅ",
-    "analytics": "ការវិភាគ",
-    "recentActivity": "សកម្មភាពថ្មីៗ",
-    "totalUsers": "អ្នកប្រើប្រាស់សរុប",
-    "activeUsers": "អ្នកប្រើប្រាស់សកម្ម",
-    "systemHealth": "សុខភាពប្រព័ន្ធ"
-  },
-  "user": {
-    "search": "ស្វែងរកអ្នកប្រើប្រាស់...",
-    "addUser": "បន្ថែមអ្នកប្រើប្រាស់",
-    "editUser": "កែសម្រួលអ្នកប្រើប្រាស់",
-    "deleteUser": "លុបអ្នកប្រើប្រាស់",
-    "userManagement": "ការគ្រប់គ្រងអ្នកប្រើប្រាស់",
-    "table-header": {
-      "email": "អ៊ីមែល",
-      "role": "តួនាទី",
-      "status": "ស្ថានភាព",
-      "createdAt": "បង្កើតនៅ",
-      "actions": "សកម្មភាព",
-      "name": "ឈ្មោះ"
-    },
-    "status": {
-      "active": "សកម្ម",
-      "inactive": "មិនសកម្ម"
-    },
-    "roles": {
-      "admin": "អ្នកគ្រប់គ្រង",
-      "user": "អ្នកប្រើប្រាស់",
-      "developer": "អ្នកអភិវឌ្ឍន៍"
-    }
+    "demoCredentials": "ព័ត៌មានសម្រាប់សាកល្បងត្រូវបានបំពេញជាមុន",
+    "copyright": "© ២០២៤ Menu Scanner។ រក្សាសិទ្ធិគ្រប់យ៉ាង។"
   }
 }

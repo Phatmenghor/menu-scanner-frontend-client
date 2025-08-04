@@ -115,7 +115,11 @@ export function LocaleProvider({
 
   return (
     <LocaleContext.Provider value={contextValue}>
-      <NextIntlClientProvider messages={messages} locale={locale}>
+      <NextIntlClientProvider
+        messages={messages}
+        locale={locale}
+        timeZone="Asia/Phnom_Penh" // Add timezone for client-side
+      >
         {children}
       </NextIntlClientProvider>
     </LocaleContext.Provider>
