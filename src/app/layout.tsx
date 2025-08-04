@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { ClientProviders } from "@/context/provider/client-provider";
+import { ClientProviders } from "@/context/client-provider";
 import { getMessages, getLocale } from "next-intl/server";
 import PageProgressBar from "@/components/shared/progressbar/Nprogressbar/global-n-progress";
 import localFont from "next/font/local";
 import "@/styles/globals.css";
-import { LocaleProvider } from "@/components/providers/locale-provider";
+import { LocaleProvider } from "@/context/locale-provider";
 import { type Locale } from "@/i18n/request";
 
 const geistSans = localFont({

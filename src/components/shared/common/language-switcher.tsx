@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Languages, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { localeConfig } from "@/constants/app-resource/language/language";
-import { useClientLocale } from "@/components/providers/locale-provider";
+import { useClientLocale } from "@/context/locale-provider";
 
 interface LanguageSwitcherProps {
   variant?: "default" | "compact" | "flag-only";
