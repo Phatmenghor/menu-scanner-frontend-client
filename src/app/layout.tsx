@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { ClientProviders } from "@/context/provider/client-provider";
-import { getLocale, getMessages } from "@/lib/i18n";
 import { NextIntlClientProvider } from "next-intl";
-import { headers } from "next/headers";
+import { getMessages } from "next-intl/server";
+import { cookies } from "next/headers";
 import PageProgressBar from "@/components/shared/progressbar/Nprogressbar/global-n-progress";
 import localFont from "next/font/local";
 import "@/styles/globals.css";
+import { locales, defaultLocale, type Locale } from "@/i18n/request";
 
 const geistSans = localFont({
   src: "../../public/fonts/GeistVF.woff",
@@ -24,18 +25,34 @@ export const metadata: Metadata = {
   description: "Admin panel for Menu Scanner application",
 };
 
+// Helper function to detect locale from cookies
+function getLocaleFromCookies(): Locale {
+  try {
+    const cookieStore = cookies();
+    const localeCookie = cookieStore.get("locale")?.value as Locale;
+
+    if (localeCookie && locales.includes(localeCookie)) {
+      return localeCookie;
+    }
+  } catch (error) {
+    console.log("Could not read locale cookie:", error);
+  }
+
+  return defaultLocale;
+}
+
 export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Get locale from browser/request
-  const headersList = headers();
-  const request = new Request("", {
-    headers: Object.fromEntries(headersList.entries()),
-  });
-  const locale = getLocale(request);
-  const messages = await getMessages(locale);
+  // FIXED: Get locale from cookies instead of URL or headers
+  const locale = getLocaleFromCookies();
+
+  console.log("Layout locale detection:", locale);
+
+  // Get messages for the detected locale
+  const messages = await getMessages({ locale });
 
   return (
     <html

@@ -1,7 +1,6 @@
 "use client";
 
-import { locales } from "@/i18n";
-import { useRouter, usePathname } from "next/navigation";
+import { locales, type Locale } from "@/i18n/request";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
@@ -22,15 +21,24 @@ interface LanguageSwitcherProps {
   className?: string;
 }
 
+// Helper function to store locale preference
+function storeLocalePreference(locale: Locale) {
+  // Store in localStorage
+  if (typeof window !== "undefined") {
+    localStorage.setItem("locale", locale);
+  }
+
+  // Store in cookie
+  document.cookie = `locale=${locale}; path=/; max-age=${365 * 24 * 60 * 60}`; // 1 year
+}
+
 export default function LanguageSwitcher({
   variant = "default",
   showBadge = false,
   className,
 }: LanguageSwitcherProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const currentLocale = useLocale();
-  const t = useTranslations("common"); // Add translations for UI text
+  const currentLocale = useLocale() as Locale;
+  const t = useTranslations("common");
   const [isClient, setIsClient] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -38,17 +46,16 @@ export default function LanguageSwitcher({
     setIsClient(true);
   }, []);
 
-  const handleLanguageChange = (newLocale: string) => {
+  const handleLanguageChange = (newLocale: Locale) => {
     if (newLocale === currentLocale) return;
 
     startTransition(() => {
-      // Remove current locale from pathname
-      const pathWithoutLocale =
-        pathname.replace(`/${currentLocale}`, "") || "/";
-      const newPath = `/${newLocale}${pathWithoutLocale}`;
+      // Store the new locale preference
+      storeLocalePreference(newLocale);
 
-      // Add loading state and smooth transition
-      router.push(newPath);
+      // Reload the page to apply the new locale
+      // This will pick up the new locale from localStorage/cookies
+      window.location.reload();
     });
   };
 
@@ -100,6 +107,7 @@ export default function LanguageSwitcher({
                   "flex items-center justify-between cursor-pointer",
                   isSelected && "bg-accent"
                 )}
+                disabled={isPending}
               >
                 <div className="flex items-center gap-2">
                   <span>{config.flag}</span>
@@ -149,6 +157,7 @@ export default function LanguageSwitcher({
                   "flex items-center justify-between cursor-pointer",
                   isSelected && "bg-accent"
                 )}
+                disabled={isPending}
               >
                 <div className="flex items-center gap-2">
                   <img
@@ -217,6 +226,7 @@ export default function LanguageSwitcher({
                   "flex items-center justify-between cursor-pointer py-2",
                   isSelected && "bg-accent"
                 )}
+                disabled={isPending}
               >
                 <div className="flex items-center gap-3">
                   <span className="text-lg">{config.flag}</span>
