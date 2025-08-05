@@ -20,15 +20,24 @@ import {
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { UploadImageRequest } from "@/models/image/image.request";
+import { uploadImageService } from "@/services/dashboard/image/image.service";
+import { BusinessModel } from "@/models/(business)/business/business.response";
+import {
+  BUSINESS_USER_ROLE_OPTIONS,
+  BusinessUserType,
+  ModalMode,
+  Status,
+  STATUS_USER_OPTIONS,
+} from "@/constants/app-resource/status/status";
 import {
   CreateUsers,
   createUserSchema,
   UpdateUsers,
   updateUserSchema,
   UserFormData,
-} from "@/models/dashboard/user/plateform-user/user.schema";
-import { UploadImageRequest } from "@/models/image/image.request";
-import { uploadImageService } from "@/services/dashboard/image/image.service";
+} from "@/models/user/user.schema";
+import { ComboboxSelectBusiness } from "../../combo-box/combobox-business";
 
 type Props = {
   mode: ModalMode;

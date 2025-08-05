@@ -12,9 +12,13 @@ git add .
 echo "🔍 Git diff summary:"
 git diff --cached --stat
 
-echo "✅ Committing with current date and time..."
-git commit -m "Auto commit on $(date '+%Y-%m-%d %H:%M:%S')"
+# Check if there is anything to commit
+if git diff --cached --quiet; then
+  echo "🟡 No changes to commit."
+else
+  echo "✅ Committing with current date and time..."
+  git commit -m "Auto commit on $(date '+%Y-%m-%d %H:%M:%S')"
 
-echo "🚀 Pushing to origin/development..."
-git push origin development
-
+  echo "🚀 Pushing to origin/development..."
+  git push origin development
+fi

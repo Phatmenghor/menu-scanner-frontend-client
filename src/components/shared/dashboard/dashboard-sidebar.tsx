@@ -12,9 +12,9 @@ import { useEffect, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getUserInfo } from "@/utils/local-storage/userInfo";
 import Image from "next/image";
-import { AuthResponse } from "@/models/auth/auth.response";
 import { ROUTES } from "@/constants/app-routed/routes";
 import { sidebarItems } from "@/constants/app-routed/navigation-config";
+import { UserAuthResponse } from "@/models/auth/auth.response";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -24,7 +24,7 @@ interface SidebarProps {
 export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const isMobile = useIsMobile();
-  const [authUser, setAuthUser] = useState<AuthResponse | null>(null);
+  const [authUser, setAuthUser] = useState<UserAuthResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [collapsed, setCollapsed] = useState(false);

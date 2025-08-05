@@ -6,10 +6,26 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
-import { DialogTitle } from "@radix-ui/react-dialog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  RotateCcw,
+  User,
+  Key,
+  Shield,
+  Copy,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import { toast } from "sonner";
+import { AdminChangePasswordService } from "@/services/dashboard/user/user.service";
 
 export default function ResetPasswordModal({
   userId,
@@ -17,137 +33,220 @@ export default function ResetPasswordModal({
   userName,
   onClose,
 }: {
-  userId?: number;
+  userId?: string;
   userName?: string;
   isOpen: boolean;
   onClose: () => void;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const defaultPassword = "88889999";
 
   const onReset = async () => {
-    // if (!userId) return toast.error("User ID missing");
-    // setIsSubmitting(true);
-    // try {
-    //   const ok = await AdminChangePasswordService ({
-    //     id: userId,
-    //     newPassword: "88889999",
-    //     confirmNewPassword: "88889999",
-    //   });
-    //   if (ok) {
-    //     setShowSuccess(true);
-    //     toast.success("Password reset to default");
-    //   } else {
-    //     toast.error("Reset failed");
-    //   }
-    // } catch (error) {
-    //   toast.error("Reset failed");
-    // } finally {
-    //   setIsSubmitting(false);
-    // }
+    if (!userId) {
+      toast.error("User ID missing");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await AdminChangePasswordService({
+        userId: userId,
+        newPassword: defaultPassword,
+        confirmPassword: defaultPassword,
+      });
+      setShowSuccess(true);
+      toast.success("Password reset successfully");
+    } catch (error) {
+      console.error("Password reset failed:", error);
+      toast.error("Reset failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {
     setShowSuccess(false);
+    setShowPassword(false);
     onClose();
   };
 
+  const copyPassword = async () => {
+    try {
+      await navigator.clipboard.writeText(defaultPassword);
+      toast.success("Password copied to clipboard");
+    } catch (error) {
+      console.error("Failed to copy password:", error);
+      toast.error("Failed to copy password");
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg w-[95vw] mx-auto rounded-2xl border-0 shadow-2xl bg-white p-0">
-        <div className="p-8 space-y-4">
-          {showSuccess ? (
-            // Success Dialog
-            <>
-              <div className="flex flex-col items-center space-y-2">
-                <div className="flex items-center justify-center">
-                  <img
-                    // src={AppIcons.Circle_alert_teal}
-                    alt="back Icon"
-                    className="h-10 w-10 text-muted-foreground"
-                  />{" "}
-                </div>
-                <div className="text-center space-y-1">
-                  <DialogTitle className="text-xl font-bold text-gray-900">
-                    Password Reset!
-                  </DialogTitle>
-                  <DialogDescription className="text-gray-500 text-base">
-                    User password have been reset to default password
-                  </DialogDescription>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="w-full max-w-md md:max-w-lg max-h-[90vh]">
+        {showSuccess ? (
+          // Success State
+          <div className="text-center space-y-6">
+            <div className="mx-auto bg-green-100 rounded-full flex items-center justify-center">
+              <CheckCircle2 className="w-8 h-8 text-green-600" />
+            </div>
+
+            <div className="space-y-2">
+              <DialogTitle className="text-xl font-semibold text-gray-900">
+                Password Reset Complete!
+              </DialogTitle>
+              <DialogDescription className="text-gray-600">
+                The user's password has been successfully reset to the default
+                password.
+              </DialogDescription>
+            </div>
+
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <Shield className="w-5 h-5 text-green-600 mt-0.5" />
+                <div className="text-left">
+                  <p className="text-sm font-medium text-green-800">
+                    Security Notice
+                  </p>
+                  <p className="text-sm text-green-700">
+                    User should change password on next login
+                  </p>
                 </div>
               </div>
+            </div>
 
-              <Separator className="bg-slate-400" />
-
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  onClick={handleClose}
-                  className="bg-teal-900 hover:bg-teal-950 text-white font-medium px-8 py-2 rounded-lg"
-                >
-                  Okay
-                </Button>
+            <Button onClick={handleClose} className="w-full">
+              Got it
+            </Button>
+          </div>
+        ) : (
+          // Confirmation State
+          <>
+            <DialogHeader className="text-center">
+              <div className="mx-auto w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-8 h-8 text-yellow-600" />
               </div>
-            </>
-          ) : (
-            <>
-              <div className="flex flex-col items-center space-y-2">
-                <div className="flex items-center justify-center">
-                  <img
-                    // src={AppIcons.reset}
-                    alt="back Icon"
-                    className="h-10 w-10 text-muted-foreground"
-                  />{" "}
-                </div>
-                <div className="text-center space-y-1">
-                  <DialogTitle className="text-xl font-bold text-gray-900">
-                    Confirm Reset!
-                  </DialogTitle>
-                  <DialogDescription className="text-gray-500 text-base">
-                    Are you sure you want to reset user password?
-                  </DialogDescription>
-                </div>
+              <div>
+                <DialogTitle className="text-xl font-semibold text-gray-900">
+                  Reset Password?
+                </DialogTitle>
+                <DialogDescription>
+                  This will reset the user's password to the default value.
+                  They'll need to change it on their next login.
+                </DialogDescription>
               </div>
+            </DialogHeader>
 
-              <div className="bg-amber-50 border- border-amber-200 rounded-lg p-4 space-y-4">
-                <div className="flex justify-center items-center">
-                  <div className="flex gap-4">
-                    <DialogDescription className="text-yellow-600 text-sm">
-                      <span>Password will reset for: {userName || "User"}</span>
-                      <br />
-                      <span>Password reset: 88889999</span>
-                    </DialogDescription>
+            <div className="space-y-4">
+              {/* User Info */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <User className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">
+                      Target User
+                    </Label>
+                    <p className="text-sm text-gray-900 font-medium">
+                      {userName || "Unknown User"}
+                    </p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center">
+                      <Key className="w-5 h-5" />
+                    </div>
+                    <Label className="text-sm font-medium text-gray-700 hover:text-gray-500">
+                      New Password
+                    </Label>
+                  </div>
+
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      value={defaultPassword}
+                      readOnly
+                      className="pr-20 font-mono"
+                    />
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="h-8 w-8 p-0 hover:bg-gray-200"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={copyPassword}
+                        className="h-8 w-8 p-0 hover:bg-gray-200"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <Separator className="bg-slate-200" />
+              {/* Warning */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-yellow-800">
+                      This action cannot be undone
+                    </p>
+                    <p className="text-sm text-yellow-700 mt-1">
+                      The user will be logged out of all devices and must use
+                      the new password to sign in.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-              {/* Action buttons */}
-              <DialogFooter className="flex flex-row justify-end items-center gap-3 flex-wrap">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClose}
-                  disabled={isSubmitting}
-                  className="min-w-[100px]"
-                >
-                  Discard
-                </Button>
-                <Button
-                  type="button"
-                  variant="default"
-                  onClick={onReset}
-                  disabled={isSubmitting}
-                  className="bg-yellow-500 hover:bg-yellow-600 text-white font-medium min-w-[100px]"
-                >
-                  {isSubmitting ? "Resetting..." : "Reset"}
-                </Button>
-              </DialogFooter>
-            </>
-          )}
-          {/* Header with icon */}
-        </div>
+            <DialogFooter className="flex gap-3 sm:gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+                disabled={isSubmitting}
+                className="flex-1 hover:bg-none hover:text-black hover:bg-transparent bg-transparent"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={onReset}
+                disabled={isSubmitting}
+                variant="destructive"
+                className="flex-1"
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center gap-2">
+                    <RotateCcw className="w-4 h-4 animate-spin" />
+                    Resetting...
+                  </div>
+                ) : (
+                  "Reset Password"
+                )}
+              </Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

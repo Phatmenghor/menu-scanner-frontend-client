@@ -1,6 +1,12 @@
 "use client";
 
+import { AppToast } from "@/components/app/components/app-toast";
 import { RoleBadge } from "@/components/shared/badge/role-badge";
+import { ConfirmDialog } from "@/components/shared/dialog/dialog-confirm";
+import { DeleteConfirmationDialog } from "@/components/shared/dialog/dialog-delete";
+import ResetPasswordModal from "@/components/shared/dialog/dialog-reset-password";
+import { UserDetailModal } from "@/components/shared/modal/user/user-detail-modal";
+import ModalUser from "@/components/shared/modal/user/user-modal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,7 +28,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { STATUS_FILTER } from "@/constants/app-resource/status/status";
+import {
+  BusinessUserRole,
+  ModalMode,
+  Status,
+  STATUS_FILTER,
+  UserRole,
+} from "@/constants/app-resource/status/status";
 import {
   getUserTableHeaders,
   UserTableHeaders,
@@ -30,8 +42,18 @@ import {
 import { ROUTES } from "@/constants/app-routed/routes";
 import { usePagination } from "@/hooks/use-pagination";
 import { cn } from "@/lib/utils";
-import { AllUserResponse } from "@/models/user/user.response.model";
-import { getAllUserService } from "@/services/dashboard/user/user.service";
+import {
+  CreateUserRequest,
+  UpdateUserRequest,
+} from "@/models/user/user.request.model";
+import { AllUserResponse, UserModel } from "@/models/user/user.response.model";
+import { UserFormData } from "@/models/user/user.schema";
+import {
+  createUserService,
+  deletedUserService,
+  getAllUserService,
+  updateUserService,
+} from "@/services/dashboard/user/user.service";
 import { indexDisplay } from "@/utils/common/common";
 import { DateTimeFormat } from "@/utils/date/date-time-format";
 import { useDebounce } from "@/utils/debounce/debounce";
@@ -41,7 +63,7 @@ import {
   ExcelSheet,
 } from "@/utils/export-file/excel";
 import { getUserInfo } from "@/utils/local-storage/userInfo";
-import { Check, Edit, Eye, Search, Trash2 } from "lucide-react";
+import { Check, Edit, Eye, RotateCw, Search, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -53,7 +75,21 @@ export default function UserPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExportingToExcel, setIsExportingToExcel] = useState(false);
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState<Status>(Status.ACTIVE);
+  const [mode, setMode] = useState<ModalMode>(ModalMode.CREATE_MODE);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [initializeUser, setInitializeUser] = useState<UserFormData | null>(
+    null
+  );
+  const [selectedUser, setSelectedUser] = useState<UserModel | null>(null);
+  const [isUserDetailOpen, setIsUserDetailOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] =
+    useState(false);
+  const [selectedUserToggle, setSelectedUserToggle] =
+    useState<UserModel | null>(null);
+  const [isToggleStatusDialogOpen, setIsToggleStatusDialogOpen] =
+    useState(false);
 
   const t = useTranslations("user");
   const headers = getUserTableHeaders(t);
@@ -78,7 +114,12 @@ export default function UserPage() {
       const response = await getAllUserService({
         search: debouncedSearchQuery,
         pageNo: currentPage,
-        businessId: user?.businessId,
+        accountStatus: statusFilter,
+        roles: [
+          BusinessUserRole.BUSINESS_OWNER,
+          BusinessUserRole.BUSINESS_MANAGER,
+          BusinessUserRole.BUSINESS_STAFF,
+        ],
         pageSize: 10,
       });
       console.log("Fetched users:", response);
@@ -97,6 +138,208 @@ export default function UserPage() {
   // Simplified search change handler - just updates the state, debouncing handles the rest
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
+  };
+
+  async function handleSubmit(formData: UserFormData) {
+    console.log("Submitting form:", formData, "mode:", mode);
+
+    setIsSubmitting(true);
+    try {
+      const isCreate = mode === ModalMode.CREATE_MODE;
+
+      if (isCreate) {
+        const createPayload: CreateUserRequest = {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email!,
+          userType: formData.userType!,
+          businessId: formData.businessId,
+          password: formData.password!,
+          phoneNumber: formData.phoneNumber,
+          accountStatus: formData.accountStatus,
+          profileImageUrl: formData.profileImageUrl,
+          address: formData.address,
+          roles: formData.roles || [UserRole.BUSINESS_STAFF],
+          userIdentifier: formData?.userIdentifier || "",
+          notes: formData.notes,
+          position: formData.position,
+        };
+
+        const response = await createUserService(createPayload);
+        if (response) {
+          // Update users list
+          setUsers((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  content: [response, ...prev.content],
+                  totalElements: prev.totalElements + 1,
+                }
+              : {
+                  content: [response],
+                  pageNo: 1,
+                  pageSize: 10,
+                  totalElements: 1,
+                  totalPages: 1,
+                  hasNext: false,
+                  hasPrevious: false,
+                  first: true,
+                  last: true,
+                }
+          );
+
+          AppToast({
+            type: "success",
+            message: `User ${
+              formData.userIdentifier ||
+              `${formData.firstName} ${formData.lastName}`
+            } added successfully`,
+            duration: 4000,
+            position: "top-right",
+          });
+
+          setIsModalOpen(false);
+        }
+      } else {
+        // Update mode
+        if (!formData.id) {
+          throw new Error("User ID is required for update");
+        }
+
+        const updatePayload: UpdateUserRequest = {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          phoneNumber: formData.phoneNumber,
+          accountStatus: formData.accountStatus,
+          profileImageUrl: formData.profileImageUrl,
+          address: formData.address,
+          businessId: formData.businessId,
+          roles: formData.roles,
+          notes: formData.notes,
+          position: formData.position,
+        };
+
+        const response = await updateUserService(formData.id, updatePayload);
+        if (response) {
+          // Update users list
+          setUsers((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  content: prev.content.map((user) =>
+                    user.id === formData.id ? response : user
+                  ),
+                }
+              : prev
+          );
+
+          AppToast({
+            type: "success",
+            message: `User ${
+              response.username || response.email
+            } updated successfully`,
+            duration: 4000,
+            position: "top-right",
+          });
+
+          setIsModalOpen(false);
+        }
+      }
+    } catch (error: any) {
+      console.error("Error submitting user form:", error);
+      toast.error(error.message || "An unexpected error occurred");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleDeleteUser() {
+    if (!selectedUser || !selectedUser.id) return;
+
+    setIsSubmitting(true);
+    try {
+      const response = await deletedUserService(selectedUser.id);
+
+      if (response) {
+        AppToast({
+          type: "success",
+          message: `User ${selectedUser.fullName ?? ""} deleted successfully`,
+          duration: 4000,
+          position: "top-right",
+        });
+        // After deletion, check if we need to go back a page
+        if (users && users.content.length === 1 && currentPage > 1) {
+          updateUrlWithPage(currentPage - 1);
+        } else {
+          await loadUsers();
+        }
+      } else {
+        AppToast({
+          type: "error",
+          message: `Failed to delete user`,
+          duration: 4000,
+          position: "top-right",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      toast.error("An error occurred while deleting the user");
+    } finally {
+      setIsSubmitting(false);
+      setIsDeleteDialogOpen(false);
+    }
+  }
+
+  const handleStatusToggle = async (user: UserModel | null) => {
+    if (!user?.id) return;
+
+    setIsSubmitting(true);
+    try {
+      const newStatus =
+        user?.accountStatus === Status.ACTIVE ? Status.INACTIVE : Status.ACTIVE;
+
+      const response = await updateUserService(user?.id, {
+        accountStatus: newStatus,
+      });
+
+      if (response) {
+        // Optimistic update
+        setUsers((prev) =>
+          prev
+            ? {
+                ...prev,
+                content: prev.content.map((user) =>
+                  user.id === selectedUserToggle?.id ? response : user
+                ),
+              }
+            : prev
+        );
+
+        AppToast({
+          type: "success",
+          message: `User status updated successfully`,
+          duration: 4000,
+          position: "top-right",
+        });
+        setSelectedUserToggle(null);
+        setIsToggleStatusDialogOpen(false);
+      } else {
+        AppToast({
+          type: "error",
+          message: `Failed to update user status`,
+          duration: 4000,
+          position: "top-right",
+        });
+        loadUsers(); // reload in case of failure
+      }
+    } catch (error: any) {
+      toast.error(
+        error?.message || "An error occurred while updating user status"
+      );
+      loadUsers(); // reload in case of failure
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleExportToPdf = async (data: AllUserResponse | null) => {
@@ -162,9 +405,35 @@ export default function UserPage() {
     }
   };
 
+  const handleResetPassword = (user: UserModel) => {
+    setSelectedUser(user);
+    setIsResetPasswordDialogOpen(true);
+  };
+
+  const handleToggleStatus = (user: UserModel) => {
+    setSelectedUserToggle(user);
+    setIsToggleStatusDialogOpen(true);
+  };
+
+  const handleEditUser = (user: UserFormData) => {
+    setInitializeUser(user);
+    setMode(ModalMode.UPDATE_MODE);
+    setIsModalOpen(!isModalOpen);
+  };
+  const handleDelete = (user: UserModel) => {
+    setSelectedUser(user);
+    setIsDeleteDialogOpen(true);
+  };
+
   // Handle status filter change - directly updates the filter value
-  const handleStatusChange = (status: string) => {
+  const handleStatusChange = (status: Status) => {
     setStatusFilter(status);
+  };
+
+  // Handle status filter change - directly updates the filter value
+  const handleViewUserDetail = (user: UserModel) => {
+    setSelectedUser(user);
+    setIsUserDetailOpen(true);
   };
 
   return (
@@ -210,7 +479,14 @@ export default function UserPage() {
             </Select>
           </div>
           <div>
-            <Button>New</Button>
+            <Button
+              onClick={() => {
+                setMode(ModalMode.CREATE_MODE);
+                setIsModalOpen(true);
+              }}
+            >
+              New
+            </Button>
           </div>
         </div>
 
@@ -248,18 +524,11 @@ export default function UserPage() {
                   </TableRow>
                 ) : (
                   users.content.map((user, index) => {
-                    // const profileImageUrl = useMemo(() => {
-                    //   if (
-                    //     user?.profileUrl &&
-                    //     process.env.NEXT_PUBLIC_API_BASE_URL
-                    //   ) {
-                    //     return new URL(
-                    //       user.profileUrl,
-                    //       `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/`
-                    //     ).toString();
-                    //   }
-                    //   return "/placeholder.svg?height=36&width=36";
-                    // }, [user]);
+                    const profileImageUrl =
+                      user?.profileImageUrl &&
+                      process.env.NEXT_PUBLIC_API_BASE_URL
+                        ? `${process.env.NEXT_PUBLIC_API_BASE_URL}${user.profileImageUrl}`
+                        : undefined;
 
                     return (
                       <TableRow key={user.id} className="text-sm">
@@ -273,7 +542,9 @@ export default function UserPage() {
                           <div className="flex items-center gap-3 min-w-[180px]">
                             <Avatar className="h-10 w-10 border-2 border-background dark:border-card shadow-sm group-hover:border-primary/30 transition-all">
                               <AvatarImage
-                                // src={user.profileUrl ? profileImageUrl : ""}
+                                src={
+                                  user.profileImageUrl ? profileImageUrl : ""
+                                }
                                 alt="Profile"
                               />
                               <AvatarFallback className="bg-primary/10 dark:bg-primary/20 text-primary font-semibold">
@@ -299,8 +570,8 @@ export default function UserPage() {
                         <TableCell>
                           <Switch
                             checked={user?.accountStatus === "ACTIVE"}
-                            // onCheckedChange={() => handleCanToggle(user, canModify)}
-                            // disabled={isSubmitting || !canModify}
+                            onCheckedChange={() => handleToggleStatus(user)}
+                            disabled={isSubmitting}
                             aria-label="Toggle user status"
                             className={cn(
                               "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
@@ -312,12 +583,12 @@ export default function UserPage() {
                           >
                             <div
                               className={cn(
-                                "inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-100 shadow-md transition-transform",
+                                "inline-block h-6 w-6 transform rounded-full bg-white dark:bg-gray-100 shadow-md transition-transform",
                                 "translate-x-1 data-[state=checked]:translate-x-5"
                               )}
                             >
                               {user.accountStatus === "ACTIVE" && (
-                                <Check className="h-3 w-3 m-auto" />
+                                <Check className="h-6 w-6 m-auto text-orange-600 dark:text-orange-300" />
                               )}
                             </div>
                           </Switch>
@@ -333,38 +604,32 @@ export default function UserPage() {
                           <div className="flex items-center justify-end">
                             <Button
                               variant="ghost"
-                              // onClick={() => {
-                              //   setSelectedUser(user);
-                              //   setIsSidebarOpen(true);
-                              // }}
+                              onClick={() => handleViewUserDetail(user)}
                               className="hover:text-primary"
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleResetPassword(user)}
+                            >
+                              {" "}
+                              <RotateCw className="w-4 h-4" />
+                            </Button>
                             <Button
                               variant="ghost"
                               className={cn(
                                 "transition-all duration-200 hover:text-primary"
-                                // !canModify && "opacity-50 cursor-not-allowed"
                               )}
-                              // onClick={() => handleCanEditUser(user, canModify)}
+                              onClick={() => handleEditUser(user)}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
 
                             <Button
                               variant="ghost"
-                              // onClick={() => {
-                              //   if (canModify) {
-                              //     setUserToDelete(user);
-                              //     setIsDeleteDialogOpen(true);
-                              //   } else {
-                              //     toast.error(
-                              //       "You are not authorized to delete this user."
-                              //     );
-                              //   }
-                              // }}
+                              onClick={() => handleDelete(user)}
                               className={cn(
                                 "text-destructive hover:text-red-600"
                                 // !canModify && "opacity-50 cursor-not-allowed"
@@ -382,6 +647,73 @@ export default function UserPage() {
             </Table>
           </div>
         </div>
+
+        <UserDetailModal
+          open={isUserDetailOpen}
+          onClose={() => setIsUserDetailOpen(false)}
+          user={selectedUser}
+        />
+
+        <ConfirmDialog
+          open={isToggleStatusDialogOpen}
+          onOpenChange={() => {
+            setIsToggleStatusDialogOpen(false);
+            setSelectedUserToggle(null);
+          }}
+          centered={true}
+          title="Change User Status"
+          description={`Are you sure you want to ${
+            selectedUserToggle?.accountStatus === "ACTIVE"
+              ? "disable"
+              : "enable"
+          } this user: ${selectedUserToggle?.email}?`}
+          confirmButton={{
+            text: `${
+              selectedUserToggle?.accountStatus === "ACTIVE"
+                ? "Disable"
+                : "Enable"
+            }`,
+            onClick: () => handleStatusToggle(selectedUserToggle),
+            variant: "primary",
+          }}
+          cancelButton={{ text: "Cancel", variant: "secondary" }}
+          onConfirm={() => handleStatusToggle(selectedUserToggle)}
+        />
+
+        <DeleteConfirmationDialog
+          isOpen={isDeleteDialogOpen}
+          onClose={() => {
+            setIsDeleteDialogOpen(false);
+            setSelectedUser(null);
+          }}
+          onDelete={handleDeleteUser}
+          title="Delete Admin"
+          description={`Are you sure you want to delete the admin`}
+          itemName={selectedUser?.fullName || selectedUser?.email}
+          isSubmitting={isSubmitting}
+        />
+
+        <ResetPasswordModal
+          isOpen={isResetPasswordDialogOpen}
+          userName={selectedUser?.fullName || selectedUser?.email}
+          onClose={() => {
+            setIsResetPasswordDialogOpen(false);
+            setSelectedUser(null);
+          }}
+          userId={selectedUser?.id}
+        />
+
+        <ModalUser
+          isOpen={isModalOpen}
+          onClose={() => {
+            setInitializeUser(null);
+            setIsModalOpen(false);
+          }}
+          isSubmitting={isSubmitting}
+          onSave={handleSubmit}
+          Data={initializeUser}
+          mode={mode}
+        />
       </CardContent>
     </Card>
   );

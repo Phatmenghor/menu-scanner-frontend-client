@@ -21,6 +21,11 @@ export const ROUTES = {
     USER_ROLES: "/admin/users/roles",
     PERMISSIONS: "/admin/users/permissions",
 
+    // Business Configure
+    Business: {
+      MY_BUSINESS: "/admin/my-business",
+    },
+
     // Content Management
     PAGES: "/admin/content/pages",
     MEDIA: "/admin/content/media",

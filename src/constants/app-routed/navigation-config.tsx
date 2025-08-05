@@ -16,6 +16,8 @@ import {
   CreditCard,
   Package,
   ShoppingCart,
+  Briefcase,
+  Building,
 } from "lucide-react";
 import { ROUTES } from "./routes";
 
@@ -68,6 +70,20 @@ export const navigationConfig: NavSection[] = [
             href: ROUTES.ADMIN.PERMISSIONS,
             icon: UserCheck,
             description: "Set user permissions",
+          },
+        ],
+      },
+      {
+        title: "Business Management",
+        icon: Building,
+        section: "Content",
+        description: "Configure and manage your business information",
+        subroutes: [
+          {
+            title: "My Business",
+            href: ROUTES.ADMIN.Business.MY_BUSINESS,
+            icon: Briefcase,
+            description: "View and update business details",
           },
         ],
       },

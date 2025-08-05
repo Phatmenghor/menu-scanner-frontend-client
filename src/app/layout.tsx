@@ -6,6 +6,7 @@ import localFont from "next/font/local";
 import "@/styles/globals.css";
 import { LocaleProvider } from "@/context/locale-provider";
 import { type Locale } from "@/i18n/request";
+import { ToastProvider } from "@/components/app/components/app-toast";
 
 const geistSans = localFont({
   src: "../../public/fonts/GeistVF.woff",
@@ -50,7 +51,7 @@ export default async function RootLayout({
         >
           <ClientProviders>
             <PageProgressBar />
-            {children}
+            <ToastProvider>{children}</ToastProvider>
           </ClientProviders>
         </LocaleProvider>
       </body>
