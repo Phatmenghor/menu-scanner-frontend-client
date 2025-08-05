@@ -97,13 +97,13 @@ export const navigationConfig: NavSection[] = [
             title: "Banner",
             href: ROUTES.ADMIN.BANNER,
             icon: FileText,
-            description: "Manage pages",
+            description: "Manage banner",
           },
           {
             title: "Brand",
-            href: ROUTES.ADMIN.BANNER,
+            href: ROUTES.ADMIN.BRAND,
             icon: FileText,
-            description: "Manage pages",
+            description: "Manage brand",
           },
           {
             title: "Media Library",

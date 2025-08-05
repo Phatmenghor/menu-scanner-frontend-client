@@ -1,14 +1,29 @@
 import {
-  AllBannerRequest,
-  UploadBannerRequest,
-} from "@/models/(content-manangement)/banner/banner.request";
+  AllBrandRequest,
+  BrandRequest,
+} from "@/models/(content-manangement)/brand/brand.request";
 import { axiosClientWithAuth } from "@/utils/axios";
 
-export async function getAllBannerService(data: AllBannerRequest) {
+export async function getAllBrandService(data: AllBrandRequest) {
+  try {
+    // POST request to fetch all staff matching the filters
+    const response = await axiosClientWithAuth.post(`/api/v1/brands/all`, data);
+    return response.data.data; // Return the actual staff list data
+  } catch (error: any) {
+    // Check if the error response contains a message, throw it as Error
+    if (error.response && error.response.data && error.response.data.message) {
+      throw new Error(error.response.data.message);
+    }
+    console.error("Error get all brand:", error); // Log error for debugging
+    throw error; // Re-throw the error for further handling
+  }
+}
+
+export async function getAllMyBannerService(data: AllBrandRequest) {
   try {
     // POST request to fetch all staff matching the filters
     const response = await axiosClientWithAuth.post(
-      `/api/v1/banners/all`,
+      `/api/v1/brands/my-business/all`,
       data
     );
     return response.data.data; // Return the actual staff list data
@@ -17,70 +32,34 @@ export async function getAllBannerService(data: AllBannerRequest) {
     if (error.response && error.response.data && error.response.data.message) {
       throw new Error(error.response.data.message);
     }
-    console.error("Error get all banner:", error); // Log error for debugging
+    console.error("Error get all my business brand:", error); // Log error for debugging
     throw error; // Re-throw the error for further handling
   }
 }
 
-export async function getAllMyBannerService(data: AllBannerRequest) {
+export async function createBrandService(data: BrandRequest) {
   try {
     // POST request to fetch all staff matching the filters
-    const response = await axiosClientWithAuth.post(
-      `/api/v1/banners/my-business/all`,
-      data
-    );
+    const response = await axiosClientWithAuth.post(`/api/v1/brands`, data);
     return response.data.data; // Return the actual staff list data
   } catch (error: any) {
     // Check if the error response contains a message, throw it as Error
     if (error.response && error.response.data && error.response.data.message) {
       throw new Error(error.response.data.message);
     }
-    console.error("Error get all my business banner:", error); // Log error for debugging
+    console.error("Error create brand:", error); // Log error for debugging
     throw error; // Re-throw the error for further handling
   }
 }
 
-export async function uploadBannerMyBusinessService(data: AllBannerRequest) {
-  try {
-    // POST request to fetch all staff matching the filters
-    const response = await axiosClientWithAuth.post(
-      `/api/v1/banners/my-business`,
-      data
-    );
-    return response.data.data; // Return the actual staff list data
-  } catch (error: any) {
-    // Check if the error response contains a message, throw it as Error
-    if (error.response && error.response.data && error.response.data.message) {
-      throw new Error(error.response.data.message);
-    }
-    console.error("Error upload banner:", error); // Log error for debugging
-    throw error; // Re-throw the error for further handling
-  }
-}
-
-export async function uploadBannerService(data: UploadBannerRequest) {
-  try {
-    // POST request to fetch all staff matching the filters
-    const response = await axiosClientWithAuth.post(`/api/v1/banners`, data);
-    return response.data.data; // Return the actual staff list data
-  } catch (error: any) {
-    // Check if the error response contains a message, throw it as Error
-    if (error.response && error.response.data && error.response.data.message) {
-      throw new Error(error.response.data.message);
-    }
-    console.error("Error upload banner:", error); // Log error for debugging
-    throw error; // Re-throw the error for further handling
-  }
-}
-
-export async function updateBannerService(
+export async function updateBrandService(
   businessId: string,
-  data: UploadBannerRequest
+  data: BrandRequest
 ) {
   try {
     // POST request to fetch all staff matching the filters
     const response = await axiosClientWithAuth.put(
-      `/api/v1/business/${businessId}`,
+      `/api/v1/brands/${businessId}`,
       data
     );
     return response.data.data; // Return the actual staff list data
@@ -94,15 +73,15 @@ export async function updateBannerService(
   }
 }
 
-export async function deletedBannerService(id: string) {
+export async function deletedBrandService(id: string) {
   try {
-    const response = await axiosClientWithAuth.delete(`/api/v1/banners/${id}`);
+    const response = await axiosClientWithAuth.delete(`/api/v1/brands/${id}`);
     return response.data.data;
   } catch (error: any) {
     if (error.response && error.response.data && error.response.data.message) {
       throw new Error(error.response.data.message);
     }
-    console.error("Error deleting banner:", error);
+    console.error("Error deleting brand:", error);
     throw error;
   }
 }

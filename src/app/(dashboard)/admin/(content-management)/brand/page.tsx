@@ -3,7 +3,8 @@
 import { AppToast } from "@/components/app/components/app-toast";
 import { ConfirmDialog } from "@/components/shared/dialog/dialog-confirm";
 import { DeleteConfirmationDialog } from "@/components/shared/dialog/dialog-delete";
-import UploadBannerModal from "@/components/shared/modal/banner/banner-modal";
+import UploadbrandModal from "@/components/shared/modal/brand/brand-modal";
+import BrandModal from "@/components/shared/modal/brand/brand-modal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,22 +32,23 @@ import {
   Status,
   STATUS_FILTER,
 } from "@/constants/app-resource/status/status";
-import { bannerTableHead } from "@/constants/app-resource/table/banner";
+import { brandTableHeaders } from "@/constants/app-resource/table/brand";
 import { getUserTableHeaders } from "@/constants/app-resource/table/table";
 import { ROUTES } from "@/constants/app-routed/routes";
 import { usePagination } from "@/hooks/use-pagination";
 import { cn } from "@/lib/utils";
-import { UploadBannerRequest } from "@/models/(content-manangement)/banner/banner.requeset";
-import {
-  AllBanner,
-  BannerModel,
-} from "@/models/(content-manangement)/banner/banner.response";
-import { UploadBannerFormData } from "@/models/(content-manangement)/banner/banner.schema";
+import { BrandRequest } from "@/models/(content-manangement)/brand/brand.request";
 import {
   AllBrand,
   BrandModel,
 } from "@/models/(content-manangement)/brand/brand.response";
 import { BrandFormData } from "@/models/(content-manangement)/brand/brand.schema";
+import {
+  createBrandService,
+  deletedBrandService,
+  getAllBrandService,
+  updateBrandService,
+} from "@/services/dashboard/content-management/brand/brand.service";
 import { indexDisplay } from "@/utils/common/common";
 import { DateTimeFormat } from "@/utils/date/date-time-format";
 import { useDebounce } from "@/utils/debounce/debounce";
@@ -68,11 +70,11 @@ export default function BrandPage() {
   const [initializeBrand, setInitializeBrand] = useState<BrandFormData | null>(
     null
   );
-  const [selectedBanner, setSelectedBanner] = useState<BrandModel | null>(null);
+  const [selectedBrand, setSelectedBrand] = useState<BrandModel | null>(null);
   const [isUserDetailOpen, setIsUserDetailOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedBannerToggle, setSelectedBannerToggle] =
-    useState<BannerModel | null>(null);
+  const [selectedBrandToggle, setSelectedBrandToggle] =
+    useState<BrandModel | null>(null);
   const [isToggleStatusDialogOpen, setIsToggleStatusDialogOpen] =
     useState(false);
 
@@ -84,19 +86,18 @@ export default function BrandPage() {
   const user = getUserInfo();
   const { currentPage, updateUrlWithPage, handlePageChange, getDisplayIndex } =
     usePagination({
-      baseRoute: ROUTES.ADMIN.BANNER,
+      baseRoute: ROUTES.ADMIN.BRAND,
       defaultPageSize: 10,
     });
 
   console.log("Page Debug:", { locale, pathname });
 
-  // Debounced search query - Optimized api performance when search
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
 
-  const loadbrands = useCallback(async () => {
+  const loadBrands = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await getAllbrandservice({
+      const response = await getAllBrandService({
         search: debouncedSearchQuery,
         pageNo: currentPage,
         status: statusFilter,
@@ -113,15 +114,15 @@ export default function BrandPage() {
   }, [debouncedSearchQuery, statusFilter, currentPage]);
 
   useEffect(() => {
-    loadbrands();
-  }, [loadbrands, debouncedSearchQuery, statusFilter]);
+    loadBrands();
+  }, [loadBrands, debouncedSearchQuery, statusFilter]);
 
   // Simplified search change handler - just updates the state, debouncing handles the rest
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
 
-  async function handleSubmit(formData: UploadBannerFormData) {
+  async function handleSubmit(formData: BrandFormData) {
     console.log("Submitting form:", formData, "mode:", mode);
 
     setIsSubmitting(true);
@@ -129,13 +130,14 @@ export default function BrandPage() {
       const isCreate = mode === ModalMode.CREATE_MODE;
 
       if (isCreate) {
-        const createPayload: UploadBannerRequest = {
+        const createPayload: BrandRequest = {
+          description: formData.description,
+          name: formData.name,
           imageUrl: formData.imageUrl,
-          linkUrl: formData.linkUrl,
           status: formData.status,
         };
 
-        const response = await uploadbrandservice(createPayload);
+        const response = await createBrandService(createPayload);
         if (response) {
           // Update brands list
           setBrands((prev) =>
@@ -160,7 +162,7 @@ export default function BrandPage() {
 
           AppToast({
             type: "success",
-            message: `Banner uploaded successfully`,
+            message: `Brand uploaded successfully`,
             duration: 4000,
             position: "top-right",
           });
@@ -170,16 +172,17 @@ export default function BrandPage() {
       } else {
         // Update mode
         if (!formData.id) {
-          throw new Error("Banner ID is required for update");
+          throw new Error("Brand ID is required for update");
         }
 
-        const updatePayload: UploadBannerRequest = {
+        const updatePayload: BrandRequest = {
+          description: formData.description,
+          name: formData.name,
           imageUrl: formData.imageUrl,
-          linkUrl: formData.linkUrl,
           status: formData.status,
         };
 
-        const response = await updatebrandservice(formData.id, updatePayload);
+        const response = await updateBrandService(formData.id, updatePayload);
         if (response) {
           // Update brands list
           setBrands((prev) =>
@@ -195,7 +198,7 @@ export default function BrandPage() {
 
           AppToast({
             type: "success",
-            message: `Banner updated successfully`,
+            message: `Brand updated successfully`,
             duration: 4000,
             position: "top-right",
           });
@@ -204,24 +207,24 @@ export default function BrandPage() {
         }
       }
     } catch (error: any) {
-      console.error("Error submitting banner form:", error);
+      console.error("Error submitting brand form:", error);
       toast.error(error.message || "An unexpected error occurred");
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  async function handleDeleteBanner() {
-    if (!selectedBanner || !selectedBanner.id) return;
+  async function handleDeleteBrand() {
+    if (!selectedBrand || !selectedBrand.id) return;
 
     setIsSubmitting(true);
     try {
-      const response = await deletedbrandservice(selectedBanner.id);
+      const response = await deletedBrandService(selectedBrand.id);
 
       if (response) {
         AppToast({
           type: "success",
-          message: `Banner deleted successfully`,
+          message: `Brand deleted successfully`,
           duration: 4000,
           position: "top-right",
         });
@@ -229,34 +232,34 @@ export default function BrandPage() {
         if (brands && brands.content.length === 1 && currentPage > 1) {
           updateUrlWithPage(currentPage - 1);
         } else {
-          await loadbrands();
+          await loadBrands();
         }
       } else {
         AppToast({
           type: "error",
-          message: `Failed to delete banner`,
+          message: `Failed to delete brand`,
           duration: 4000,
           position: "top-right",
         });
       }
     } catch (error) {
-      console.error("Error deleting banner:", error);
-      toast.error("An error occurred while deleting the banner");
+      console.error("Error deleting brand:", error);
+      toast.error("An error occurred while deleting the brand");
     } finally {
       setIsSubmitting(false);
       setIsDeleteDialogOpen(false);
     }
   }
 
-  const handleStatusToggle = async (banner: BannerModel | null) => {
-    if (!banner?.id) return;
+  const handleStatusToggle = async (brand: BrandModel | null) => {
+    if (!brand?.id) return;
 
     setIsSubmitting(true);
     try {
       const newStatus =
-        banner?.status === Status.ACTIVE ? Status.INACTIVE : Status.ACTIVE;
+        brand?.status === Status.ACTIVE ? Status.INACTIVE : Status.ACTIVE;
 
-      const response = await updatebrandservice(banner?.id, {
+      const response = await updateBrandService(brand?.id, {
         status: newStatus,
       });
 
@@ -266,8 +269,8 @@ export default function BrandPage() {
           prev
             ? {
                 ...prev,
-                content: prev.content.map((banner) =>
-                  banner.id === selectedBannerToggle?.id ? response : banner
+                content: prev.content.map((brand) =>
+                  brand.id === selectedBrandToggle?.id ? response : brand
                 ),
               }
             : prev
@@ -275,44 +278,44 @@ export default function BrandPage() {
 
         AppToast({
           type: "success",
-          message: `Banner status updated successfully`,
+          message: `brand status updated successfully`,
           duration: 4000,
           position: "top-right",
         });
-        setSelectedBannerToggle(null);
+        setSelectedBrandToggle(null);
         setIsToggleStatusDialogOpen(false);
       } else {
         AppToast({
           type: "error",
-          message: `Failed to update banner status`,
+          message: `Failed to update brand status`,
           duration: 4000,
           position: "top-right",
         });
-        loadbrands(); // reload in case of failure
+        loadBrands(); // reload in case of failure
       }
     } catch (error: any) {
       toast.error(
-        error?.message || "An error occurred while updating banner status"
+        error?.message || "An error occurred while updating brand status"
       );
-      loadbrands(); // reload in case of failure
+      loadBrands(); // reload in case of failure
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleToggleStatus = (banner: BannerModel | null) => {
-    setSelectedBannerToggle(banner);
+  const handleToggleStatus = (brand: BrandModel | null) => {
+    setSelectedBrandToggle(brand);
     setIsToggleStatusDialogOpen(true);
   };
 
-  const handleEditBanner = (banner: UploadBannerFormData) => {
-    setInitializeBrand(banner);
+  const handleEdit = (brand: BrandFormData) => {
+    setInitializeBrand(brand);
     setMode(ModalMode.UPDATE_MODE);
     setIsModalOpen(!isModalOpen);
   };
 
-  const handleDelete = (banner: BannerModel) => {
-    setSelectedBanner(banner);
+  const handleDelete = (brand: BrandModel) => {
+    setSelectedBrand(brand);
     setIsDeleteDialogOpen(true);
   };
 
@@ -322,8 +325,8 @@ export default function BrandPage() {
   };
 
   // Handle status filter change - directly updates the filter value
-  const handleViewBannerDetail = (banner: BannerModel) => {
-    setSelectedBanner(banner);
+  const handleViewbrandDetail = (brand: BrandModel) => {
+    setSelectedBrand(brand);
     setIsUserDetailOpen(true);
   };
 
@@ -334,8 +337,8 @@ export default function BrandPage() {
           <div className="relative w-full md:w-[350px]">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              aria-label="search-user"
-              autoComplete="search-user"
+              aria-label="search-brand"
+              autoComplete="search-brand"
               type="search"
               placeholder={t("search")}
               value={searchQuery}
@@ -388,7 +391,7 @@ export default function BrandPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  {bannerTableHead.map((header) => (
+                  {brandTableHeaders.map((header) => (
                     <TableHead
                       key={header.key}
                       className="text-xs font-semibold text-muted-foreground"
@@ -403,20 +406,20 @@ export default function BrandPage() {
                 {!brands || brands.content.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={bannerTableHead.length}
+                      colSpan={brandTableHeaders.length + 2} // +2 for index and image
                       className="text-center py-8 text-muted-foreground"
                     >
                       No brands found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  brands.content.map((banner, index) => {
-                    const imageUrl = banner.imageUrl
-                      ? `${process.env.NEXT_PUBLIC_API_BASE_URL}${banner.imageUrl}`
+                  brands.content.map((brand, index) => {
+                    const imageUrl = brand.imageUrl
+                      ? `${process.env.NEXT_PUBLIC_API_BASE_URL}${brand.imageUrl}`
                       : "";
 
                     return (
-                      <TableRow key={banner.id} className="text-sm">
+                      <TableRow key={brand.id} className="text-sm">
                         {/* Index */}
                         <TableCell>
                           {indexDisplay(brands.pageNo, brands.pageSize, index)}
@@ -425,35 +428,31 @@ export default function BrandPage() {
                         {/* Image */}
                         <TableCell>
                           <Avatar className="h-10 w-10 border">
-                            <AvatarImage src={imageUrl} alt="Banner Image" />
+                            <AvatarImage src={imageUrl} alt="Brand Image" />
                             <AvatarFallback>
-                              {banner?.businessName?.charAt(0).toUpperCase() ||
+                              {brand?.businessName?.charAt(0).toUpperCase() ||
                                 "B"}
                             </AvatarFallback>
                           </Avatar>
                         </TableCell>
 
-                        {/* Link URL */}
-                        <TableCell className="whitespace-nowrap text-blue-600 hover:underline">
-                          <a
-                            href={banner.linkUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {banner?.linkUrl || "---"}
-                          </a>
+                        {/* Brand Name */}
+                        <TableCell className="font-medium">
+                          {brand.name}
                         </TableCell>
+
+                        {/* Business Name */}
+                        <TableCell>{brand.businessName}</TableCell>
 
                         {/* Status */}
                         <TableCell>
                           <Switch
-                            checked={banner?.status === "ACTIVE"}
-                            onCheckedChange={() => handleToggleStatus(banner)}
+                            checked={brand?.status === "ACTIVE"}
+                            onCheckedChange={() => handleToggleStatus(brand)}
                             disabled={isSubmitting}
-                            aria-label="Toggle user status"
+                            aria-label="Toggle brand status"
                             className={cn(
                               "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
-                              // canModify
                               1
                                 ? "bg-gray-300 dark:bg-gray-600 data-[state=checked]:bg-primary dark:data-[state=checked]:bg-primary"
                                 : "bg-gray-300 dark:bg-primary opacity-50 cursor-not-allowed"
@@ -465,31 +464,32 @@ export default function BrandPage() {
                                 "translate-x-1 data-[state=checked]:translate-x-5"
                               )}
                             >
-                              {banner.status === "ACTIVE" && (
+                              {brand.status === "ACTIVE" && (
                                 <Check className="h-6 w-6 m-auto text-orange-600 dark:text-orange-300" />
                               )}
                             </div>
                           </Switch>
                         </TableCell>
 
-                        {/* Created At */}
-                        <TableCell className="text-muted-foreground">
-                          {DateTimeFormat(banner?.createdAt || "---")}
-                        </TableCell>
+                        {/* Total Products */}
+                        <TableCell>{brand.totalProducts}</TableCell>
+
+                        {/* Active Products */}
+                        <TableCell>{brand.activeProducts}</TableCell>
 
                         {/* Actions */}
                         <TableCell>
                           <div className="flex items-center gap-2 justify-end">
                             <Button
                               variant="outline"
-                              onClick={() => handleEditBanner(banner)}
+                              onClick={() => handleEdit(brand)}
                               className="hover:text-primary"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
-                              onClick={() => handleDelete(banner)}
+                              onClick={() => handleDelete(brand)}
                               className="text-destructive hover:text-red-600"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -508,45 +508,45 @@ export default function BrandPage() {
         <UserDetailModal
           open={isUserDetailOpen}
           onClose={() => setIsUserDetailOpen(false)}
-          user={selectedBanner}
+          user={selectedBrand}
         /> */}
 
         <ConfirmDialog
           open={isToggleStatusDialogOpen}
           onOpenChange={() => {
             setIsToggleStatusDialogOpen(false);
-            setSelectedBannerToggle(null);
+            setSelectedBrandToggle(null);
           }}
           centered={true}
           title="Change User Status"
           description={`Are you sure you want to ${
-            selectedBannerToggle?.status === "ACTIVE" ? "disable" : "enable"
-          } this banner?`}
+            selectedBrandToggle?.status === "ACTIVE" ? "disable" : "enable"
+          } this brand?`}
           confirmButton={{
             text: `${
-              selectedBannerToggle?.status === "ACTIVE" ? "Disable" : "Enable"
+              selectedBrandToggle?.status === "ACTIVE" ? "Disable" : "Enable"
             }`,
-            onClick: () => handleToggleStatus(selectedBannerToggle),
+            onClick: () => handleToggleStatus(selectedBrandToggle),
             variant: "primary",
           }}
           cancelButton={{ text: "Cancel", variant: "secondary" }}
-          onConfirm={() => handleStatusToggle(selectedBannerToggle)}
+          onConfirm={() => handleStatusToggle(selectedBrandToggle)}
         />
 
         <DeleteConfirmationDialog
           isOpen={isDeleteDialogOpen}
           onClose={() => {
             setIsDeleteDialogOpen(false);
-            setSelectedBanner(null);
+            setSelectedBrand(null);
           }}
-          onDelete={handleDeleteBanner}
+          onDelete={handleDeleteBrand}
           title="Delete Admin"
           description={`Are you sure you want to delete the admin`}
-          itemName={selectedBanner?.businessName}
+          itemName={selectedBrand?.businessName}
           isSubmitting={isSubmitting}
         />
 
-        <UploadBannerModal
+        <BrandModal
           isOpen={isModalOpen}
           onClose={() => {
             setInitializeBrand(null);

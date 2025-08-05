@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Upload,
   X,
@@ -26,26 +27,28 @@ import {
   Link,
   Eye,
   Loader2,
+  Building2,
+  FileText,
 } from "lucide-react";
 import {
   ModalMode,
-  Status,
   STATUS_USER_OPTIONS,
 } from "@/constants/app-resource/status/status";
+import { BrandRequest } from "@/models/(content-manangement)/brand/brand.request";
 import {
-  UploadBannerFormData,
-  UploadBannerSchema,
-} from "@/models/(content-manangement)/banner/banner.schema";
+  BrandFormData,
+  BrandSchema,
+} from "@/models/(content-manangement)/brand/brand.schema";
 import { uploadImageService } from "@/services/dashboard/image/image.service";
 import { UploadImageRequest } from "@/models/image/image.request";
 
 type Props = {
   mode: ModalMode;
-  data: UploadBannerFormData | null;
+  data: BrandFormData | null;
   onClose: () => void;
   isOpen: boolean;
   isSubmitting?: boolean;
-  onSave: (data: UploadBannerFormData) => void;
+  onSave: (data: BrandRequest) => void;
 };
 
 // Utility functions
@@ -58,7 +61,7 @@ const getActiveStatusValue = () => {
   return activeStatus?.value || STATUS_USER_OPTIONS[0]?.value || "";
 };
 
-function UploadBannerModal({
+function BrandModal({
   isOpen,
   onClose,
   data,
@@ -81,11 +84,12 @@ function UploadBannerModal({
     setValue,
     watch,
     formState: { errors },
-  } = useForm<UploadBannerFormData>({
-    resolver: zodResolver(UploadBannerSchema),
+  } = useForm<BrandFormData>({
+    resolver: zodResolver(BrandSchema),
     defaultValues: {
+      name: "",
       imageUrl: "",
-      linkUrl: "",
+      description: "",
       status: activeStatusValue,
     },
   });
@@ -96,15 +100,15 @@ function UploadBannerModal({
   useEffect(() => {
     if (isOpen) {
       reset({
-        id: data?.id ?? "",
+        name: data?.name ?? "",
         imageUrl: data?.imageUrl ?? "",
-        linkUrl: data?.linkUrl ?? "",
-        status: data?.status ?? "ACTIVE",
+        description: data?.description ?? "",
+        status: data?.status ?? activeStatusValue,
       });
       setSelectedFile(null);
       setPreviewUrl(data?.imageUrl ? getImageSource(data.imageUrl) : "");
     }
-  }, [data, reset, isOpen]);
+  }, [data, reset, isOpen, activeStatusValue]);
 
   // Update preview when imageUrl changes
   useEffect(() => {
@@ -121,7 +125,7 @@ function UploadBannerModal({
       : (process.env.NEXT_PUBLIC_API_BASE_URL ?? "") + imageUrl;
   };
 
-  // Handle file upload via API
+  // Handle file upload with actual API service
   const handleFileUpload = async (file: File) => {
     if (!file || !file.type.startsWith("image/")) return;
 
@@ -138,13 +142,26 @@ function UploadBannerModal({
             type: file.type,
           };
 
+          console.log("Uploading image with payload:", {
+            type: file.type,
+            size: file.size,
+          });
+
           const response = await uploadImageService(payload);
+          console.log("Upload response:", response);
+
           if (response?.imageUrl) {
             setValue("imageUrl", response.imageUrl, {
               shouldValidate: true,
             });
             setPreviewUrl(getImageSource(response.imageUrl));
             console.log("Image uploaded successfully:", response.imageUrl);
+            console.log(
+              "Preview URL set to:",
+              getImageSource(response.imageUrl)
+            );
+          } else {
+            console.error("No imageUrl in response:", response);
           }
         } catch (error) {
           console.error("Failed to upload image", error);
@@ -153,9 +170,16 @@ function UploadBannerModal({
           setIsUploading(false);
         }
       };
+
+      reader.onerror = () => {
+        console.error("Failed to read file");
+        setIsUploading(false);
+      };
+
+      console.log("Starting to read file:", file.name, file.type, file.size);
       reader.readAsDataURL(file);
     } catch (error) {
-      console.error("Failed to read file", error);
+      console.error("Failed to process file", error);
       setIsUploading(false);
     }
   };
@@ -209,8 +233,8 @@ function UploadBannerModal({
   };
 
   // Form submission handler
-  const onSubmit = (formData: UploadBannerFormData) => {
-    console.log(isCreate ? "New banner: " : "Update banner: ", formData);
+  const onSubmit = (formData: BrandFormData) => {
+    console.log(isCreate ? "New brand: " : "Update brand: ", formData);
     onSave({
       id: data?.id,
       ...formData,
@@ -226,20 +250,46 @@ function UploadBannerModal({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="w-full max-w-lg md:max-w-xl lg:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {isCreate ? "Upload Banner" : "Edit Banner"}
+          <DialogTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            {isCreate ? "Create Brand" : "Edit Brand"}
           </DialogTitle>
           <DialogDescription>
             {isCreate
-              ? "Upload a new banner image and configure its settings."
-              : "Update banner information and image."}
+              ? "Create a new brand with logo and description."
+              : "Update brand information and settings."}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-4">
-          {/* Image Upload Section */}
+          {/* Brand Name Field */}
+          <div className="space-y-1">
+            <Label htmlFor="name" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Brand Name <span className="text-red-500">*</span>
+            </Label>
+            <Controller
+              control={control}
+              name="name"
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  id="name"
+                  type="text"
+                  placeholder="Enter brand name"
+                  disabled={isSubmitting || isUploading}
+                  className={errors.name ? "border-red-500" : ""}
+                />
+              )}
+            />
+            {errors.name && (
+              <p className="text-sm text-destructive">{errors.name.message}</p>
+            )}
+          </div>
+
+          {/* Brand Logo Upload Section */}
           <div className="space-y-2">
-            <Label>Banner Image</Label>
+            <Label>Brand Logo</Label>
 
             {/* Upload Area */}
             <div
@@ -257,18 +307,22 @@ function UploadBannerModal({
                 <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-lg z-10">
                   <div className="text-center">
                     <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-                    <p className="mt-2 text-sm text-gray-600">Uploading...</p>
+                    <p className="mt-2 text-sm text-gray-600">
+                      Uploading logo...
+                    </p>
                   </div>
                 </div>
               )}
 
               {previewUrl ? (
                 <div className="relative">
-                  <img
-                    src={previewUrl}
-                    alt="Banner preview"
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
+                  <div className="flex justify-center">
+                    <img
+                      src={previewUrl}
+                      alt="Brand logo preview"
+                      className="max-w-full h-32 object-contain rounded-lg bg-white p-2 border"
+                    />
+                  </div>
                   <Button
                     type="button"
                     variant="destructive"
@@ -291,14 +345,14 @@ function UploadBannerModal({
                       disabled={isSubmitting || isUploading}
                     >
                       <Upload className="mr-2 h-4 w-4" />
-                      Choose File
+                      Choose Logo
                     </Button>
                     <p className="mt-2 text-sm text-gray-500">
-                      or drag and drop an image here
+                      or drag and drop a logo here
                     </p>
                   </div>
                   <p className="text-xs text-gray-400 mt-2">
-                    PNG, JPG, GIF up to 10MB
+                    PNG, JPG, SVG up to 5MB (square format recommended)
                   </p>
                 </div>
               )}
@@ -318,7 +372,7 @@ function UploadBannerModal({
           <div className="space-y-1">
             <Label htmlFor="imageUrl" className="flex items-center gap-2">
               <Link className="h-4 w-4" />
-              Image URL (Alternative)
+              Logo URL (Alternative)
             </Label>
             <Controller
               control={control}
@@ -328,7 +382,7 @@ function UploadBannerModal({
                   {...field}
                   id="imageUrl"
                   type="text"
-                  placeholder="https://example.com/banner.jpg"
+                  placeholder="https://example.com/brand-logo.png"
                   disabled={isSubmitting || isUploading}
                   className={errors.imageUrl ? "border-red-500" : ""}
                 />
@@ -340,80 +394,80 @@ function UploadBannerModal({
               </p>
             )}
             <p className="text-xs text-muted-foreground">
-              You can either upload a file above or provide an image URL here
+              You can either upload a file above or provide a logo URL here
             </p>
           </div>
 
-          {/* Link URL Field */}
+          {/* Description Field */}
           <div className="space-y-1">
-            <Label htmlFor="linkUrl" className="flex items-center gap-2">
-              <Link className="h-4 w-4" />
-              Link URL (Optional)
+            <Label htmlFor="description" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Description
             </Label>
             <Controller
               control={control}
-              name="linkUrl"
+              name="description"
               render={({ field }) => (
-                <Input
+                <Textarea
                   {...field}
-                  id="linkUrl"
-                  type="text"
-                  placeholder="https://example.com/landing-page"
+                  id="description"
+                  placeholder="Enter brand description (optional)"
                   disabled={isSubmitting || isUploading}
-                  className={errors.linkUrl ? "border-red-500" : ""}
+                  className={`min-h-[80px] resize-none ${
+                    errors.description ? "border-red-500" : ""
+                  }`}
+                  maxLength={500}
                 />
               )}
             />
-            {errors.linkUrl && (
+            {errors.description && (
               <p className="text-sm text-destructive">
-                {errors.linkUrl.message}
+                {errors.description.message}
               </p>
             )}
             <p className="text-xs text-muted-foreground">
-              URL to navigate when banner is clicked
+              Brief description about the brand (max 500 characters)
             </p>
           </div>
 
           {/* Status Field */}
-          {!isCreate && (
-            <div className="space-y-1">
-              <Label htmlFor="status-select">
-                Status <span className="text-red-500">*</span>
-              </Label>
-              <Controller
-                control={control}
-                name="status"
-                render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    disabled={isSubmitting || isUploading}
+          <div className="space-y-1">
+            <Label htmlFor="status-select">
+              Status <span className="text-red-500">*</span>
+            </Label>
+            <Controller
+              control={control}
+              name="status"
+              render={({ field }) => (
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  disabled={isSubmitting || isUploading}
+                >
+                  <SelectTrigger
+                    id="status-select"
+                    className={`bg-white dark:bg-inherit ${
+                      errors.status ? "border-red-500" : ""
+                    }`}
                   >
-                    <SelectTrigger
-                      id="status-select"
-                      className={`bg-white dark:bg-inherit ${
-                        errors.status ? "border-red-500" : ""
-                      }`}
-                    >
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATUS_USER_OPTIONS.map((status) => (
-                        <SelectItem key={status.value} value={status.value}>
-                          {status.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              {errors.status && (
-                <p className="text-sm text-destructive">
-                  {errors.status.message}
-                </p>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_USER_OPTIONS.map((status) => (
+                      <SelectItem key={status.value} value={status.value}>
+                        {status.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
-            </div>
-          )}
+            />
+            {errors.status && (
+              <p className="text-sm text-destructive">
+                {errors.status.message}
+              </p>
+            )}
+          </div>
 
           {/* Preview Section */}
           {previewUrl && (
@@ -422,15 +476,27 @@ function UploadBannerModal({
                 <Eye className="h-4 w-4" />
                 Preview
               </Label>
-              <div className="p-3 border rounded-lg bg-gray-50">
-                <p className="text-sm text-muted-foreground mb-2">
-                  Banner Preview:
+              <div className="p-4 border rounded-lg bg-gray-50">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Brand Preview:
                 </p>
-                <img
-                  src={previewUrl}
-                  alt="Banner preview"
-                  className="w-full max-h-32 object-cover rounded border"
-                />
+                <div className="flex items-center gap-3 p-3 bg-white rounded border">
+                  <img
+                    src={previewUrl}
+                    alt="Brand logo preview"
+                    className="w-12 h-12 object-contain rounded"
+                  />
+                  <div>
+                    <h4 className="font-medium">
+                      {watch("name") || "Brand Name"}
+                    </h4>
+                    {watch("description") && (
+                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                        {watch("description")}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -449,8 +515,8 @@ function UploadBannerModal({
               {isSubmitting || isUploading
                 ? "Processing..."
                 : isCreate
-                ? "Upload Banner"
-                : "Update Banner"}
+                ? "Create Brand"
+                : "Update Brand"}
             </Button>
           </div>
         </form>
@@ -459,4 +525,4 @@ function UploadBannerModal({
   );
 }
 
-export default UploadBannerModal;
+export default BrandModal;
