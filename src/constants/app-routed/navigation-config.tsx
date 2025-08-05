@@ -94,8 +94,14 @@ export const navigationConfig: NavSection[] = [
         description: "Manage application content",
         subroutes: [
           {
-            title: "Pages",
-            href: ROUTES.ADMIN.PAGES,
+            title: "Banner",
+            href: ROUTES.ADMIN.BANNER,
+            icon: FileText,
+            description: "Manage pages",
+          },
+          {
+            title: "Brand",
+            href: ROUTES.ADMIN.BANNER,
             icon: FileText,
             description: "Manage pages",
           },

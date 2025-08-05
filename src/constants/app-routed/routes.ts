@@ -29,6 +29,8 @@ export const ROUTES = {
     // Content Management
     PAGES: "/admin/content/pages",
     MEDIA: "/admin/content/media",
+    BANNER: "/admin/banner",
+    BRAND: "/admin/brand",
 
     // E-Commerce
     PRODUCTS: "/admin/ecommerce/products",

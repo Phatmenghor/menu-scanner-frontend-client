@@ -850,7 +850,7 @@ export default function BusinessPage() {
                             {
                               name: "facebookUrl",
                               label: "Facebook",
-                              icon: AppIcons.Facebook, // image path or import
+                              icon: AppIcons.Facebook,
                               color: "text-blue-600",
                             },
                             {
