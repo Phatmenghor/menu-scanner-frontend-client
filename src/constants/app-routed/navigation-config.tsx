@@ -18,6 +18,10 @@ import {
   ShoppingCart,
   Briefcase,
   Building,
+  Boxes,
+  Tags,
+  Image,
+  LayoutDashboard,
 } from "lucide-react";
 import { ROUTES } from "./routes";
 
@@ -89,27 +93,33 @@ export const navigationConfig: NavSection[] = [
       },
       {
         title: "Content Management",
-        icon: FileText,
+        icon: LayoutDashboard, // Represents overall content management or admin section
         section: "content",
         description: "Manage application content",
         subroutes: [
           {
             title: "Banner",
             href: ROUTES.ADMIN.BANNER,
-            icon: FileText,
+            icon: Image, // Banners are often images
             description: "Manage banner",
           },
           {
             title: "Brand",
             href: ROUTES.ADMIN.BRAND,
-            icon: FileText,
+            icon: Tags, // Tags icon works well for brands/labels
             description: "Manage brand",
           },
           {
-            title: "Media Library",
-            href: ROUTES.ADMIN.MEDIA,
-            icon: Database,
-            description: "Manage media files",
+            title: "Category",
+            href: ROUTES.ADMIN.CATEGORIES,
+            icon: Boxes, // Represents multiple items/groups = category
+            description: "Manage category",
+          },
+          {
+            title: "Product",
+            href: ROUTES.ADMIN.PRODUCTS,
+            icon: Package, // Represents a product/package
+            description: "Manage product",
           },
         ],
       },

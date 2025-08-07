@@ -1,5 +1,5 @@
 import { LoginCredentials } from "@/models/auth/auth.request";
-import { AuthResponse } from "@/models/auth/auth.response";
+import { UserAuthResponse } from "@/models/auth/auth.response";
 import { axiosClient } from "@/utils/axios";
 import { storeRoles } from "@/utils/local-storage/roles";
 import { storeToken } from "@/utils/local-storage/token";
@@ -9,12 +9,12 @@ export async function loginService(credentials: LoginCredentials) {
   try {
     const user = await axiosClient.post("/api/v1/auth/login", credentials);
 
-    const userData = user.data.data as AuthResponse;
+    const userData = user.data.data as UserAuthResponse;
     // On success, store token and role (simulate your original behavior)
     storeToken(userData.accessToken);
     storeUserInfo({
       userId: userData.userId || "",
-      userIdentifier: userData || "",
+      userIdentifier: userData.userIdentifier || "",
       profileImageUrl: userData.profileImageUrl || "",
       email: userData.email || "",
       fullName: userData.fullName || "",

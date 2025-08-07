@@ -29,12 +29,12 @@ export const ROUTES = {
     // Content Management
     PAGES: "/admin/content/pages",
     MEDIA: "/admin/content/media",
-    BANNER: "/admin/banner",
-    BRAND: "/admin/brand",
 
     // E-Commerce
-    PRODUCTS: "/admin/ecommerce/products",
-    CATEGORIES: "/admin/ecommerce/categories",
+    BANNER: "/admin/banner",
+    BRAND: "/admin/brand",
+    CATEGORIES: "/admin/category",
+    PRODUCTS: "/admin/products",
     ORDERS: "/admin/ecommerce/orders",
     PAYMENTS: "/admin/ecommerce/payments",
 
