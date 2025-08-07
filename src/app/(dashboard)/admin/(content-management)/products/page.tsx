@@ -4,7 +4,7 @@ import { AppToast } from "@/components/app/components/app-toast";
 import PaginationPage from "@/components/shared/common/pagination-page";
 import { ConfirmDialog } from "@/components/shared/dialog/dialog-confirm";
 import { DeleteConfirmationDialog } from "@/components/shared/dialog/dialog-delete";
-import ProductModal from "@/components/shared/modal/product/product-modal";
+import { ProductModal } from "@/components/shared/modal/product/product-modal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -399,8 +399,12 @@ export default function ProductPage() {
                       </TableRow>
                     ) : (
                       products.content.map((product, index) => {
-                        const imageUrl = product.images?.[0]?.imageUrl
-                          ? `${process.env.NEXT_PUBLIC_API_BASE_URL}${product.images[0].imageUrl}`
+                        const findThumbnail = product.images.find(
+                          (image) => image.imageType === "MAIN"
+                        );
+
+                        const imageUrl = findThumbnail
+                          ? `${process.env.NEXT_PUBLIC_API_BASE_URL}${findThumbnail.imageUrl}`
                           : "";
 
                         return (
@@ -573,6 +577,19 @@ export default function ProductPage() {
               setIsModalOpen(false);
             }}
             onSave={handleSubmit}
+          />
+
+          <DeleteConfirmationDialog
+            isOpen={isDeleteDialogOpen}
+            onClose={() => {
+              setIsDeleteDialogOpen(false);
+              setSelectedProduct(null);
+            }}
+            onDelete={handleDeleteProduct}
+            title="Delete Product"
+            description={`Are you sure you want to delete this product`}
+            itemName={selectedProduct?.name || selectedProduct?.brandName}
+            isSubmitting={isSubmitting}
           />
 
           {/* Pagination could go here if needed */}

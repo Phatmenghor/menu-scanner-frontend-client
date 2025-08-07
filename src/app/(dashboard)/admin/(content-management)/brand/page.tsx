@@ -441,9 +441,6 @@ export default function BrandPage() {
                           {brand.name}
                         </TableCell>
 
-                        {/* Business Name */}
-                        <TableCell>{brand.businessName}</TableCell>
-
                         {/* Status */}
                         <TableCell>
                           <Switch

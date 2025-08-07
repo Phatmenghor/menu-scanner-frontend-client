@@ -1,3 +1,4 @@
+"use client";
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   Dialog,
@@ -6,7 +7,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { z } from "zod";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
@@ -26,12 +26,12 @@ import {
   ImageIcon,
   Loader2,
   Package,
-  Plus,
-  Trash2,
   Star,
   ImageIcon as ImageLucide,
   AlertCircle,
   CheckCircle,
+  Percent,
+  Calendar,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -39,12 +39,26 @@ import {
   productFormData,
   ProductFormSchema,
 } from "@/models/(content-manangement)/product/product.schema";
+import { ModalMode } from "@/constants/app-resource/status/status";
+import { ComboboxSelectCategory } from "../../combo-box/combobox-category";
+import { CategoryModel } from "@/models/(content-manangement)/category/category.response";
+import { BrandModel } from "@/models/(content-manangement)/brand/brand.response";
+import { ComboboxSelectBrand } from "../../combo-box/combobox-brand";
+import { uploadImageService } from "@/services/dashboard/image/image.service";
+import { UploadImageRequest } from "@/models/image/image.request";
+import { AppToast } from "@/components/app/components/app-toast";
+import { getProductByIdService } from "@/services/dashboard/content-management/product/product.service";
+import { PriceInput } from "../../common/price-input";
 
 // Types
 type ImageType = "MAIN" | "GALLERY";
+type ImageData = {
+  imageUrl: string;
+  imageType: ImageType;
+};
 
 type Props = {
-  mode: "CREATE" | "EDIT";
+  mode: ModalMode;
   data: productFormData | null;
   onClose: () => void;
   isOpen: boolean;
@@ -52,8 +66,8 @@ type Props = {
   onSave: (data: productFormData) => void;
 };
 
-// Image Management Hook
-const useImageManagement = (control: any, setValue: any) => {
+// Image Management Hook - FIXED
+const useImageManagement = (control: any, setValue: any, watch: any) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadImageType, setUploadImageType] = useState<ImageType>("GALLERY");
 
@@ -67,39 +81,35 @@ const useImageManagement = (control: any, setValue: any) => {
     name: "images",
   });
 
-  const watchedImages = control._formValues?.images || [];
+  // FIXED: Use watch instead of control._formValues
+  const watchedImages: ImageData[] = watch("images") || [];
 
   // Image type utilities
   const getMainImage = () =>
-    watchedImages.find((img: productFormData) => img.imageType === "MAIN");
+    watchedImages.find((img: ImageData) => img.imageType === "MAIN");
+
   const hasMainImage = () => !!getMainImage();
+
   const getMainImageIndex = () =>
-    watchedImages.findIndex((img: productFormData) => img.imageType === "MAIN");
+    watchedImages.findIndex((img: ImageData) => img.imageType === "MAIN");
+
   const getImageCounts = () => ({
-    main: watchedImages.filter(
-      (img: productFormData) => img.imageType === "MAIN"
-    ).length,
+    main: watchedImages.filter((img: ImageData) => img.imageType === "MAIN")
+      .length,
     gallery: watchedImages.filter(
-      (img: productFormData) => img.imageType === "GALLERY"
+      (img: ImageData) => img.imageType === "GALLERY"
     ).length,
     total: watchedImages.length,
   });
 
-  // Mock upload service - replace with your actual service
-  const uploadImageService = async (
-    file: File
-  ): Promise<{ imageUrl: string }> => {
-    // Simulate upload delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    // Create a mock URL - in real implementation, this would be your uploaded image URL
-    const mockUrl = URL.createObjectURL(file);
-    return { imageUrl: mockUrl };
-  };
-
   const handleFileUpload = async (file: File, imageType: ImageType) => {
     if (!file || !file.type.startsWith("image/")) {
-      alert("Please select a valid image file.");
+      AppToast({
+        type: "error",
+        message: "Please select a valid image file.",
+        duration: 3000,
+        position: "top-right",
+      });
       return;
     }
 
@@ -119,26 +129,37 @@ const useImageManagement = (control: any, setValue: any) => {
 
     setIsUploading(true);
     try {
-      const response = await uploadImageService(file);
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = reader.result as string;
+        const base64Data = base64String.split(",")[1];
 
-      if (response?.imageUrl) {
-        if (imageType === "MAIN" && hasMainImage()) {
-          // Replace existing main image
-          const mainImageIndex = getMainImageIndex();
-          if (mainImageIndex !== -1) {
-            updateImage(mainImageIndex, {
+        const payload: UploadImageRequest = {
+          base64: base64Data,
+          type: file.type,
+        };
+
+        const response = await uploadImageService(payload);
+        if (response?.imageUrl) {
+          if (imageType === "MAIN" && hasMainImage()) {
+            // Replace existing main image
+            const mainImageIndex = getMainImageIndex();
+            if (mainImageIndex !== -1) {
+              updateImage(mainImageIndex, {
+                imageUrl: response.imageUrl,
+                imageType: "MAIN",
+              });
+            }
+          } else {
+            // Add new image
+            appendImage({
               imageUrl: response.imageUrl,
-              imageType: "MAIN",
+              imageType: imageType,
             });
           }
-        } else {
-          // Add new image
-          appendImage({
-            imageUrl: response.imageUrl,
-            imageType: imageType,
-          });
         }
-      }
+      };
+      reader.readAsDataURL(file);
     } catch (error) {
       console.error("Failed to upload image", error);
       alert("Failed to upload image. Please try again.");
@@ -149,7 +170,6 @@ const useImageManagement = (control: any, setValue: any) => {
 
   const toggleImageType = (index: number) => {
     const currentImage = watchedImages[index];
-
     if (currentImage.imageType === "MAIN") {
       // Converting MAIN to GALLERY
       updateImage(index, {
@@ -163,7 +183,6 @@ const useImageManagement = (control: any, setValue: any) => {
           "You already have a main image. Do you want to make this image the new main image?"
         );
         if (!confirmReplace) return;
-
         // Convert current MAIN to GALLERY
         const mainImageIndex = getMainImageIndex();
         if (mainImageIndex !== -1) {
@@ -173,7 +192,6 @@ const useImageManagement = (control: any, setValue: any) => {
           });
         }
       }
-
       // Convert this image to MAIN
       updateImage(index, {
         ...currentImage,
@@ -204,9 +222,12 @@ export function ProductModal({
   onSave,
   isSubmitting = false,
 }: Props) {
-  const isCreate = mode === "CREATE";
+  const isCreate = mode === ModalMode.CREATE_MODE;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [selectedCategory, setSelectedCategory] =
+    useState<CategoryModel | null>(null);
+  const [selectedBrand, setSelectedBrand] = useState<BrandModel | null>(null);
 
   const {
     control,
@@ -228,10 +249,28 @@ export function ProductModal({
       promotionValue: 0,
       promotionFromDate: "",
       promotionToDate: "",
-      sizes: [],
+      sizes: [
+        {
+          name: "",
+          price: 0,
+          promotionType: "NONE",
+          promotionValue: 0,
+          promotionFromDate: "",
+          promotionToDate: "",
+        },
+      ],
       status: "ACTIVE",
     },
   });
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "sizes",
+  });
+
+  watch("categoryId");
+  watch("brandId");
+  const promotionType = watch("promotionType");
 
   const {
     imageFields,
@@ -244,12 +283,12 @@ export function ProductModal({
     toggleImageType,
     getImageCounts,
     hasMainImage,
-  } = useImageManagement(control, setValue);
+  } = useImageManagement(control, setValue, watch);
 
-  // Reset form when modal opens or data changes
+  // Reset form when modal opens or data changes - FIXED
   useEffect(() => {
     if (isOpen) {
-      reset({
+      const formData = {
         name: data?.name ?? "",
         categoryId: data?.categoryId ?? "",
         images: data?.images ?? [],
@@ -262,7 +301,28 @@ export function ProductModal({
         promotionToDate: data?.promotionToDate ?? "",
         sizes: data?.sizes ?? [],
         status: data?.status ?? "ACTIVE",
-      });
+      };
+
+      reset(formData);
+
+      // Set selected category and brand for comboboxes
+      if (data?.categoryId) {
+        // You might need to fetch the category object based on ID
+        // For now, creating a mock object - replace with actual data fetching
+        setSelectedCategory({
+          id: data.categoryId,
+          name: "Selected Category",
+        } as CategoryModel);
+      }
+
+      if (data?.brandId) {
+        // You might need to fetch the brand object based on ID
+        // For now, creating a mock object - replace with actual data fetching
+        setSelectedBrand({
+          id: data.brandId,
+          name: "Selected Brand",
+        } as BrandModel);
+      }
     }
   }, [data, reset, isOpen]);
 
@@ -280,6 +340,24 @@ export function ProductModal({
       handleFileSelect(file);
     }
   };
+
+  const onCategoryChange = useCallback(
+    (cate: CategoryModel) => {
+      console.log("Selected category: ", cate);
+      setSelectedCategory(cate);
+      setValue("categoryId", cate.id);
+    },
+    [setValue]
+  );
+
+  const onBrandChange = useCallback(
+    (brand: BrandModel) => {
+      console.log("Selected brand: ", brand);
+      setSelectedBrand(brand);
+      setValue("brandId", brand.id);
+    },
+    [setValue]
+  );
 
   // Handle drag and drop
   const handleDrag = (e: React.DragEvent) => {
@@ -302,22 +380,19 @@ export function ProductModal({
     }
   };
 
-  const onSubmit = (formData: ProductFormData) => {
+  const onSubmit = (formData: productFormData) => {
     const counts = getImageCounts();
-
     // Validation
     if (counts.total === 0) {
       alert("Please add at least one product image.");
       return;
     }
-
     if (counts.main === 0) {
       alert(
         "Please set one image as the main image for the product thumbnail."
       );
       return;
     }
-
     if (counts.main > 1) {
       alert("You can only have one main image. Please fix this before saving.");
       return;
@@ -338,9 +413,20 @@ export function ProductModal({
 
   const counts = getImageCounts();
 
+  const getFullImageUrl = (imageUrl: string) => {
+    // Handle different URL formats
+    if (imageUrl.startsWith("http")) {
+      return imageUrl; // Already full URL
+    }
+    if (imageUrl.startsWith("/")) {
+      return `${process.env.NEXT_PUBLIC_API_BASE_URL}${imageUrl}`;
+    }
+    return `${process.env.NEXT_PUBLIC_API_BASE_URL}/${imageUrl}`;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-full max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
@@ -391,25 +477,37 @@ export function ProductModal({
                   control={control}
                   name="categoryId"
                   render={({ field }) => (
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      disabled={isSubmitting || isUploading}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="electronics">Electronics</SelectItem>
-                        <SelectItem value="clothing">Clothing</SelectItem>
-                        <SelectItem value="books">Books</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <ComboboxSelectCategory
+                      dataSelect={selectedCategory}
+                      onChangeSelected={onCategoryChange}
+                    />
                   )}
                 />
                 {errors.categoryId && (
                   <p className="text-sm text-destructive">
                     {errors.categoryId.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Brand */}
+              <div className="space-y-1">
+                <Label htmlFor="brandId">
+                  Brand <span className="text-red-500">*</span>
+                </Label>
+                <Controller
+                  control={control}
+                  name="brandId"
+                  render={({ field }) => (
+                    <ComboboxSelectBrand
+                      dataSelect={selectedBrand}
+                      onChangeSelected={onBrandChange}
+                    />
+                  )}
+                />
+                {errors.brandId && (
+                  <p className="text-sm text-destructive">
+                    {errors.brandId.message}
                   </p>
                 )}
               </div>
@@ -489,6 +587,154 @@ export function ProductModal({
             </div>
           </div>
 
+          {/* ADDED: Promotion Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Percent className="h-5 w-5" />
+              <Label className="text-lg font-semibold">
+                Promotion Settings
+              </Label>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 border rounded-lg bg-gray-50">
+              {/* Promotion Type */}
+              <div className="space-y-1">
+                <Label htmlFor="promotionType">Promotion Type</Label>
+                <Controller
+                  control={control}
+                  name="promotionType"
+                  render={({ field }) => (
+                    <Select
+                      value={field.value || ""}
+                      onValueChange={(value) =>
+                        field.onChange(value || undefined)
+                      }
+                      disabled={isSubmitting || isUploading}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select promotion type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NONE">No Promotion</SelectItem>
+                        <SelectItem value="PERCENTAGE">
+                          Percentage Discount
+                        </SelectItem>
+                        <SelectItem value="FIXED_AMOUNT">
+                          Fixed Amount Discount
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.promotionType && (
+                  <p className="text-sm text-destructive">
+                    {errors.promotionType.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Promotion Value */}
+              <div className="space-y-1">
+                <Label htmlFor="promotionValue">
+                  Promotion Value
+                  {promotionType === "PERCENTAGE" && " (%)"}
+                  {promotionType === "FIXED_AMOUNT" && " ($)"}
+                </Label>
+                <Controller
+                  control={control}
+                  name="promotionValue"
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      id="promotionValue"
+                      type="number"
+                      step={promotionType === "PERCENTAGE" ? "1" : "0.01"}
+                      min="0"
+                      max={promotionType === "PERCENTAGE" ? "100" : undefined}
+                      placeholder={
+                        promotionType === "PERCENTAGE"
+                          ? "Enter percentage (0-100)"
+                          : promotionType === "FIXED_AMOUNT"
+                          ? "Enter amount"
+                          : "0"
+                      }
+                      disabled={isSubmitting || isUploading || !promotionType}
+                      className={errors.promotionValue ? "border-red-500" : ""}
+                      onChange={(e) =>
+                        field.onChange(parseFloat(e.target.value) || 0)
+                      }
+                    />
+                  )}
+                />
+                {errors.promotionValue && (
+                  <p className="text-sm text-destructive">
+                    {errors.promotionValue.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Promotion From Date */}
+              <div className="space-y-1">
+                <Label
+                  htmlFor="promotionFromDate"
+                  className="flex items-center gap-1"
+                >
+                  <Calendar className="h-4 w-4" />
+                  Promotion Start Date
+                </Label>
+                <Controller
+                  control={control}
+                  name="promotionFromDate"
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      id="promotionFromDate"
+                      type="datetime-local"
+                      disabled={isSubmitting || isUploading || !promotionType}
+                      className={
+                        errors.promotionFromDate ? "border-red-500" : ""
+                      }
+                    />
+                  )}
+                />
+                {errors.promotionFromDate && (
+                  <p className="text-sm text-destructive">
+                    {errors.promotionFromDate.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Promotion To Date */}
+              <div className="space-y-1">
+                <Label
+                  htmlFor="promotionToDate"
+                  className="flex items-center gap-1"
+                >
+                  <Calendar className="h-4 w-4" />
+                  Promotion End Date
+                </Label>
+                <Controller
+                  control={control}
+                  name="promotionToDate"
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      id="promotionToDate"
+                      type="datetime-local"
+                      disabled={isSubmitting || isUploading || !promotionType}
+                      className={errors.promotionToDate ? "border-red-500" : ""}
+                    />
+                  )}
+                />
+                {errors.promotionToDate && (
+                  <p className="text-sm text-destructive">
+                    {errors.promotionToDate.message}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Product Images Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -507,7 +753,6 @@ export function ProductModal({
                 <Badge variant="secondary">Total: {counts.total}</Badge>
               </div>
             </div>
-
             {/* Image Type Selector */}
             <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
               <Label className="text-sm font-medium">Upload as:</Label>
@@ -543,7 +788,6 @@ export function ProductModal({
                   : "Gallery images are shown in product details"}
               </p>
             </div>
-
             {/* Upload Area */}
             <div
               className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
@@ -595,13 +839,12 @@ export function ProductModal({
                 disabled={isSubmitting || isUploading}
               />
             </div>
-
             {/* Image Preview Grid */}
             {imageFields.length > 0 && (
               <div className="space-y-4">
                 {/* Main Images */}
                 {watchedImages?.filter(
-                  (img: productFormData) => img.imageType === "MAIN"
+                  (img: ImageData) => img.imageType === "MAIN"
                 ).length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium mb-2 flex items-center gap-1">
@@ -610,13 +853,14 @@ export function ProductModal({
                     </h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       {imageFields.map((image, index) => {
-                        if (image.imageType !== "MAIN") return null;
+                        const watchedImage = watchedImages[index];
+                        if (watchedImage?.imageType !== "MAIN") return null;
                         return (
                           <div key={image.id} className="relative group">
                             <div className="relative">
                               <img
                                 src={
-                                  image.imageUrl ||
+                                  getFullImageUrl(watchedImage.imageUrl) ||
                                   "/placeholder.svg?height=96&width=96"
                                 }
                                 alt="Main product image"
@@ -661,7 +905,7 @@ export function ProductModal({
 
                 {/* Gallery Images */}
                 {watchedImages?.filter(
-                  (img: productFormData) => img.imageType === "GALLERY"
+                  (img: ImageData) => img.imageType === "GALLERY"
                 ).length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium mb-2 flex items-center gap-1">
@@ -670,13 +914,14 @@ export function ProductModal({
                     </h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       {imageFields.map((image, index) => {
-                        if (image.imageType !== "GALLERY") return null;
+                        const watchedImage = watchedImages[index];
+                        if (watchedImage?.imageType !== "GALLERY") return null;
                         return (
                           <div key={image.id} className="relative group">
                             <div className="relative">
                               <img
                                 src={
-                                  image.imageUrl ||
+                                  getFullImageUrl(watchedImage.imageUrl) ||
                                   "/placeholder.svg?height=96&width=96"
                                 }
                                 alt={`Gallery image ${index + 1}`}
@@ -724,7 +969,6 @@ export function ProductModal({
                 )}
               </div>
             )}
-
             {/* Validation Messages */}
             {counts.total === 0 && (
               <Alert>
@@ -734,7 +978,6 @@ export function ProductModal({
                 </AlertDescription>
               </Alert>
             )}
-
             {counts.total > 0 && counts.main === 0 && (
               <Alert>
                 <AlertCircle className="h-4 w-4" />
@@ -744,7 +987,6 @@ export function ProductModal({
                 </AlertDescription>
               </Alert>
             )}
-
             {counts.main > 1 && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
@@ -754,7 +996,6 @@ export function ProductModal({
                 </AlertDescription>
               </Alert>
             )}
-
             {counts.main === 1 && counts.total > 0 && (
               <Alert>
                 <CheckCircle className="h-4 w-4" />
@@ -764,12 +1005,143 @@ export function ProductModal({
                 </AlertDescription>
               </Alert>
             )}
-
             {errors.images && (
               <p className="text-sm text-destructive">
                 {errors.images.message}
               </p>
             )}
+
+            {fields.map((item, index) => {
+              const promotionType = watch(`sizes.${index}.promotionType`);
+
+              return (
+                <div
+                  key={item.id}
+                  className="space-y-4 rounded-md border p-4 bg-white shadow-sm"
+                >
+                  {/* 🔹 Size Name */}
+                  <Controller
+                    control={control}
+                    name={`sizes.${index}.name`}
+                    render={({ field }) => (
+                      <Input {...field} placeholder="Size Name" />
+                    )}
+                  />
+
+                  {/* 🔹 Price */}
+                  <Controller
+                    control={control}
+                    name={`sizes.${index}.price`}
+                    render={({ field }) => (
+                      <PriceInput
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Price"
+                        currency="$"
+                        min={0}
+                      />
+                    )}
+                  />
+
+                  {/* 🔹 Promotion Type */}
+                  <Controller
+                    control={control}
+                    name={`sizes.${index}.promotionType`}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value || "NONE"}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select promotion type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="NONE">No Promotion</SelectItem>
+                          <SelectItem value="PERCENTAGE">
+                            Percentage Discount
+                          </SelectItem>
+                          <SelectItem value="FIXED_AMOUNT">
+                            Fixed Amount Discount
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+
+                  {/* 🔹 Promotion Value – only shown if promotionType is selected */}
+                  {promotionType !== "NONE" && (
+                    <Controller
+                      control={control}
+                      name={`sizes.${index}.promotionValue`}
+                      render={({ field }) => (
+                        <PriceInput
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Promotion Value"
+                          currency={promotionType === "PERCENTAGE" ? "%" : "$"}
+                          min={0}
+                        />
+                      )}
+                    />
+                  )}
+
+                  {/* 🔹 Promotion Dates – only shown if promotionType is selected */}
+                  {promotionType !== "NONE" && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <Controller
+                        control={control}
+                        name={`sizes.${index}.promotionFromDate`}
+                        render={({ field }) => (
+                          <Input
+                            type="date"
+                            {...field}
+                            placeholder="From Date"
+                          />
+                        )}
+                      />
+                      <Controller
+                        control={control}
+                        name={`sizes.${index}.promotionToDate`}
+                        render={({ field }) => (
+                          <Input type="date" {...field} placeholder="To Date" />
+                        )}
+                      />
+                    </div>
+                  )}
+
+                  {/* 🔹 Remove Button */}
+                  <div className="text-right">
+                    <button
+                      type="button"
+                      onClick={() => remove(index)}
+                      className="text-red-500 text-sm underline"
+                    >
+                      Remove Size
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* 🔹 Add Size Button */}
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() =>
+                  append({
+                    name: "",
+                    price: 0,
+                    promotionType: "NONE",
+                    promotionValue: 0,
+                    promotionFromDate: "",
+                    promotionToDate: "",
+                  })
+                }
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                Add Size
+              </button>
+            </div>
           </div>
 
           {/* Form Actions */}
