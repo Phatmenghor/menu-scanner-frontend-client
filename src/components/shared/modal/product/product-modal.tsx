@@ -47,8 +47,10 @@ import { ComboboxSelectBrand } from "../../combo-box/combobox-brand";
 import { uploadImageService } from "@/services/dashboard/image/image.service";
 import { UploadImageRequest } from "@/models/image/image.request";
 import { AppToast } from "@/components/app/components/app-toast";
-import { getProductByIdService } from "@/services/dashboard/content-management/product/product.service";
 import { PriceInput } from "../../common/price-input";
+import { size } from "zod";
+import { getCategoryByIdService } from "@/services/dashboard/content-management/category/category.service";
+import { getBrandByIdService } from "@/services/dashboard/content-management/brand/brand.service";
 
 // Types
 type ImageType = "MAIN" | "GALLERY";
@@ -227,6 +229,7 @@ export function ProductModal({
   const [dragActive, setDragActive] = useState(false);
   const [selectedCategory, setSelectedCategory] =
     useState<CategoryModel | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState<BrandModel | null>(null);
 
   const {
@@ -235,7 +238,7 @@ export function ProductModal({
     reset,
     setValue,
     watch,
-    formState: { errors },
+    formState: { errors, isDirty, isValid },
   } = useForm<productFormData>({
     resolver: zodResolver(ProductFormSchema),
     defaultValues: {
@@ -271,6 +274,7 @@ export function ProductModal({
   watch("categoryId");
   watch("brandId");
   const promotionType = watch("promotionType");
+  const watchedSizes = watch("sizes");
 
   const {
     imageFields,
@@ -285,46 +289,128 @@ export function ProductModal({
     hasMainImage,
   } = useImageManagement(control, setValue, watch);
 
+  function normalizePromotionType(value: string | undefined): string {
+    return value === undefined || value === null ? "NONE" : value;
+  }
+
+  function denormalizePromotionType(value: string): string | undefined {
+    return value === "NONE" ? undefined : value;
+  }
+
+  const fetchCategoryDetail = useCallback(async () => {
+    if (!data?.categoryId) return;
+    setIsLoading(true);
+    try {
+      const response = await getCategoryByIdService(data?.categoryId);
+      console.log("Fetched categories:", response);
+      setSelectedCategory(response);
+    } catch (error: any) {
+      console.log("Failed to fetch categories: ", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [data?.categoryId]);
+
+  const fetchBrandDetail = useCallback(async () => {
+    if (!data?.brandId) return;
+    setIsLoading(true);
+    try {
+      const response = await getBrandByIdService(data?.brandId);
+      console.log("Fetched brands:", response);
+      setSelectedBrand(response);
+    } catch (error: any) {
+      console.log("Failed to fetch brands: ", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [data?.brandId]);
+
+  useEffect(() => {
+    if (isOpen && data) {
+      fetchCategoryDetail();
+      fetchBrandDetail();
+    }
+  }, [isOpen, data?.id]);
+
   // Reset form when modal opens or data changes - FIXED
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && data) {
+      console.log("=== FORM RESET ===");
+      console.log("Raw data:", data);
       const formData = {
+        id: data?.id,
         name: data?.name ?? "",
         categoryId: data?.categoryId ?? "",
         images: data?.images ?? [],
         description: data?.description ?? "",
         brandId: data?.brandId ?? "",
         price: data?.price ?? 0,
-        promotionType: data?.promotionType,
+        promotionType: normalizePromotionType(data?.promotionType),
         promotionValue: data?.promotionValue ?? 0,
-        promotionFromDate: data?.promotionFromDate ?? "",
-        promotionToDate: data?.promotionToDate ?? "",
-        sizes: data?.sizes ?? [],
+        promotionFromDate: data?.promotionFromDate || "",
+        promotionToDate: data?.promotionToDate || "",
+        sizes:
+          data?.sizes && data.sizes.length > 0
+            ? data.sizes.map((size) => ({
+                ...size,
+                promotionType: normalizePromotionType(size?.promotionType),
+                promotionFromDate: size.promotionFromDate || "",
+                promotionToDate: size.promotionToDate || "",
+              }))
+            : [
+                {
+                  name: "",
+                  price: 0,
+                  promotionType: "NONE",
+                  promotionValue: 0,
+                  promotionFromDate: "",
+                  promotionToDate: "",
+                },
+              ],
         status: data?.status ?? "ACTIVE",
       };
 
       reset(formData);
-
-      // Set selected category and brand for comboboxes
-      if (data?.categoryId) {
-        // You might need to fetch the category object based on ID
-        // For now, creating a mock object - replace with actual data fetching
-        setSelectedCategory({
-          id: data.categoryId,
-          name: "Selected Category",
-        } as CategoryModel);
-      }
-
-      if (data?.brandId) {
-        // You might need to fetch the brand object based on ID
-        // For now, creating a mock object - replace with actual data fetching
-        setSelectedBrand({
-          id: data.brandId,
-          name: "Selected Brand",
-        } as BrandModel);
-      }
+    } else if (isOpen && !data) {
+      // Handle create mode - reset to default values
+      reset({
+        name: "",
+        categoryId: "",
+        images: [],
+        description: "",
+        brandId: "",
+        price: 0,
+        promotionType: "NONE",
+        promotionValue: 0,
+        promotionFromDate: "",
+        promotionToDate: "",
+        sizes: [],
+        status: "ACTIVE",
+      });
     }
-  }, [data, reset, isOpen]);
+  }, [isOpen, data, reset]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      // Clear selected category and brand when modal closes
+      setSelectedCategory(null);
+      setSelectedBrand(null);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    console.log("=== FORM DEBUG ===");
+    console.log("Form errors:", errors);
+    console.log("Form isValid:", isValid);
+    console.log("Form isDirty:", isDirty);
+    console.log("Form isSubmitting:", isSubmitting);
+    console.log("Current form values:", watch());
+
+    // Check specific field errors
+    if (Object.keys(errors).length > 0) {
+      console.log("Validation errors:", JSON.stringify(errors, null, 2));
+    }
+  }, [errors, isValid, isDirty, isSubmitting, watch]);
 
   // Handle file selection
   const handleFileSelect = (file: File) => {
@@ -384,28 +470,57 @@ export function ProductModal({
     const counts = getImageCounts();
     // Validation
     if (counts.total === 0) {
-      alert("Please add at least one product image.");
-      return;
-    }
-    if (counts.main === 0) {
-      alert(
-        "Please set one image as the main image for the product thumbnail."
-      );
-      return;
-    }
-    if (counts.main > 1) {
-      alert("You can only have one main image. Please fix this before saving.");
+      AppToast({
+        type: "warning",
+        message: "Please add at least one product image.",
+        duration: 3000,
+        position: "top-right",
+      });
       return;
     }
 
-    const payload = {
+    if (counts.main === 0) {
+      AppToast({
+        type: "warning",
+        message:
+          "Please set one image as the main image for the product thumbnail.",
+        duration: 3000,
+        position: "top-right",
+      });
+      return;
+    }
+    if (counts.main > 1) {
+      AppToast({
+        type: "warning",
+        message:
+          "You can only have one main image. Please fix this before saving.",
+        duration: 3000,
+        position: "top-right",
+      });
+      return;
+    }
+
+    // FIX: Use denormalizePromotionType to convert "NONE" back to undefined
+    const processedFormData = {
       ...formData,
-      id: data?.id,
-      name: formData.name.trim(),
-      description: formData.description?.trim(),
-      categoryId: formData.categoryId.trim(),
-      brandId: formData.brandId?.trim(),
+      promotionType: denormalizePromotionType(formData.promotionType || "NONE"),
+      sizes: formData.sizes?.map((size) => ({
+        ...size,
+        promotionType: denormalizePromotionType(size.promotionType || "NONE"),
+      })),
     };
+
+    const payload = {
+      ...processedFormData,
+      id: data?.id,
+      name: processedFormData.name.trim(),
+      description: processedFormData.description?.trim(),
+      categoryId: processedFormData.categoryId.trim(),
+      brandId: processedFormData.brandId?.trim(),
+      size: processedFormData.sizes,
+    };
+
+    console.log("Payload before submit:", payload);
 
     onSave(payload);
     onClose();
@@ -490,6 +605,31 @@ export function ProductModal({
                 )}
               </div>
 
+              {/* Price */}
+              <div className="space-y-1">
+                <Label htmlFor="price">Base Price</Label>
+                <Controller
+                  control={control}
+                  name="price"
+                  render={({ field }) => (
+                    <PriceInput
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Price"
+                      currency="$"
+                      min={0}
+                    />
+                  )}
+                />
+                {errors.price && (
+                  <p className="text-sm text-destructive">
+                    {errors.price.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-4">
               {/* Brand */}
               <div className="space-y-1">
                 <Label htmlFor="brandId">
@@ -512,37 +652,6 @@ export function ProductModal({
                 )}
               </div>
 
-              {/* Price */}
-              <div className="space-y-1">
-                <Label htmlFor="price">Base Price</Label>
-                <Controller
-                  control={control}
-                  name="price"
-                  render={({ field }) => (
-                    <Input
-                      {...field}
-                      id="price"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      disabled={isSubmitting || isUploading}
-                      className={errors.price ? "border-red-500" : ""}
-                      onChange={(e) =>
-                        field.onChange(parseFloat(e.target.value) || 0)
-                      }
-                    />
-                  )}
-                />
-                {errors.price && (
-                  <p className="text-sm text-destructive">
-                    {errors.price.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-4">
               {/* Description */}
               <div className="space-y-1">
                 <Label htmlFor="description">Description</Label>
@@ -562,28 +671,30 @@ export function ProductModal({
               </div>
 
               {/* Status */}
-              <div className="space-y-1">
-                <Label htmlFor="status">Status</Label>
-                <Controller
-                  control={control}
-                  name="status"
-                  render={({ field }) => (
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      disabled={isSubmitting || isUploading}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ACTIVE">Active</SelectItem>
-                        <SelectItem value="INACTIVE">Inactive</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
+              {!isCreate && (
+                <div className="space-y-1">
+                  <Label htmlFor="status">Status</Label>
+                  <Controller
+                    control={control}
+                    name="status"
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={isSubmitting || isUploading}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ACTIVE">Active</SelectItem>
+                          <SelectItem value="INACTIVE">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
@@ -596,7 +707,7 @@ export function ProductModal({
               </Label>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 border rounded-lg bg-gray-50">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg bg-gray-50">
               {/* Promotion Type */}
               <div className="space-y-1">
                 <Label htmlFor="promotionType">Promotion Type</Label>
@@ -605,7 +716,7 @@ export function ProductModal({
                   name="promotionType"
                   render={({ field }) => (
                     <Select
-                      value={field.value || ""}
+                      value={field.value === "NONE" ? undefined : field.value}
                       onValueChange={(value) =>
                         field.onChange(value || undefined)
                       }
@@ -736,7 +847,7 @@ export function ProductModal({
           </div>
 
           {/* Product Images Section */}
-          <div className="space-y-4">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>
                 Product Images <span className="text-red-500">*</span>
@@ -1012,23 +1123,26 @@ export function ProductModal({
             )}
 
             {fields.map((item, index) => {
-              const promotionType = watch(`sizes.${index}.promotionType`);
+              const sizePromotionType = watch(`sizes.${index}.promotionType`);
 
               return (
                 <div
                   key={item.id}
-                  className="space-y-4 rounded-md border p-4 bg-white shadow-sm"
+                  className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-md bg-white shadow-sm"
                 >
-                  {/* 🔹 Size Name */}
+                  {/* 🟦 Size Name */}
                   <Controller
                     control={control}
                     name={`sizes.${index}.name`}
                     render={({ field }) => (
-                      <Input {...field} placeholder="Size Name" />
+                      <Input
+                        {...field}
+                        placeholder="Enter size (e.g. Medium (24 oz))"
+                      />
                     )}
                   />
 
-                  {/* 🔹 Price */}
+                  {/* 🟦 Price */}
                   <Controller
                     control={control}
                     name={`sizes.${index}.price`}
@@ -1043,14 +1157,16 @@ export function ProductModal({
                     )}
                   />
 
-                  {/* 🔹 Promotion Type */}
+                  {/* 🟦 Promotion Type */}
                   <Controller
                     control={control}
                     name={`sizes.${index}.promotionType`}
                     render={({ field }) => (
                       <Select
-                        value={field.value || "NONE"}
-                        onValueChange={field.onChange}
+                        value={field.value === "NONE" ? undefined : field.value}
+                        onValueChange={(value) =>
+                          field.onChange(value || undefined)
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select promotion type" />
@@ -1068,53 +1184,64 @@ export function ProductModal({
                     )}
                   />
 
-                  {/* 🔹 Promotion Value – only shown if promotionType is selected */}
-                  {promotionType !== "NONE" && (
-                    <Controller
-                      control={control}
-                      name={`sizes.${index}.promotionValue`}
-                      render={({ field }) => (
-                        <PriceInput
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Promotion Value"
-                          currency={promotionType === "PERCENTAGE" ? "%" : "$"}
-                          min={0}
-                        />
-                      )}
-                    />
-                  )}
-
-                  {/* 🔹 Promotion Dates – only shown if promotionType is selected */}
-                  {promotionType !== "NONE" && (
-                    <div className="grid grid-cols-2 gap-4">
+                  {/* 🟦 Promotion Value */}
+                  {sizePromotionType !== "NONE" &&
+                    sizePromotionType !== undefined && (
                       <Controller
                         control={control}
-                        name={`sizes.${index}.promotionFromDate`}
+                        name={`sizes.${index}.promotionValue`}
                         render={({ field }) => (
-                          <Input
-                            type="date"
-                            {...field}
-                            placeholder="From Date"
+                          <PriceInput
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Promotion Value"
+                            currency={
+                              watchedSizes?.[index]?.promotionType ===
+                              "PERCENTAGE"
+                                ? "%"
+                                : "$"
+                            }
+                            min={0}
                           />
                         )}
                       />
-                      <Controller
-                        control={control}
-                        name={`sizes.${index}.promotionToDate`}
-                        render={({ field }) => (
-                          <Input type="date" {...field} placeholder="To Date" />
-                        )}
-                      />
-                    </div>
-                  )}
+                    )}
 
-                  {/* 🔹 Remove Button */}
-                  <div className="text-right">
+                  {/* 🟦 Promotion Dates */}
+                  {sizePromotionType !== "NONE" &&
+                    sizePromotionType !== undefined && (
+                      <>
+                        <Controller
+                          control={control}
+                          name={`sizes.${index}.promotionFromDate`}
+                          render={({ field }) => (
+                            <Input
+                              type="date"
+                              {...field}
+                              placeholder="From Date"
+                            />
+                          )}
+                        />
+                        <Controller
+                          control={control}
+                          name={`sizes.${index}.promotionToDate`}
+                          render={({ field }) => (
+                            <Input
+                              type="date"
+                              {...field}
+                              placeholder="To Date"
+                            />
+                          )}
+                        />
+                      </>
+                    )}
+
+                  {/* 🗑 Remove Button (Full Width) */}
+                  <div className="col-span-1 md:col-span-2 text-right pt-2">
                     <button
                       type="button"
                       onClick={() => remove(index)}
-                      className="text-red-500 text-sm underline"
+                      className="text-sm text-red-500 underline"
                     >
                       Remove Size
                     </button>
@@ -1124,8 +1251,8 @@ export function ProductModal({
             })}
 
             {/* 🔹 Add Size Button */}
-            <div className="mt-4">
-              <button
+            <div>
+              <Button
                 type="button"
                 onClick={() =>
                   append({
@@ -1137,15 +1264,15 @@ export function ProductModal({
                     promotionToDate: "",
                   })
                 }
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                className="text-sm font-sans px-2 py-2 rounded"
               >
                 Add Size
-              </button>
+              </Button>
             </div>
           </div>
 
           {/* Form Actions */}
-          <div className="flex justify-end gap-3 pt-6 border-t">
+          <div className="flex justify-end gap-3 pt-2 border-t">
             <Button
               type="button"
               variant="outline"

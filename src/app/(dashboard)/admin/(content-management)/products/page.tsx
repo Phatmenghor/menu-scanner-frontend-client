@@ -4,6 +4,7 @@ import { AppToast } from "@/components/app/components/app-toast";
 import PaginationPage from "@/components/shared/common/pagination-page";
 import { ConfirmDialog } from "@/components/shared/dialog/dialog-confirm";
 import { DeleteConfirmationDialog } from "@/components/shared/dialog/dialog-delete";
+import ProductDetailModal from "@/components/shared/modal/product/product-detail-modal";
 import { ProductModal } from "@/components/shared/modal/product/product-modal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -53,7 +54,7 @@ import { indexDisplay } from "@/utils/common/common";
 import { DateTimeFormat } from "@/utils/date/date-time-format";
 import { useDebounce } from "@/utils/debounce/debounce";
 import { getUserInfo } from "@/utils/local-storage/userInfo";
-import { Check, Edit, Search, Trash2 } from "lucide-react";
+import { Edit, Eye, Search, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -72,12 +73,12 @@ export default function ProductPage() {
   const [selectedProduct, setSelectedProduct] = useState<ProductModel | null>(
     null
   );
+  const [selectedProductToDelete, setSelectedProductToDelete] =
+    useState<ProductModel | null>(null);
   const [isUserDetailOpen, setIsUserDetailOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedProductToggle, setSelectedProductToggle] =
     useState<ProductModel | null>(null);
-  const [isToggleStatusDialogOpen, setIsToggleStatusDialogOpen] =
-    useState(false);
 
   const t = useTranslations("user");
   const headers = getUserTableHeaders(t);
@@ -179,7 +180,6 @@ export default function ProductPage() {
           setIsModalOpen(false);
         }
       } else {
-        // Update mode
         if (!formData.id) {
           throw new Error("Product ID is required for update");
         }
@@ -268,6 +268,26 @@ export default function ProductPage() {
     }
   }
 
+  const getAdminDisplayPrice = (product: ProductModel): string => {
+    // If product has sizes, show price range
+    if (product.hasSizes && product.sizes && product.sizes.length > 0) {
+      const prices = product.sizes.map((size) => size.finalPrice || size.price);
+      const minPrice = Math.min(...prices);
+      const maxPrice = Math.max(...prices);
+
+      // Same price for all sizes
+      if (minPrice === maxPrice) {
+        return `$${minPrice.toFixed(2)}`;
+      }
+
+      // Different prices - show range
+      return `$${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}`;
+    }
+
+    // No sizes - use main product price
+    return `$${(product.displayPrice || product.price || 0).toFixed(2)}`;
+  };
+
   // const handleToggleStatus = (Product: ProductModel | null) => {
   //   setSelectedProductToggle(Product);
   //   setIsToggleStatusDialogOpen(true);
@@ -280,7 +300,7 @@ export default function ProductPage() {
   };
 
   const handleDelete = (Product: ProductModel) => {
-    setSelectedProduct(Product);
+    setSelectedProductToDelete(Product);
     setIsDeleteDialogOpen(true);
   };
 
@@ -399,7 +419,7 @@ export default function ProductPage() {
                       </TableRow>
                     ) : (
                       products.content.map((product, index) => {
-                        const findThumbnail = product.images.find(
+                        const findThumbnail = product?.images?.find(
                           (image) => image.imageType === "MAIN"
                         );
 
@@ -438,7 +458,10 @@ export default function ProductPage() {
 
                             {/* Name */}
                             <TableCell className="font-semibold min-w-[200px] max-w-[250px]">
-                              <div className="truncate" title={product.name}>
+                              <div
+                                className="truncate w-full"
+                                title={product.name}
+                              >
                                 {product.name}
                               </div>
                             </TableCell>
@@ -464,13 +487,18 @@ export default function ProductPage() {
                             </TableCell>
 
                             {/* Price */}
-                            <TableCell className="font-bold text-right min-w-[100px]">
-                              <div className="text-green-600 text-lg">
-                                $
-                                {product.displayPrice ||
-                                  product.price ||
-                                  "0.00"}
+                            <TableCell className="text-right">
+                              <div className="font-bold text-lg text-green-600">
+                                {getAdminDisplayPrice(product)}
                               </div>
+                              {product.hasSizes &&
+                                product.sizes &&
+                                product.sizes.length > 0 && (
+                                  <div className="text-xs text-gray-500 font-medium">
+                                    {product.sizes.length} size
+                                    {product.sizes.length > 1 ? "s" : ""}
+                                  </div>
+                                )}
                             </TableCell>
 
                             {/* Status */}
@@ -540,6 +568,17 @@ export default function ProductPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
+                                  onClick={() =>
+                                    handleViewProductDetail(product)
+                                  }
+                                  className="hover:text-primary h-8 w-8 p-0 border-blue-200 hover:bg-blue-50"
+                                  title="Edit product"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
                                   onClick={() => handleEdit(product)}
                                   className="hover:text-primary h-8 w-8 p-0 border-blue-200 hover:bg-blue-50"
                                   title="Edit product"
@@ -567,6 +606,15 @@ export default function ProductPage() {
             </div>
           </div>
 
+          <ProductDetailModal
+            product={selectedProduct}
+            open={isUserDetailOpen}
+            onClose={() => {
+              setSelectedProduct(null);
+              setIsModalOpen(false);
+            }}
+          />
+
           <ProductModal
             data={initializeProduct}
             isOpen={isModalOpen}
@@ -583,7 +631,7 @@ export default function ProductPage() {
             isOpen={isDeleteDialogOpen}
             onClose={() => {
               setIsDeleteDialogOpen(false);
-              setSelectedProduct(null);
+              setSelectedProductToDelete(null);
             }}
             onDelete={handleDeleteProduct}
             title="Delete Product"

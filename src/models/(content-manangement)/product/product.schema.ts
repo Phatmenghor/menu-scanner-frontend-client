@@ -12,8 +12,18 @@ export const SizeSchema = z.object({
   price: z.number().nonnegative("Price must be non-negative"),
   promotionType: z.string().optional(),
   promotionValue: z.number().optional(),
-  promotionFromDate: z.string().optional(),
-  promotionToDate: z.string().optional(),
+  promotionFromDate: z
+    .union([
+      z.string().length(0), // Empty string
+      z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"), // YYYY-MM-DD
+    ])
+    .optional(),
+  promotionToDate: z
+    .union([
+      z.string().length(0), // Empty string
+      z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"), // YYYY-MM-DD
+    ])
+    .optional(),
 });
 
 // ProductFormData Schema
@@ -28,8 +38,18 @@ export const ProductFormSchema = z.object({
 
   promotionType: z.string().optional(),
   promotionValue: z.number().nonnegative().optional(),
-  promotionFromDate: z.string().optional(),
-  promotionToDate: z.string().optional(),
+  promotionFromDate: z
+    .union([
+      z.string().length(0), // Empty string
+      z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"), // YYYY-MM-DD
+    ])
+    .optional(),
+  promotionToDate: z
+    .union([
+      z.string().length(0), // Empty string
+      z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format"), // YYYY-MM-DD
+    ])
+    .optional(),
 
   sizes: z.array(SizeSchema).optional(),
   status: z.string().optional(),

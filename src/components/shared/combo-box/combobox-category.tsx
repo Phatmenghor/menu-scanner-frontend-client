@@ -119,7 +119,7 @@ export function ComboboxSelectCategory({
           disabled={disabled}
         >
           {/* Always show the name directly from dataSelect prop if available */}
-          {dataSelect ? dataSelect.name : "Select a user..."}
+          {dataSelect ? dataSelect.name : "Select a category..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -141,7 +141,7 @@ export function ComboboxSelectCategory({
               target.scrollTop += e.deltaY;
             }}
           >
-            <CommandEmpty>No user found.</CommandEmpty>
+            <CommandEmpty>No category found.</CommandEmpty>
             <CommandGroup>
               {data?.map((item, index) => (
                 <CommandItem

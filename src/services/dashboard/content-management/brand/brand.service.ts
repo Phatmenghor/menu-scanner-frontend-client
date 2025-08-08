@@ -19,6 +19,21 @@ export async function getAllBrandService(data: AllBrandRequest) {
   }
 }
 
+export async function getBrandByIdService(id: string) {
+  try {
+    // POST request to fetch all staff matching the filters
+    const response = await axiosClientWithAuth.get(`/api/v1/brands/${id}`);
+    return response.data.data; // Return the actual staff list data
+  } catch (error: any) {
+    // Check if the error response contains a message, throw it as Error
+    if (error.response && error.response.data && error.response.data.message) {
+      throw new Error(error.response.data.message);
+    }
+    console.error("Error get brand by id:", error); // Log error for debugging
+    throw error; // Re-throw the error for further handling
+  }
+}
+
 export async function getAllMyBannerService(data: AllBrandRequest) {
   try {
     // POST request to fetch all staff matching the filters
