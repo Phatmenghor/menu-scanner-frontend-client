@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import {
   X,
@@ -19,6 +19,21 @@ import {
   XCircle,
   AlertTriangle,
   Clock,
+  Share,
+  Copy,
+  ExternalLink,
+  MapPin,
+  Phone,
+  Mail,
+  Star,
+  TrendingUp,
+  Users,
+  ShoppingCart,
+  Percent,
+  Zap,
+  Info,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +43,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { ProductModel } from "@/models/(content-manangement)/product/product.response";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 interface ProductDetailModalProps {
   product: ProductModel | null;
@@ -40,6 +56,9 @@ export default function ProductDetailModal({
   open,
   onClose,
 }: ProductDetailModalProps) {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [imageLoading, setImageLoading] = useState(false);
+
   if (!open || !product) return null;
 
   const getStatusConfig = (status: string) => {
@@ -61,6 +80,12 @@ export default function ProductDetailModal({
           color: "bg-red-50 text-red-700 border-red-200",
           icon: <XCircle className="h-3.5 w-3.5" />,
           dot: "bg-red-500",
+        };
+      case "out_of_stock":
+        return {
+          color: "bg-orange-50 text-orange-700 border-orange-200",
+          icon: <AlertTriangle className="h-3.5 w-3.5" />,
+          dot: "bg-orange-500",
         };
       default:
         return {
@@ -90,12 +115,33 @@ export default function ProductDetailModal({
   };
 
   const getPromotionText = (type: string, value: number) => {
-    if (type === "percentage") {
+    if (type === "PERCENTAGE") {
       return `${value}% OFF`;
-    } else if (type === "fixed") {
+    } else if (type === "FIXED_AMOUNT") {
       return `$${value} OFF`;
     }
     return "SALE";
+  };
+
+  const copyToClipboard = (text: string, message: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success(message);
+    });
+  };
+
+  const shareProduct = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: product.name,
+        text: `Check out this product: ${product.name}`,
+        url: product.publicUrl || window.location.href,
+      });
+    } else {
+      copyToClipboard(
+        product.publicUrl || window.location.href,
+        "Product link copied to clipboard!"
+      );
+    }
   };
 
   const InfoItem = ({
@@ -103,11 +149,13 @@ export default function ProductDetailModal({
     label,
     value,
     className = "",
+    action,
   }: {
     icon: React.ReactNode;
     label: string;
     value: string | React.ReactNode;
     className?: string;
+    action?: React.ReactNode;
   }) => (
     <div className={`flex items-start gap-3 ${className}`}>
       <div className="flex-shrink-0 mt-0.5 text-muted-foreground">{icon}</div>
@@ -115,96 +163,294 @@ export default function ProductDetailModal({
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
           {label}
         </p>
-        <div className="text-sm font-medium text-foreground">
+        <div className="text-sm font-medium text-foreground flex items-center justify-between">
           {value || (
             <span className="text-muted-foreground italic">Not provided</span>
           )}
+          {action}
         </div>
       </div>
     </div>
   );
 
+  const StatCard = ({
+    icon,
+    label,
+    value,
+    trend,
+    trendValue,
+    color = "blue",
+  }: {
+    icon: React.ReactNode;
+    label: string;
+    value: string | number;
+    trend?: "up" | "down" | "neutral";
+    trendValue?: string;
+    color?: string;
+  }) => (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div className={`p-2 rounded-lg bg-${color}-100`}>
+            <div className={`text-${color}-600`}>{icon}</div>
+          </div>
+          {trend && (
+            <div
+              className={`flex items-center text-xs ${
+                trend === "up"
+                  ? "text-green-600"
+                  : trend === "down"
+                  ? "text-red-600"
+                  : "text-gray-600"
+              }`}
+            >
+              <TrendingUp className="h-3 w-3 mr-1" />
+              {trendValue}
+            </div>
+          )}
+        </div>
+        <div className="mt-3">
+          <p className="text-2xl font-bold">{value}</p>
+          <p className="text-sm text-muted-foreground">{label}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   const statusConfig = getStatusConfig(product.status);
+  const allImages = product.images || [];
+  const currentImage = allImages[currentImageIndex];
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % allImages.length);
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex(
+      (prev) => (prev - 1 + allImages.length) % allImages.length
+    );
+  };
+
+  const getFullImageUrl = (imageUrl: string) => {
+    if (imageUrl.startsWith("http")) return imageUrl;
+    if (imageUrl.startsWith("/")) {
+      return `${process.env.NEXT_PUBLIC_API_BASE_URL}${imageUrl}`;
+    }
+    return `${process.env.NEXT_PUBLIC_API_BASE_URL}/${imageUrl}`;
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onClose} aria-hidden="true">
-      <DialogContent className="max-w-4xl">
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[95vh] flex flex-col border">
-            {/* Enhanced Header */}
-            <div className="relative bg-gradient-to-r from-slate-50 to-slate-100 border-b p-6 flex-shrink-0 rounded-t-xl">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4">
-                  <div className="relative">
-                    <div className="h-20 w-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                      {product.mainImageUrl ? (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden p-0">
+        <div className="flex flex-col h-full">
+          {/* Enhanced Header with Action Buttons */}
+          <div className="relative bg-gradient-to-r from-slate-50 via-white to-slate-50 border-b p-6 flex-shrink-0">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-6">
+                {/* Product Image Carousel */}
+                <div className="relative">
+                  <div className="h-24 w-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
+                    {allImages.length > 0 && currentImage ? (
+                      <>
                         <Image
-                          src={
-                            process.env.NEXT_PUBLIC_API_BASE_URL +
-                              product.mainImageUrl || "/placeholder.svg"
-                          }
+                          src={getFullImageUrl(currentImage.imageUrl)}
                           alt={product.name}
-                          width={80}
-                          height={80}
-                          className="rounded-xl object-cover"
+                          width={96}
+                          height={96}
+                          className="rounded-xl object-cover w-full h-full"
+                          onLoadStart={() => setImageLoading(true)}
+                          onLoad={() => setImageLoading(false)}
                         />
-                      ) : (
-                        <Package className="h-10 w-10 text-white" />
-                      )}
-                    </div>
-                    <div
-                      className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-3 border-white ${statusConfig.dot}`}
-                    />
+                        {imageLoading && (
+                          <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-xl" />
+                        )}
+                      </>
+                    ) : (
+                      <Package className="h-12 w-12 text-white" />
+                    )}
                   </div>
-                  <div className="flex-1 pt-1">
+
+                  {/* Image Navigation */}
+                  {allImages.length > 1 && (
+                    <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 flex items-center gap-1 bg-white rounded-full shadow-lg px-2 py-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={prevImage}
+                        className="h-6 w-6 p-0"
+                      >
+                        <ChevronLeft className="h-3 w-3" />
+                      </Button>
+                      <span className="text-xs font-medium px-1">
+                        {currentImageIndex + 1}/{allImages.length}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={nextImage}
+                        className="h-6 w-6 p-0"
+                      >
+                        <ChevronRight className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+
+                  <div
+                    className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-3 border-white ${statusConfig.dot}`}
+                  />
+                </div>
+
+                {/* Product Info */}
+                <div className="flex-1 pt-1">
+                  <div className="flex items-start justify-between mb-2">
                     <h2 className="text-2xl font-bold text-gray-900 mb-1">
                       {product.name}
                     </h2>
-                    <p className="text-base text-gray-600 mb-3 flex items-center gap-2">
-                      <Building2 className="h-4 w-4" />
-                      {product.businessName}
-                    </p>
-                    <div className="flex items-center gap-3">
-                      <Badge
-                        className={`${statusConfig.color} font-medium px-3 py-1`}
+                    <div className="flex items-center gap-2 ml-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={shareProduct}
+                        className="flex items-center gap-1"
                       >
-                        {statusConfig.icon}
-                        <span className="ml-1.5">{product.status}</span>
-                      </Badge>
-                      {product.hasPromotionActive && (
-                        <Badge className="bg-red-50 text-red-700 border-red-200 font-medium px-3 py-1">
-                          {getPromotionText(
-                            product.promotionType,
-                            product.promotionValue
-                          )}
-                        </Badge>
+                        <Share className="h-4 w-4" />
+                        Share
+                      </Button>
+                      {product.publicUrl && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            window.open(product.publicUrl, "_blank")
+                          }
+                          className="flex items-center gap-1"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          View Public
+                        </Button>
                       )}
                     </div>
                   </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onClose}
-                  className="h-10 w-10 rounded-full hover:bg-white/80"
-                >
-                  <X className="h-5 w-5" />
-                  <span className="sr-only">Close</span>
-                </Button>
-              </div>
-            </div>
 
-            {/* Content */}
-            <ScrollArea className="flex-1 overflow-y-auto">
+                  <p className="text-base text-gray-600 mb-3 flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    {product.businessName}
+                  </p>
+
+                  <div className="flex items-center gap-3 mb-3">
+                    <Badge
+                      className={`${statusConfig.color} font-medium px-3 py-1`}
+                    >
+                      {statusConfig.icon}
+                      <span className="ml-1.5">{product.status}</span>
+                    </Badge>
+                    {product.hasPromotionActive && (
+                      <Badge className="bg-red-50 text-red-700 border-red-200 font-medium px-3 py-1 flex items-center gap-1">
+                        <Zap className="h-3 w-3" />
+                        {getPromotionText(
+                          product.promotionType,
+                          product.promotionValue
+                        )}
+                      </Badge>
+                    )}
+                    {product.categoryName && (
+                      <Badge
+                        variant="outline"
+                        className="flex items-center gap-1"
+                      >
+                        <Tag className="h-3 w-3" />
+                        {product.categoryName}
+                      </Badge>
+                    )}
+                    {product.brandName && (
+                      <Badge
+                        variant="outline"
+                        className="flex items-center gap-1"
+                      >
+                        <Building2 className="h-3 w-3" />
+                        {product.brandName}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Price Display */}
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-3xl font-bold text-green-600">
+                        {formatPrice(product.displayPrice)}
+                      </span>
+                      {product.hasPromotionActive &&
+                        product.price !== product.displayPrice && (
+                          <span className="text-lg text-gray-500 line-through">
+                            {formatPrice(product.price)}
+                          </span>
+                        )}
+                    </div>
+                    {product.hasSizes && (
+                      <Badge
+                        variant="secondary"
+                        className="flex items-center gap-1"
+                      >
+                        <Ruler className="h-3 w-3" />
+                        {product.sizes?.length} sizes available
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                className="h-10 w-10 rounded-full hover:bg-white/80"
+              >
+                <X className="h-5 w-5" />
+                <span className="sr-only">Close</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full">
               <div className="p-6">
-                <Tabs defaultValue="basic">
-                  <TabsList className="grid w-full grid-cols-5 mb-6">
+                {/* Quick Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                  <StatCard
+                    icon={<Eye className="h-5 w-5" />}
+                    label="Views"
+                    value={product.viewCount.toLocaleString()}
+                    color="blue"
+                  />
+                  <StatCard
+                    icon={<Heart className="h-5 w-5" />}
+                    label="Favorites"
+                    value={product.favoriteCount.toLocaleString()}
+                    color="pink"
+                  />
+                  <StatCard
+                    icon={<Package className="h-5 w-5" />}
+                    label="Images"
+                    value={product.images?.length || 0}
+                    color="purple"
+                  />
+                  <StatCard
+                    icon={<Ruler className="h-5 w-5" />}
+                    label="Size Options"
+                    value={product.sizes?.length || (product.hasSizes ? 0 : 1)}
+                    color="green"
+                  />
+                </div>
+
+                <Tabs defaultValue="overview" className="space-y-6">
+                  <TabsList className="grid w-full grid-cols-6">
                     <TabsTrigger
-                      value="basic"
+                      value="overview"
                       className="flex items-center gap-2"
                     >
-                      <FileText className="h-4 w-4" />
-                      Basic Info
+                      <Info className="h-4 w-4" />
+                      Overview
                     </TabsTrigger>
                     <TabsTrigger
                       value="pricing"
@@ -218,7 +464,7 @@ export default function ProductDetailModal({
                       className="flex items-center gap-2"
                     >
                       <ImageIcon className="h-4 w-4" />
-                      Images
+                      Gallery
                     </TabsTrigger>
                     <TabsTrigger
                       value="sizes"
@@ -228,41 +474,112 @@ export default function ProductDetailModal({
                       Sizes
                     </TabsTrigger>
                     <TabsTrigger
-                      value="stats"
+                      value="analytics"
                       className="flex items-center gap-2"
                     >
                       <BarChart3 className="h-4 w-4" />
-                      Stats
+                      Analytics
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="system"
+                      className="flex items-center gap-2"
+                    >
+                      <Clock className="h-4 w-4" />
+                      System
                     </TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="basic" className="space-y-6">
-                    {/* Quick Info Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <Card className="border-l-4 border-l-green-500">
-                        <CardContent className="p-4">
+                  <TabsContent value="overview" className="space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Product Information */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-blue-600" />
+                            Product Information
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
                           <InfoItem
                             icon={<Building2 className="h-4 w-4" />}
+                            label="Business"
+                            value={product.businessName}
+                          />
+                          <InfoItem
+                            icon={<Tag className="h-4 w-4" />}
                             label="Category"
                             value={product.categoryName}
                           />
+                          <InfoItem
+                            icon={<Building2 className="h-4 w-4" />}
+                            label="Brand"
+                            value={product.brandName || "No brand"}
+                          />
+                          <InfoItem
+                            icon={<Package className="h-4 w-4" />}
+                            label="Product Type"
+                            value={
+                              product.hasSizes
+                                ? "Variable Product"
+                                : "Simple Product"
+                            }
+                          />
                         </CardContent>
                       </Card>
-                      <Card className="border-l-4 border-l-purple-500">
-                        <CardContent className="p-4">
-                          <InfoItem
-                            icon={<Tag className="h-4 w-4" />}
-                            label="Brand"
-                            value={product.brandName}
-                          />
+
+                      {/* Quick Actions */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Zap className="h-5 w-5 text-purple-600" />
+                            Quick Actions
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start"
+                            onClick={() =>
+                              copyToClipboard(
+                                product.name,
+                                "Product name copied!"
+                              )
+                            }
+                          >
+                            <Copy className="h-4 w-4 mr-2" />
+                            Copy Product Name
+                          </Button>
+                          {product.publicUrl && (
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start"
+                              onClick={() =>
+                                copyToClipboard(
+                                  product.publicUrl!,
+                                  "Product URL copied!"
+                                )
+                              }
+                            >
+                              <Copy className="h-4 w-4 mr-2" />
+                              Copy Public URL
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start"
+                            onClick={shareProduct}
+                          >
+                            <Share className="h-4 w-4 mr-2" />
+                            Share Product
+                          </Button>
                         </CardContent>
                       </Card>
                     </div>
 
                     {/* Description */}
                     <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="flex items-center gap-2 text-lg">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
                           <FileText className="h-5 w-5 text-blue-600" />
                           Description
                         </CardTitle>
@@ -295,47 +612,64 @@ export default function ProductDetailModal({
                       </CardHeader>
                       <CardContent className="space-y-6">
                         <div className="grid grid-cols-2 gap-6">
-                          <InfoItem
-                            icon={<DollarSign className="h-4 w-4" />}
-                            label="Base Price"
-                            value={formatPrice(product.price)}
-                          />
-                          <InfoItem
-                            icon={<DollarSign className="h-4 w-4" />}
-                            label="Display Price"
-                            value={formatPrice(product.displayPrice)}
-                          />
+                          <div className="text-center p-6 bg-green-50 rounded-lg">
+                            <DollarSign className="h-8 w-8 mx-auto mb-2 text-green-600" />
+                            <p className="text-sm text-green-600 font-medium mb-1">
+                              Current Price
+                            </p>
+                            <p className="text-3xl font-bold text-green-700">
+                              {formatPrice(product.displayPrice)}
+                            </p>
+                          </div>
+                          <div className="text-center p-6 bg-gray-50 rounded-lg">
+                            <Package className="h-8 w-8 mx-auto mb-2 text-gray-600" />
+                            <p className="text-sm text-gray-600 font-medium mb-1">
+                              Base Price
+                            </p>
+                            <p className="text-3xl font-bold text-gray-700">
+                              {formatPrice(product.price)}
+                            </p>
+                          </div>
                         </div>
 
-                        {product.promotionType && (
+                        {product.hasPromotionActive && (
                           <>
                             <Separator />
                             <div className="space-y-4">
-                              <h4 className="text-base font-medium">
-                                Promotion Details
-                              </h4>
-                              <div className="grid grid-cols-3 gap-4">
+                              <div className="flex items-center gap-2 mb-4">
+                                <Percent className="h-5 w-5 text-red-600" />
+                                <h4 className="text-base font-medium">
+                                  Active Promotion
+                                </h4>
+                                <Badge className="bg-red-100 text-red-700">
+                                  {getPromotionText(
+                                    product.promotionType,
+                                    product.promotionValue
+                                  )}
+                                </Badge>
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <InfoItem
                                   icon={<Tag className="h-4 w-4" />}
                                   label="Promotion Type"
                                   value={
-                                    product.promotionType === "percentage"
-                                      ? "Percentage"
-                                      : "Fixed Amount"
+                                    product.promotionType === "PERCENTAGE"
+                                      ? "Percentage Discount"
+                                      : "Fixed Amount Discount"
                                   }
                                 />
                                 <InfoItem
-                                  icon={<DollarSign className="h-4 w-4" />}
-                                  label="Promotion Value"
+                                  icon={<Percent className="h-4 w-4" />}
+                                  label="Discount Value"
                                   value={
-                                    product.promotionType === "percentage"
+                                    product.promotionType === "PERCENTAGE"
                                       ? `${product.promotionValue}%`
                                       : formatPrice(product.promotionValue)
                                   }
                                 />
                                 <InfoItem
                                   icon={<DollarSign className="h-4 w-4" />}
-                                  label="Savings"
+                                  label="You Save"
                                   value={formatPrice(
                                     product.price - product.displayPrice
                                   )}
@@ -365,33 +699,42 @@ export default function ProductDetailModal({
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <ImageIcon className="h-5 w-5" />
-                          Product Images ({product.images.length})
+                          Product Gallery ({product.images?.length || 0} images)
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        {product.images.length > 0 ? (
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {product?.images?.map((image, index) => (
+                        {product.images && product.images.length > 0 ? (
+                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {product.images.map((image, index) => (
                               <div key={image.id} className="space-y-2">
-                                <div className="aspect-square relative bg-muted rounded-lg overflow-hidden">
+                                <div className="aspect-square relative bg-muted rounded-lg overflow-hidden group cursor-pointer">
                                   <Image
-                                    src={
-                                      process.env.NEXT_PUBLIC_API_BASE_URL +
-                                        image.imageUrl || "/placeholder.svg"
-                                    }
+                                    src={getFullImageUrl(image.imageUrl)}
                                     alt={`Product image ${index + 1}`}
                                     fill
-                                    className="object-cover"
+                                    className="object-cover transition-transform group-hover:scale-105"
+                                    onClick={() => setCurrentImageIndex(index)}
                                   />
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                    <Eye className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                  </div>
                                 </div>
                                 <div className="flex justify-center">
                                   <Badge
                                     variant={
-                                      image.imageType === "main"
+                                      image.imageType === "MAIN"
                                         ? "default"
                                         : "secondary"
                                     }
+                                    className={
+                                      image.imageType === "MAIN"
+                                        ? "bg-yellow-100 text-yellow-700 border-yellow-200"
+                                        : ""
+                                    }
                                   >
+                                    {image.imageType === "MAIN" && (
+                                      <Star className="h-3 w-3 mr-1" />
+                                    )}
                                     {image.imageType}
                                   </Badge>
                                 </div>
@@ -399,9 +742,14 @@ export default function ProductDetailModal({
                             ))}
                           </div>
                         ) : (
-                          <div className="text-center py-8 text-muted-foreground">
-                            <ImageIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                            <p>No images available</p>
+                          <div className="text-center py-12 text-muted-foreground">
+                            <ImageIcon className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                            <p className="text-lg font-medium">
+                              No images available
+                            </p>
+                            <p className="text-sm">
+                              This product doesn't have any images yet.
+                            </p>
                           </div>
                         )}
                       </CardContent>
@@ -417,7 +765,9 @@ export default function ProductDetailModal({
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        {product.hasSizes && product.sizes.length > 0 ? (
+                        {product.hasSizes &&
+                        product.sizes &&
+                        product.sizes.length > 0 ? (
                           <div className="space-y-4">
                             {product.sizes.map((size) => (
                               <Card
@@ -426,61 +776,63 @@ export default function ProductDetailModal({
                               >
                                 <CardContent className="p-4">
                                   <div className="flex justify-between items-start mb-4">
-                                    <h4 className="text-base font-medium">
-                                      {size.name}
-                                    </h4>
+                                    <div>
+                                      <h4 className="text-lg font-semibold">
+                                        {size.name}
+                                      </h4>
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-2xl font-bold text-green-600">
+                                          {formatPrice(size.finalPrice)}
+                                        </span>
+                                        {size.isPromotionActive &&
+                                          size.price !== size.finalPrice && (
+                                            <span className="text-sm text-gray-500 line-through">
+                                              {formatPrice(size.price)}
+                                            </span>
+                                          )}
+                                      </div>
+                                    </div>
                                     {size.isPromotionActive && (
                                       <Badge className="bg-red-50 text-red-700 border-red-200">
-                                        On Sale
+                                        <Zap className="h-3 w-3 mr-1" />
+                                        {getPromotionText(
+                                          size.promotionType,
+                                          size.promotionValue
+                                        )}
                                       </Badge>
                                     )}
                                   </div>
-                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <InfoItem
-                                      icon={<DollarSign className="h-4 w-4" />}
-                                      label="Original Price"
-                                      value={formatPrice(size.price)}
-                                    />
-                                    <InfoItem
-                                      icon={<DollarSign className="h-4 w-4" />}
-                                      label="Final Price"
-                                      value={formatPrice(size.finalPrice)}
-                                    />
-                                    {size.promotionType && (
-                                      <>
-                                        <InfoItem
-                                          icon={<Tag className="h-4 w-4" />}
-                                          label="Promotion"
-                                          value={
-                                            size.promotionType === "percentage"
-                                              ? `${size.promotionValue}% OFF`
-                                              : `$${size.promotionValue} OFF`
-                                          }
-                                        />
-                                        <InfoItem
-                                          icon={
-                                            <DollarSign className="h-4 w-4" />
-                                          }
-                                          label="Savings"
-                                          value={formatPrice(
-                                            size.price - size.finalPrice
-                                          )}
-                                        />
-                                      </>
-                                    )}
-                                  </div>
-                                  {size.promotionType && (
-                                    <div className="grid grid-cols-2 gap-4 mt-4">
+
+                                  {size.isPromotionActive && (
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-3 bg-red-50 rounded-lg">
+                                      <InfoItem
+                                        icon={<Tag className="h-4 w-4" />}
+                                        label="Promotion Type"
+                                        value={
+                                          size.promotionType === "PERCENTAGE"
+                                            ? "Percentage"
+                                            : "Fixed Amount"
+                                        }
+                                      />
+                                      <InfoItem
+                                        icon={<Percent className="h-4 w-4" />}
+                                        label="Discount"
+                                        value={
+                                          size.promotionType === "PERCENTAGE"
+                                            ? `${size.promotionValue}%`
+                                            : formatPrice(size.promotionValue)
+                                        }
+                                      />
                                       <InfoItem
                                         icon={<Calendar className="h-4 w-4" />}
-                                        label="Promotion Start"
+                                        label="Start Date"
                                         value={formatDate(
                                           size.promotionFromDate
                                         )}
                                       />
                                       <InfoItem
                                         icon={<Calendar className="h-4 w-4" />}
-                                        label="Promotion End"
+                                        label="End Date"
                                         value={formatDate(size.promotionToDate)}
                                       />
                                     </div>
@@ -490,67 +842,91 @@ export default function ProductDetailModal({
                             ))}
                           </div>
                         ) : (
-                          <div className="text-center py-8 text-muted-foreground">
-                            <Ruler className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                            <p>No size variants configured</p>
+                          <div className="text-center py-12 text-muted-foreground">
+                            <Ruler className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                            <p className="text-lg font-medium">
+                              No size variants
+                            </p>
+                            <p className="text-sm">
+                              This is a simple product with a single price.
+                            </p>
                           </div>
                         )}
                       </CardContent>
                     </Card>
                   </TabsContent>
 
-                  <TabsContent value="stats" className="space-y-6">
+                  <TabsContent value="analytics" className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Engagement Metrics */}
                       <Card>
                         <CardHeader>
                           <CardTitle className="flex items-center gap-2">
-                            <Eye className="h-5 w-5" />
-                            View Statistics
+                            <Users className="h-5 w-5" />
+                            Engagement Metrics
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                          <InfoItem
-                            icon={<Eye className="h-4 w-4" />}
-                            label="Total Views"
-                            value={product.viewCount.toLocaleString()}
-                          />
-                          <InfoItem
-                            icon={<Tag className="h-4 w-4" />}
-                            label="Public URL"
-                            value={
-                              product.publicUrl ? (
-                                <a
-                                  href={product.publicUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 hover:underline"
-                                >
-                                  View Product
-                                </a>
-                              ) : (
-                                "Not set"
-                              )
-                            }
-                          />
+                          <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <Eye className="h-5 w-5 text-blue-600" />
+                              <span className="font-medium">Total Views</span>
+                            </div>
+                            <span className="text-xl font-bold text-blue-700">
+                              {product.viewCount.toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-pink-50 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <Heart className="h-5 w-5 text-pink-600" />
+                              <span className="font-medium">Favorites</span>
+                            </div>
+                            <span className="text-xl font-bold text-pink-700">
+                              {product.favoriteCount.toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <TrendingUp className="h-5 w-5 text-green-600" />
+                              <span className="font-medium">
+                                Engagement Rate
+                              </span>
+                            </div>
+                            <span className="text-xl font-bold text-green-700">
+                              {product.viewCount > 0
+                                ? (
+                                    (product.favoriteCount /
+                                      product.viewCount) *
+                                    100
+                                  ).toFixed(1)
+                                : "0.0"}
+                              %
+                            </span>
+                          </div>
                         </CardContent>
                       </Card>
 
+                      {/* Product Status */}
                       <Card>
                         <CardHeader>
                           <CardTitle className="flex items-center gap-2">
-                            <Heart className="h-5 w-5" />
-                            Favorite Statistics
+                            <BarChart3 className="h-5 w-5" />
+                            Product Status
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                           <InfoItem
-                            icon={<Heart className="h-4 w-4" />}
-                            label="Total Favorites"
-                            value={product.favoriteCount.toLocaleString()}
+                            icon={statusConfig.icon}
+                            label="Current Status"
+                            value={
+                              <Badge className={statusConfig.color}>
+                                {product.status.replace("_", " ")}
+                              </Badge>
+                            }
                           />
                           <InfoItem
                             icon={<Heart className="h-4 w-4" />}
-                            label="Currently Favorited"
+                            label="User Favorited"
                             value={
                               <Badge
                                 variant={
@@ -561,62 +937,242 @@ export default function ProductDetailModal({
                               </Badge>
                             }
                           />
+                          <InfoItem
+                            icon={<Zap className="h-4 w-4" />}
+                            label="Has Active Promotion"
+                            value={
+                              <Badge
+                                variant={
+                                  product.hasPromotionActive
+                                    ? "default"
+                                    : "secondary"
+                                }
+                              >
+                                {product.hasPromotionActive ? "Yes" : "No"}
+                              </Badge>
+                            }
+                          />
                         </CardContent>
                       </Card>
                     </div>
 
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Clock className="h-5 w-5" />
-                          System Information
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Public URL */}
+                    {product.publicUrl && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <ExternalLink className="h-5 w-5" />
+                            Public Access
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                            <ExternalLink className="h-5 w-5 text-gray-600" />
+                            <span className="flex-1 font-mono text-sm">
+                              {product.publicUrl}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                copyToClipboard(
+                                  product.publicUrl!,
+                                  "Public URL copied!"
+                                )
+                              }
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                window.open(product.publicUrl, "_blank")
+                              }
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="system" className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Creation Info */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Clock className="h-5 w-5" />
+                            Creation Information
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
                           <InfoItem
                             icon={<Calendar className="h-4 w-4" />}
-                            label="Created"
-                            value={
-                              <div>
-                                <div>{formatDate(product.createdAt)}</div>
-                                {product.createdBy && (
-                                  <div className="text-xs text-muted-foreground mt-1">
-                                    by {product.createdBy}
-                                  </div>
-                                )}
-                              </div>
-                            }
+                            label="Created Date"
+                            value={formatDate(product.createdAt)}
                           />
+                          {product.createdBy && (
+                            <InfoItem
+                              icon={<Users className="h-4 w-4" />}
+                              label="Created By"
+                              value={product.createdBy}
+                            />
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Update Info */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Calendar className="h-5 w-5" />
+                            Last Update Information
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
                           <InfoItem
                             icon={<Calendar className="h-4 w-4" />}
                             label="Last Updated"
+                            value={formatDate(product.updatedAt)}
+                          />
+                          {product.updatedBy && (
+                            <InfoItem
+                              icon={<Users className="h-4 w-4" />}
+                              label="Updated By"
+                              value={product.updatedBy}
+                            />
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* System IDs */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Package className="h-5 w-5" />
+                          System Identifiers
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <InfoItem
+                          icon={<Tag className="h-4 w-4" />}
+                          label="Product ID"
+                          value={
+                            <span className="font-mono text-sm">
+                              {product.id}
+                            </span>
+                          }
+                          action={
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                copyToClipboard(
+                                  product.id!,
+                                  "Product ID copied!"
+                                )
+                              }
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          }
+                        />
+                        <InfoItem
+                          icon={<Building2 className="h-4 w-4" />}
+                          label="Business ID"
+                          value={
+                            <span className="font-mono text-sm">
+                              {product.businessId}
+                            </span>
+                          }
+                          action={
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                copyToClipboard(
+                                  product.businessId!,
+                                  "Business ID copied!"
+                                )
+                              }
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          }
+                        />
+                        {product.categoryId && (
+                          <InfoItem
+                            icon={<Tag className="h-4 w-4" />}
+                            label="Category ID"
                             value={
-                              <div>
-                                <div>{formatDate(product.updatedAt)}</div>
-                                {product.updatedBy && (
-                                  <div className="text-xs text-muted-foreground mt-1">
-                                    by {product.updatedBy}
-                                  </div>
-                                )}
-                              </div>
+                              <span className="font-mono text-sm">
+                                {product.categoryId}
+                              </span>
+                            }
+                            action={
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  copyToClipboard(
+                                    product.categoryId!,
+                                    "Category ID copied!"
+                                  )
+                                }
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
                             }
                           />
-                        </div>
+                        )}
+                        {product.brandId && (
+                          <InfoItem
+                            icon={<Building2 className="h-4 w-4" />}
+                            label="Brand ID"
+                            value={
+                              <span className="font-mono text-sm">
+                                {product.brandId}
+                              </span>
+                            }
+                            action={
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  copyToClipboard(
+                                    product.brandId!,
+                                    "Brand ID copied!"
+                                  )
+                                }
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            }
+                          />
+                        )}
                       </CardContent>
                     </Card>
                   </TabsContent>
                 </Tabs>
               </div>
             </ScrollArea>
+          </div>
 
-            {/* Footer */}
-            <div className="border-t bg-gray-50 px-6 py-4 flex justify-end items-center flex-shrink-0 rounded-b-xl">
-              <Button
-                variant="outline"
-                onClick={onClose}
-                className="px-6 bg-transparent"
-              >
+          {/* Footer */}
+          <div className="border-t bg-gray-50 px-6 py-4 flex justify-between items-center flex-shrink-0">
+            <div className="text-sm text-muted-foreground">
+              Last updated: {formatDate(product.updatedAt)}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={shareProduct}>
+                <Share className="h-4 w-4 mr-2" />
+                Share Product
+              </Button>
+              <Button variant="outline" onClick={onClose} className="px-6">
                 Close
               </Button>
             </div>

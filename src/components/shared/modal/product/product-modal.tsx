@@ -620,8 +620,12 @@ export function ProductModal({
       delete basePayload.price; // Remove price for variable products
     }
 
-    // Clean promotion data - only include if promotion type is set
-    if (formData.promotionType && formData.promotionType !== "") {
+    // FIXED: Clean promotion data - properly handle empty strings
+    if (
+      formData.promotionType &&
+      formData.promotionType !== "" &&
+      formData.promotionType !== "NONE"
+    ) {
       basePayload.promotionType = formData.promotionType;
       basePayload.promotionValue = formData.promotionValue ?? 0;
       basePayload.promotionFromDate = formData.promotionFromDate;
@@ -1344,15 +1348,17 @@ export function ProductModal({
                         name="promotionType"
                         render={({ field }) => (
                           <Select
-                            value={field.value || ""}
-                            onValueChange={field.onChange}
+                            value={field.value || "NONE"}
+                            onValueChange={(value) =>
+                              field.onChange(value === "NONE" ? "" : value)
+                            }
                             disabled={isSubmitting || isUploading}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Select promotion type" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">No Promotion</SelectItem>
+                              <SelectItem value="NONE">No Promotion</SelectItem>
                               <SelectItem value="PERCENTAGE">
                                 Percentage Discount
                               </SelectItem>
@@ -1365,77 +1371,81 @@ export function ProductModal({
                       />
                     </div>
 
-                    {promotionType && (
-                      <>
-                        <div className="space-y-2">
-                          <Label>
-                            Promotion Value
-                            {promotionType === "PERCENTAGE" && " (%)"}
-                            {promotionType === "FIXED_AMOUNT" && " ($)"}
-                          </Label>
-                          <Controller
-                            control={control}
-                            name="promotionValue"
-                            render={({ field }) => (
-                              <Input
-                                {...field}
-                                type="number"
-                                step={
-                                  promotionType === "PERCENTAGE" ? "1" : "0.01"
-                                }
-                                min="0"
-                                max={
-                                  promotionType === "PERCENTAGE"
-                                    ? "100"
-                                    : undefined
-                                }
-                                placeholder={
-                                  promotionType === "PERCENTAGE"
-                                    ? "0-100"
-                                    : "0.00"
-                                }
-                                onChange={(e) =>
-                                  field.onChange(
-                                    parseFloat(e.target.value) || 0
-                                  )
-                                }
-                                disabled={isSubmitting || isUploading}
-                              />
-                            )}
-                          />
-                        </div>
+                    {promotionType &&
+                      promotionType !== "" &&
+                      promotionType !== "NONE" && (
+                        <>
+                          <div className="space-y-2">
+                            <Label>
+                              Promotion Value
+                              {promotionType === "PERCENTAGE" && " (%)"}
+                              {promotionType === "FIXED_AMOUNT" && " ($)"}
+                            </Label>
+                            <Controller
+                              control={control}
+                              name="promotionValue"
+                              render={({ field }) => (
+                                <Input
+                                  {...field}
+                                  type="number"
+                                  step={
+                                    promotionType === "PERCENTAGE"
+                                      ? "1"
+                                      : "0.01"
+                                  }
+                                  min="0"
+                                  max={
+                                    promotionType === "PERCENTAGE"
+                                      ? "100"
+                                      : undefined
+                                  }
+                                  placeholder={
+                                    promotionType === "PERCENTAGE"
+                                      ? "0-100"
+                                      : "0.00"
+                                  }
+                                  onChange={(e) =>
+                                    field.onChange(
+                                      parseFloat(e.target.value) || 0
+                                    )
+                                  }
+                                  disabled={isSubmitting || isUploading}
+                                />
+                              )}
+                            />
+                          </div>
 
-                        <div className="space-y-2">
-                          <Label>Start Date</Label>
-                          <Controller
-                            control={control}
-                            name="promotionFromDate"
-                            render={({ field }) => (
-                              <Input
-                                {...field}
-                                type="datetime-local"
-                                disabled={isSubmitting || isUploading}
-                              />
-                            )}
-                          />
-                        </div>
+                          <div className="space-y-2">
+                            <Label>Start Date</Label>
+                            <Controller
+                              control={control}
+                              name="promotionFromDate"
+                              render={({ field }) => (
+                                <Input
+                                  {...field}
+                                  type="datetime-local"
+                                  disabled={isSubmitting || isUploading}
+                                />
+                              )}
+                            />
+                          </div>
 
-                        <div className="space-y-2">
-                          <Label>End Date</Label>
-                          <Controller
-                            control={control}
-                            name="promotionToDate"
-                            render={({ field }) => (
-                              <Input
-                                {...field}
-                                type="datetime-local"
-                                disabled={isSubmitting || isUploading}
-                              />
-                            )}
-                          />
-                        </div>
-                      </>
-                    )}
+                          <div className="space-y-2">
+                            <Label>End Date</Label>
+                            <Controller
+                              control={control}
+                              name="promotionToDate"
+                              render={({ field }) => (
+                                <Input
+                                  {...field}
+                                  type="datetime-local"
+                                  disabled={isSubmitting || isUploading}
+                                />
+                              )}
+                            />
+                          </div>
+                        </>
+                      )}
                   </div>
                 </CardContent>
               </Card>
