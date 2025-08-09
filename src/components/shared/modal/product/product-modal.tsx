@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Upload,
   X,
@@ -32,6 +34,11 @@ import {
   CheckCircle,
   Percent,
   Calendar,
+  Plus,
+  Trash2,
+  RotateCcw,
+  Layers,
+  Settings,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -48,16 +55,17 @@ import { uploadImageService } from "@/services/dashboard/image/image.service";
 import { UploadImageRequest } from "@/models/image/image.request";
 import { AppToast } from "@/components/app/components/app-toast";
 import { PriceInput } from "../../common/price-input";
-import { size } from "zod";
 import { getCategoryByIdService } from "@/services/dashboard/content-management/category/category.service";
 import { getBrandByIdService } from "@/services/dashboard/content-management/brand/brand.service";
 
-// Types
+// FIXED: Types with proper optional handling
 type ImageType = "MAIN" | "GALLERY";
 type ImageData = {
   imageUrl: string;
   imageType: ImageType;
 };
+
+type ProductType = "simple" | "variable";
 
 type Props = {
   mode: ModalMode;
@@ -68,8 +76,12 @@ type Props = {
   onSave: (data: productFormData) => void;
 };
 
-// Image Management Hook - FIXED
-const useImageManagement = (control: any, setValue: any, watch: any) => {
+// FIXED: Enhanced Image Management Hook with proper typing
+const useEnhancedImageManagement = (
+  control: any,
+  setValue: any,
+  watch: any
+) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadImageType, setUploadImageType] = useState<ImageType>("GALLERY");
 
@@ -83,17 +95,7 @@ const useImageManagement = (control: any, setValue: any, watch: any) => {
     name: "images",
   });
 
-  // FIXED: Use watch instead of control._formValues
   const watchedImages: ImageData[] = watch("images") || [];
-
-  // Image type utilities
-  const getMainImage = () =>
-    watchedImages.find((img: ImageData) => img.imageType === "MAIN");
-
-  const hasMainImage = () => !!getMainImage();
-
-  const getMainImageIndex = () =>
-    watchedImages.findIndex((img: ImageData) => img.imageType === "MAIN");
 
   const getImageCounts = () => ({
     main: watchedImages.filter((img: ImageData) => img.imageType === "MAIN")
@@ -103,6 +105,12 @@ const useImageManagement = (control: any, setValue: any, watch: any) => {
     ).length,
     total: watchedImages.length,
   });
+
+  const hasMainImage = () => getImageCounts().main > 0;
+  const hasValidImageSetup = () => {
+    const counts = getImageCounts();
+    return counts.total > 0 && counts.main === 1;
+  };
 
   const handleFileUpload = async (file: File, imageType: ImageType) => {
     if (!file || !file.type.startsWith("image/")) {
@@ -115,13 +123,16 @@ const useImageManagement = (control: any, setValue: any, watch: any) => {
       return;
     }
 
-    // Validate file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
-      alert("File size must be less than 10MB.");
+      AppToast({
+        type: "error",
+        message: "File size must be less than 10MB.",
+        duration: 3000,
+        position: "top-right",
+      });
       return;
     }
 
-    // Check if trying to upload MAIN image when one already exists
     if (imageType === "MAIN" && hasMainImage()) {
       const confirmReplace = window.confirm(
         "You already have a main image. Do you want to replace it with this new image?"
@@ -145,7 +156,9 @@ const useImageManagement = (control: any, setValue: any, watch: any) => {
         if (response?.imageUrl) {
           if (imageType === "MAIN" && hasMainImage()) {
             // Replace existing main image
-            const mainImageIndex = getMainImageIndex();
+            const mainImageIndex = watchedImages.findIndex(
+              (img) => img.imageType === "MAIN"
+            );
             if (mainImageIndex !== -1) {
               updateImage(mainImageIndex, {
                 imageUrl: response.imageUrl,
@@ -159,12 +172,24 @@ const useImageManagement = (control: any, setValue: any, watch: any) => {
               imageType: imageType,
             });
           }
+
+          AppToast({
+            type: "success",
+            message: `${imageType} image uploaded successfully`,
+            duration: 2000,
+            position: "top-right",
+          });
         }
       };
       reader.readAsDataURL(file);
     } catch (error) {
       console.error("Failed to upload image", error);
-      alert("Failed to upload image. Please try again.");
+      AppToast({
+        type: "error",
+        message: "Failed to upload image. Please try again.",
+        duration: 3000,
+        position: "top-right",
+      });
     } finally {
       setIsUploading(false);
     }
@@ -173,20 +198,19 @@ const useImageManagement = (control: any, setValue: any, watch: any) => {
   const toggleImageType = (index: number) => {
     const currentImage = watchedImages[index];
     if (currentImage.imageType === "MAIN") {
-      // Converting MAIN to GALLERY
       updateImage(index, {
         ...currentImage,
         imageType: "GALLERY",
       });
     } else {
-      // Converting GALLERY to MAIN
       if (hasMainImage()) {
         const confirmReplace = window.confirm(
           "You already have a main image. Do you want to make this image the new main image?"
         );
         if (!confirmReplace) return;
-        // Convert current MAIN to GALLERY
-        const mainImageIndex = getMainImageIndex();
+        const mainImageIndex = watchedImages.findIndex(
+          (img) => img.imageType === "MAIN"
+        );
         if (mainImageIndex !== -1) {
           updateImage(mainImageIndex, {
             ...watchedImages[mainImageIndex],
@@ -194,12 +218,15 @@ const useImageManagement = (control: any, setValue: any, watch: any) => {
           });
         }
       }
-      // Convert this image to MAIN
       updateImage(index, {
         ...currentImage,
         imageType: "MAIN",
       });
     }
+  };
+
+  const clearAllImages = () => {
+    setValue("images", []);
   };
 
   return {
@@ -213,6 +240,67 @@ const useImageManagement = (control: any, setValue: any, watch: any) => {
     toggleImageType,
     getImageCounts,
     hasMainImage,
+    hasValidImageSetup,
+    clearAllImages,
+  };
+};
+
+// FIXED: Enhanced Size Management Hook with proper typing
+const useEnhancedSizeManagement = (
+  control: any,
+  setValue: any,
+  watch: any,
+  productType: ProductType
+) => {
+  const {
+    fields: sizeFields,
+    append: appendSize,
+    remove: removeSize,
+  } = useFieldArray({
+    control,
+    name: "sizes",
+  });
+
+  const watchedSizes = watch("sizes") || [];
+
+  const addSize = () => {
+    appendSize({
+      name: "",
+      price: 0,
+      promotionType: "",
+      promotionValue: 0,
+      promotionFromDate: "",
+      promotionToDate: "",
+    });
+  };
+
+  const clearAllSizes = () => {
+    setValue("sizes", []);
+  };
+
+  const resetSizePromotions = () => {
+    const resetSizes = watchedSizes.map((size: any) => ({
+      ...size,
+      promotionType: "",
+      promotionValue: 0,
+      promotionFromDate: "",
+      promotionToDate: "",
+    }));
+    setValue("sizes", resetSizes);
+  };
+
+  const hasValidSizes = () => {
+    return productType === "variable" ? watchedSizes.length > 0 : true;
+  };
+
+  return {
+    sizeFields,
+    watchedSizes,
+    addSize,
+    removeSize,
+    clearAllSizes,
+    resetSizePromotions,
+    hasValidSizes,
   };
 };
 
@@ -229,8 +317,10 @@ export function ProductModal({
   const [dragActive, setDragActive] = useState(false);
   const [selectedCategory, setSelectedCategory] =
     useState<CategoryModel | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState<BrandModel | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("basic");
+  const [productType, setProductType] = useState<ProductType>("simple");
 
   const {
     control,
@@ -238,7 +328,7 @@ export function ProductModal({
     reset,
     setValue,
     watch,
-    formState: { errors, isDirty, isValid },
+    formState: { errors },
   } = useForm<productFormData>({
     resolver: zodResolver(ProductFormSchema),
     defaultValues: {
@@ -248,34 +338,16 @@ export function ProductModal({
       description: "",
       brandId: "",
       price: 0,
-      promotionType: undefined,
+      promotionType: "",
       promotionValue: 0,
       promotionFromDate: "",
       promotionToDate: "",
-      sizes: [
-        {
-          name: "",
-          price: 0,
-          promotionType: "NONE",
-          promotionValue: 0,
-          promotionFromDate: "",
-          promotionToDate: "",
-        },
-      ],
+      sizes: [],
       status: "ACTIVE",
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "sizes",
-  });
-
-  watch("categoryId");
-  watch("brandId");
-  const promotionType = watch("promotionType");
-  const watchedSizes = watch("sizes");
-
+  // Enhanced Hooks
   const {
     imageFields,
     watchedImages,
@@ -287,22 +359,89 @@ export function ProductModal({
     toggleImageType,
     getImageCounts,
     hasMainImage,
-  } = useImageManagement(control, setValue, watch);
+    hasValidImageSetup,
+    clearAllImages,
+  } = useEnhancedImageManagement(control, setValue, watch);
 
-  function normalizePromotionType(value: string | undefined): string {
-    return value === undefined || value === null ? "NONE" : value;
-  }
+  const {
+    sizeFields,
+    watchedSizes,
+    addSize,
+    removeSize,
+    clearAllSizes,
+    resetSizePromotions,
+    hasValidSizes,
+  } = useEnhancedSizeManagement(control, setValue, watch, productType);
 
-  function denormalizePromotionType(value: string): string | undefined {
-    return value === "NONE" ? undefined : value;
-  }
+  // Watch form values
+  const promotionType = watch("promotionType");
 
+  // Enhanced: Product Type Switching
+  const switchToSimple = () => {
+    setProductType("simple");
+    clearAllSizes();
+    if (!watch("price")) {
+      setValue("price", 0);
+    }
+  };
+
+  const switchToVariable = () => {
+    setProductType("variable");
+    setValue("price", 0);
+
+    if (watchedSizes.length === 0) {
+      addSize();
+    }
+  };
+
+  // FIXED: Form Initialization with proper typing
+  const initializeForm = useCallback(() => {
+    if (data) {
+      const hasValidSizes = data.sizes && data.sizes.length > 0;
+      setProductType(hasValidSizes ? "variable" : "simple");
+
+      const formData: productFormData = {
+        id: data.id,
+        name: data.name || "",
+        categoryId: data.categoryId || "",
+        images: data.images || [],
+        description: data.description || "",
+        brandId: data.brandId || "",
+        price: hasValidSizes ? 0 : data.price || 0,
+        promotionType: data.promotionType || "",
+        promotionValue: data.promotionValue || 0,
+        promotionFromDate: data.promotionFromDate || "",
+        promotionToDate: data.promotionToDate || "",
+        sizes: hasValidSizes ? data.sizes : [],
+        status: data.status || "ACTIVE",
+      };
+
+      reset(formData);
+    } else {
+      setProductType("simple");
+      reset({
+        name: "",
+        categoryId: "",
+        images: [],
+        description: "",
+        brandId: "",
+        price: 0,
+        promotionType: "",
+        promotionValue: 0,
+        promotionFromDate: "",
+        promotionToDate: "",
+        sizes: [],
+        status: "ACTIVE",
+      });
+    }
+  }, [data, reset]);
+
+  // Fetch category and brand details
   const fetchCategoryDetail = useCallback(async () => {
     if (!data?.categoryId) return;
     setIsLoading(true);
     try {
-      const response = await getCategoryByIdService(data?.categoryId);
-      console.log("Fetched categories:", response);
+      const response = await getCategoryByIdService(data.categoryId);
       setSelectedCategory(response);
     } catch (error: any) {
       console.log("Failed to fetch categories: ", error);
@@ -315,8 +454,7 @@ export function ProductModal({
     if (!data?.brandId) return;
     setIsLoading(true);
     try {
-      const response = await getBrandByIdService(data?.brandId);
-      console.log("Fetched brands:", response);
+      const response = await getBrandByIdService(data.brandId);
       setSelectedBrand(response);
     } catch (error: any) {
       console.log("Failed to fetch brands: ", error);
@@ -325,101 +463,28 @@ export function ProductModal({
     }
   }, [data?.brandId]);
 
+  // Effects
   useEffect(() => {
-    if (isOpen && data) {
-      fetchCategoryDetail();
-      fetchBrandDetail();
-    }
-  }, [isOpen, data?.id]);
-
-  // Reset form when modal opens or data changes - FIXED
-  useEffect(() => {
-    if (isOpen && data) {
-      console.log("=== FORM RESET ===");
-      console.log("Raw data:", data);
-      const formData = {
-        id: data?.id,
-        name: data?.name ?? "",
-        categoryId: data?.categoryId ?? "",
-        images: data?.images ?? [],
-        description: data?.description ?? "",
-        brandId: data?.brandId ?? "",
-        price: data?.price ?? 0,
-        promotionType: normalizePromotionType(data?.promotionType),
-        promotionValue: data?.promotionValue ?? 0,
-        promotionFromDate: data?.promotionFromDate || "",
-        promotionToDate: data?.promotionToDate || "",
-        sizes:
-          data?.sizes && data.sizes.length > 0
-            ? data.sizes.map((size) => ({
-                ...size,
-                promotionType: normalizePromotionType(size?.promotionType),
-                promotionFromDate: size.promotionFromDate || "",
-                promotionToDate: size.promotionToDate || "",
-              }))
-            : [
-                {
-                  name: "",
-                  price: 0,
-                  promotionType: "NONE",
-                  promotionValue: 0,
-                  promotionFromDate: "",
-                  promotionToDate: "",
-                },
-              ],
-        status: data?.status ?? "ACTIVE",
-      };
-
-      reset(formData);
-    } else if (isOpen && !data) {
-      // Handle create mode - reset to default values
-      reset({
-        name: "",
-        categoryId: "",
-        images: [],
-        description: "",
-        brandId: "",
-        price: 0,
-        promotionType: "NONE",
-        promotionValue: 0,
-        promotionFromDate: "",
-        promotionToDate: "",
-        sizes: [],
-        status: "ACTIVE",
-      });
-    }
-  }, [isOpen, data, reset]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      // Clear selected category and brand when modal closes
+    if (isOpen) {
+      initializeForm();
+      if (data) {
+        fetchCategoryDetail();
+        fetchBrandDetail();
+      }
+      setActiveTab("basic");
+    } else {
       setSelectedCategory(null);
       setSelectedBrand(null);
     }
-  }, [isOpen]);
+  }, [isOpen, data, initializeForm, fetchCategoryDetail, fetchBrandDetail]);
 
-  useEffect(() => {
-    console.log("=== FORM DEBUG ===");
-    console.log("Form errors:", errors);
-    console.log("Form isValid:", isValid);
-    console.log("Form isDirty:", isDirty);
-    console.log("Form isSubmitting:", isSubmitting);
-    console.log("Current form values:", watch());
-
-    // Check specific field errors
-    if (Object.keys(errors).length > 0) {
-      console.log("Validation errors:", JSON.stringify(errors, null, 2));
-    }
-  }, [errors, isValid, isDirty, isSubmitting, watch]);
-
-  // Handle file selection
+  // Event Handlers
   const handleFileSelect = (file: File) => {
     if (file && file.type.startsWith("image/")) {
       handleFileUpload(file, uploadImageType);
     }
   };
 
-  // Handle file input change
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -429,7 +494,6 @@ export function ProductModal({
 
   const onCategoryChange = useCallback(
     (cate: CategoryModel) => {
-      console.log("Selected category: ", cate);
       setSelectedCategory(cate);
       setValue("categoryId", cate.id);
     },
@@ -438,14 +502,12 @@ export function ProductModal({
 
   const onBrandChange = useCallback(
     (brand: BrandModel) => {
-      console.log("Selected brand: ", brand);
       setSelectedBrand(brand);
       setValue("brandId", brand.id);
     },
     [setValue]
   );
 
-  // Handle drag and drop
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -466,73 +528,143 @@ export function ProductModal({
     }
   };
 
-  const onSubmit = (formData: productFormData) => {
+  // FIXED: Form Validation with proper null checking
+  const validateForm = (formData: productFormData) => {
     const counts = getImageCounts();
-    // Validation
+    const errors: string[] = [];
+
+    if (!formData.name?.trim()) {
+      errors.push("Product name is required");
+    }
+
+    if (!formData.categoryId) {
+      errors.push("Category is required");
+    }
+
     if (counts.total === 0) {
-      AppToast({
-        type: "warning",
-        message: "Please add at least one product image.",
-        duration: 3000,
-        position: "top-right",
-      });
-      return;
+      errors.push("At least one product image is required");
     }
 
     if (counts.main === 0) {
-      AppToast({
-        type: "warning",
-        message:
-          "Please set one image as the main image for the product thumbnail.",
-        duration: 3000,
-        position: "top-right",
-      });
-      return;
+      errors.push("Please set one image as the main image");
     }
+
     if (counts.main > 1) {
+      errors.push("Only one main image is allowed");
+    }
+
+    if (productType === "simple") {
+      if (!formData.price || formData.price <= 0) {
+        errors.push("Price is required for simple products");
+      }
+    } else if (productType === "variable") {
+      if (!formData.sizes || formData.sizes.length === 0) {
+        errors.push("At least one size is required for variable products");
+      } else {
+        formData.sizes.forEach((size, index) => {
+          if (!size.name?.trim()) {
+            errors.push(`Size ${index + 1} name is required`);
+          }
+          if (!size.price || size.price <= 0) {
+            errors.push(`Size ${index + 1} price is required`);
+          }
+        });
+      }
+    }
+
+    // FIXED: Proper null checking for promotion validation
+    if (formData.promotionType && formData.promotionType !== "") {
+      const promotionValue = formData.promotionValue ?? 0;
+      if (promotionValue <= 0) {
+        errors.push("Promotion value is required when promotion type is set");
+      }
+
+      if (formData.promotionType === "PERCENTAGE" && promotionValue > 100) {
+        errors.push("Percentage discount cannot exceed 100%");
+      }
+    }
+
+    return errors;
+  };
+
+  // FIXED: Form Submission with proper type handling
+  const onSubmit = (formData: productFormData) => {
+    const validationErrors = validateForm(formData);
+
+    if (validationErrors.length > 0) {
       AppToast({
-        type: "warning",
-        message:
-          "You can only have one main image. Please fix this before saving.",
-        duration: 3000,
+        type: "error",
+        message: validationErrors[0],
+        duration: 4000,
         position: "top-right",
       });
       return;
     }
 
-    // FIX: Use denormalizePromotionType to convert "NONE" back to undefined
-    const processedFormData = {
+    // FIXED: Prepare payload with proper null handling
+    const basePayload: Partial<productFormData> = {
       ...formData,
-      promotionType: denormalizePromotionType(formData.promotionType || "NONE"),
-      sizes: formData.sizes?.map((size) => ({
-        ...size,
-        promotionType: denormalizePromotionType(size.promotionType || "NONE"),
-      })),
-    };
-
-    const payload = {
-      ...processedFormData,
       id: data?.id,
-      name: processedFormData.name.trim(),
-      description: processedFormData.description?.trim(),
-      categoryId: processedFormData.categoryId.trim(),
-      brandId: processedFormData.brandId?.trim(),
-      size: processedFormData.sizes,
+      name: formData.name.trim(),
+      description: formData.description?.trim(),
+      categoryId: formData.categoryId.trim(),
+      brandId: formData.brandId?.trim(),
     };
 
-    console.log("Payload before submit:", payload);
+    // Clean up data based on product type
+    if (productType === "simple") {
+      basePayload.sizes = []; // Empty array for Spring Boot
+      basePayload.price = formData.price;
+    } else {
+      basePayload.sizes = formData.sizes || [];
+      delete basePayload.price; // Remove price for variable products
+    }
 
-    onSave(payload);
-    onClose();
+    // Clean promotion data - only include if promotion type is set
+    if (formData.promotionType && formData.promotionType !== "") {
+      basePayload.promotionType = formData.promotionType;
+      basePayload.promotionValue = formData.promotionValue ?? 0;
+      basePayload.promotionFromDate = formData.promotionFromDate;
+      basePayload.promotionToDate = formData.promotionToDate;
+    } else {
+      // Remove promotion fields if no promotion
+      delete basePayload.promotionType;
+      delete basePayload.promotionValue;
+      delete basePayload.promotionFromDate;
+      delete basePayload.promotionToDate;
+    }
+
+    console.log("Payload for Spring Boot:", basePayload);
+    onSave(basePayload as productFormData);
+  };
+
+  // Enhanced: Reset Functions
+  const resetFormCompletely = () => {
+    reset();
+    setProductType("simple");
+    setSelectedCategory(null);
+    setSelectedBrand(null);
+  };
+
+  const resetOnlyImages = () => {
+    clearAllImages();
+  };
+
+  const resetOnlySizes = () => {
+    clearAllSizes();
+  };
+
+  const resetOnlyPromotions = () => {
+    setValue("promotionType", "");
+    setValue("promotionValue", 0);
+    setValue("promotionFromDate", "");
+    setValue("promotionToDate", "");
+    resetSizePromotions();
   };
 
   const counts = getImageCounts();
-
   const getFullImageUrl = (imageUrl: string) => {
-    // Handle different URL formats
-    if (imageUrl.startsWith("http")) {
-      return imageUrl; // Already full URL
-    }
+    if (imageUrl.startsWith("http")) return imageUrl;
     if (imageUrl.startsWith("/")) {
       return `${process.env.NEXT_PUBLIC_API_BASE_URL}${imageUrl}`;
     }
@@ -541,7 +673,7 @@ export function ProductModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-full max-w-6xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
@@ -554,748 +686,801 @@ export function ProductModal({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pt-4">
-          {/* Basic Product Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              {/* Product Name */}
-              <div className="space-y-1">
-                <Label htmlFor="name">
-                  Product Name <span className="text-red-500">*</span>
-                </Label>
-                <Controller
-                  control={control}
-                  name="name"
-                  render={({ field }) => (
-                    <Input
-                      {...field}
-                      id="name"
-                      placeholder="Enter product name"
-                      disabled={isSubmitting || isUploading}
-                      className={errors.name ? "border-red-500" : ""}
-                    />
-                  )}
-                />
-                {errors.name && (
-                  <p className="text-sm text-destructive">
-                    {errors.name.message}
-                  </p>
-                )}
-              </div>
+        <div className="space-y-6 pt-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="basic" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Basic Info
+              </TabsTrigger>
+              <TabsTrigger value="images" className="flex items-center gap-2">
+                <ImageIcon className="h-4 w-4" />
+                Images ({counts.total})
+              </TabsTrigger>
+              <TabsTrigger value="pricing" className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Pricing & Sizes
+              </TabsTrigger>
+              <TabsTrigger
+                value="promotion"
+                className="flex items-center gap-2"
+              >
+                <Star className="h-4 w-4" />
+                Promotions
+              </TabsTrigger>
+            </TabsList>
 
-              {/* Category */}
-              <div className="space-y-1">
-                <Label htmlFor="categoryId">
-                  Category <span className="text-red-500">*</span>
-                </Label>
-                <Controller
-                  control={control}
-                  name="categoryId"
-                  render={({ field }) => (
-                    <ComboboxSelectCategory
-                      dataSelect={selectedCategory}
-                      onChangeSelected={onCategoryChange}
-                    />
-                  )}
-                />
-                {errors.categoryId && (
-                  <p className="text-sm text-destructive">
-                    {errors.categoryId.message}
-                  </p>
-                )}
-              </div>
+            {/* Basic Information Tab */}
+            <TabsContent value="basic" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Product Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-4">
+                      {/* Product Name */}
+                      <div className="space-y-1">
+                        <Label htmlFor="name">
+                          Product Name <span className="text-red-500">*</span>
+                        </Label>
+                        <Controller
+                          control={control}
+                          name="name"
+                          render={({ field }) => (
+                            <Input
+                              {...field}
+                              id="name"
+                              placeholder="Enter product name"
+                              disabled={isSubmitting || isUploading}
+                              className={errors.name ? "border-red-500" : ""}
+                            />
+                          )}
+                        />
+                        {errors.name && (
+                          <p className="text-sm text-destructive">
+                            {errors.name.message}
+                          </p>
+                        )}
+                      </div>
 
-              {/* Price */}
-              <div className="space-y-1">
-                <Label htmlFor="price">Base Price</Label>
-                <Controller
-                  control={control}
-                  name="price"
-                  render={({ field }) => (
-                    <PriceInput
-                      value={field.value}
-                      onChange={field.onChange}
-                      placeholder="Price"
-                      currency="$"
-                      min={0}
-                    />
-                  )}
-                />
-                {errors.price && (
-                  <p className="text-sm text-destructive">
-                    {errors.price.message}
-                  </p>
-                )}
-              </div>
-            </div>
+                      {/* Category */}
+                      <div className="space-y-1">
+                        <Label htmlFor="categoryId">
+                          Category <span className="text-red-500">*</span>
+                        </Label>
+                        <Controller
+                          control={control}
+                          name="categoryId"
+                          render={({ field }) => (
+                            <ComboboxSelectCategory
+                              dataSelect={selectedCategory}
+                              onChangeSelected={onCategoryChange}
+                            />
+                          )}
+                        />
+                        {errors.categoryId && (
+                          <p className="text-sm text-destructive">
+                            {errors.categoryId.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
 
-            <div className="space-y-4">
-              {/* Brand */}
-              <div className="space-y-1">
-                <Label htmlFor="brandId">
-                  Brand <span className="text-red-500">*</span>
-                </Label>
-                <Controller
-                  control={control}
-                  name="brandId"
-                  render={({ field }) => (
-                    <ComboboxSelectBrand
-                      dataSelect={selectedBrand}
-                      onChangeSelected={onBrandChange}
-                    />
-                  )}
-                />
-                {errors.brandId && (
-                  <p className="text-sm text-destructive">
-                    {errors.brandId.message}
-                  </p>
-                )}
-              </div>
+                    <div className="space-y-4">
+                      {/* Brand */}
+                      <div className="space-y-1">
+                        <Label htmlFor="brandId">Brand</Label>
+                        <Controller
+                          control={control}
+                          name="brandId"
+                          render={({ field }) => (
+                            <ComboboxSelectBrand
+                              dataSelect={selectedBrand}
+                              onChangeSelected={onBrandChange}
+                            />
+                          )}
+                        />
+                      </div>
 
-              {/* Description */}
-              <div className="space-y-1">
-                <Label htmlFor="description">Description</Label>
-                <Controller
-                  control={control}
-                  name="description"
-                  render={({ field }) => (
-                    <Textarea
-                      {...field}
-                      id="description"
-                      placeholder="Enter product description"
-                      disabled={isSubmitting || isUploading}
-                      className="min-h-[100px] resize-none"
-                    />
-                  )}
-                />
-              </div>
+                      {/* Status */}
+                      <div className="space-y-1">
+                        <Label htmlFor="status">Status</Label>
+                        <Controller
+                          control={control}
+                          name="status"
+                          render={({ field }) => (
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              disabled={isSubmitting || isUploading}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="ACTIVE">Active</SelectItem>
+                                <SelectItem value="INACTIVE">
+                                  Inactive
+                                </SelectItem>
+                                <SelectItem value="OUT_OF_STOCK">
+                                  Out of Stock
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-              {/* Status */}
-              {!isCreate && (
-                <div className="space-y-1">
-                  <Label htmlFor="status">Status</Label>
-                  <Controller
-                    control={control}
-                    name="status"
-                    render={({ field }) => (
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
+                  {/* Description */}
+                  <div className="space-y-1">
+                    <Label htmlFor="description">Description</Label>
+                    <Controller
+                      control={control}
+                      name="description"
+                      render={({ field }) => (
+                        <Textarea
+                          {...field}
+                          id="description"
+                          placeholder="Enter product description"
+                          disabled={isSubmitting || isUploading}
+                          className="min-h-[100px] resize-none"
+                        />
+                      )}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Images Tab */}
+            <TabsContent value="images" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <ImageIcon className="h-5 w-5" />
+                      Product Images
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className="flex items-center gap-1"
+                      >
+                        <Star className="h-3 w-3 text-yellow-500" />
+                        Main: {counts.main}/1
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className="flex items-center gap-1"
+                      >
+                        <ImageLucide className="h-3 w-3" />
+                        Gallery: {counts.gallery}
+                      </Badge>
+                      <Badge variant="secondary">Total: {counts.total}</Badge>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Image Type Selector */}
+                  <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                    <Label className="text-sm font-medium">Upload as:</Label>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant={
+                          uploadImageType === "MAIN" ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() => setUploadImageType("MAIN")}
+                        disabled={isSubmitting || isUploading}
+                        className="flex items-center gap-1"
+                      >
+                        <Star className="h-3 w-3" />
+                        Main {hasMainImage() ? "(Replace)" : ""}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={
+                          uploadImageType === "GALLERY" ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() => setUploadImageType("GALLERY")}
+                        disabled={isSubmitting || isUploading}
+                        className="flex items-center gap-1"
+                      >
+                        <ImageLucide className="h-3 w-3" />
+                        Gallery
+                      </Button>
+                    </div>
+                    <div className="ml-auto flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={resetOnlyImages}
                         disabled={isSubmitting || isUploading}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="ACTIVE">Active</SelectItem>
-                          <SelectItem value="INACTIVE">Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        <RotateCcw className="h-3 w-3 mr-1" />
+                        Clear All
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Upload Area */}
+                  <div
+                    className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
+                      dragActive
+                        ? "border-primary bg-primary/5"
+                        : "border-gray-300 hover:border-gray-400"
+                    } ${isUploading ? "opacity-50" : ""}`}
+                    onDragEnter={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDragOver={handleDrag}
+                    onDrop={handleDrop}
+                  >
+                    {isUploading && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-lg z-10">
+                        <div className="text-center">
+                          <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+                          <p className="mt-2 text-sm text-gray-600">
+                            Uploading {uploadImageType.toLowerCase()} image...
+                          </p>
+                        </div>
+                      </div>
                     )}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
+                    <div className="text-center">
+                      <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
+                      <div className="mt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isSubmitting || isUploading}
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          Add {uploadImageType} Image
+                        </Button>
+                        <p className="mt-2 text-sm text-gray-500">
+                          or drag and drop images here
+                        </p>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-2">
+                        PNG, JPG, GIF up to 10MB each
+                      </p>
+                    </div>
+                    <Input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileInputChange}
+                      className="hidden"
+                      disabled={isSubmitting || isUploading}
+                    />
+                  </div>
 
-          {/* ADDED: Promotion Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Percent className="h-5 w-5" />
-              <Label className="text-lg font-semibold">
-                Promotion Settings
-              </Label>
-            </div>
+                  {/* Image Preview Grid */}
+                  {imageFields.length > 0 && (
+                    <div className="space-y-4">
+                      {/* Main Images */}
+                      {watchedImages?.filter(
+                        (img: ImageData) => img.imageType === "MAIN"
+                      ).length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-medium mb-2 flex items-center gap-1">
+                            <Star className="h-4 w-4 text-yellow-500" />
+                            Main Image (Thumbnail)
+                          </h4>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {imageFields.map((image, index) => {
+                              const watchedImage = watchedImages[index];
+                              if (watchedImage?.imageType !== "MAIN")
+                                return null;
+                              return (
+                                <div key={image.id} className="relative group">
+                                  <div className="relative">
+                                    <img
+                                      src={getFullImageUrl(
+                                        watchedImage.imageUrl
+                                      )}
+                                      alt="Main product image"
+                                      className="w-full h-24 object-cover rounded-lg border-2 border-yellow-400"
+                                    />
+                                    <div className="absolute top-1 left-1">
+                                      <Badge className="bg-yellow-500 text-white text-xs px-1 rounded flex items-center gap-1">
+                                        <Star className="h-2 w-2" />
+                                        MAIN
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                  <div className="absolute top-1 right-1 flex gap-1">
+                                    <Button
+                                      type="button"
+                                      variant="secondary"
+                                      size="icon"
+                                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={() => toggleImageType(index)}
+                                      disabled={isUploading}
+                                      title="Convert to Gallery"
+                                    >
+                                      <ImageLucide className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="destructive"
+                                      size="icon"
+                                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={() => removeImage(index)}
+                                      disabled={isUploading}
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg bg-gray-50">
-              {/* Promotion Type */}
-              <div className="space-y-1">
-                <Label htmlFor="promotionType">Promotion Type</Label>
-                <Controller
-                  control={control}
-                  name="promotionType"
-                  render={({ field }) => (
-                    <Select
-                      value={field.value === "NONE" ? undefined : field.value}
-                      onValueChange={(value) =>
-                        field.onChange(value || undefined)
-                      }
+                      {/* Gallery Images */}
+                      {watchedImages?.filter(
+                        (img: ImageData) => img.imageType === "GALLERY"
+                      ).length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-medium mb-2 flex items-center gap-1">
+                            <ImageLucide className="h-4 w-4" />
+                            Gallery Images ({counts.gallery})
+                          </h4>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {imageFields.map((image, index) => {
+                              const watchedImage = watchedImages[index];
+                              if (watchedImage?.imageType !== "GALLERY")
+                                return null;
+                              return (
+                                <div key={image.id} className="relative group">
+                                  <div className="relative">
+                                    <img
+                                      src={getFullImageUrl(
+                                        watchedImage.imageUrl
+                                      )}
+                                      alt={`Gallery image ${index + 1}`}
+                                      className="w-full h-24 object-cover rounded-lg border"
+                                    />
+                                    <div className="absolute top-1 left-1">
+                                      <Badge className="bg-gray-600 text-white text-xs px-1 rounded flex items-center gap-1">
+                                        <ImageLucide className="h-2 w-2" />
+                                        GALLERY
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                  <div className="absolute top-1 right-1 flex gap-1">
+                                    <Button
+                                      type="button"
+                                      variant="secondary"
+                                      size="icon"
+                                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={() => toggleImageType(index)}
+                                      disabled={isUploading}
+                                      title={
+                                        hasMainImage()
+                                          ? "Replace Main Image"
+                                          : "Set as Main Image"
+                                      }
+                                    >
+                                      <Star className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="destructive"
+                                      size="icon"
+                                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={() => removeImage(index)}
+                                      disabled={isUploading}
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Validation Messages */}
+                  {counts.total === 0 && (
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Please add at least one product image.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {counts.total > 0 && counts.main === 0 && (
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Please set one image as the main image.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {counts.main > 1 && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        You can only have one main image.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {hasValidImageSetup() && (
+                    <Alert>
+                      <CheckCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Images configured correctly! You have 1 main image and{" "}
+                        {counts.gallery} gallery images.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Pricing & Sizes Tab */}
+            <TabsContent value="pricing" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    Product Type & Pricing
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={resetOnlySizes}
+                        disabled={isSubmitting || isUploading}
+                      >
+                        <RotateCcw className="h-3 w-3 mr-1" />
+                        Reset Sizes
+                      </Button>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Product Type Selector */}
+                  <div className="space-y-4">
+                    <Label className="text-lg font-semibold">
+                      Product Type
+                    </Label>
+                    <div className="flex gap-4">
+                      <Button
+                        type="button"
+                        variant={
+                          productType === "simple" ? "default" : "outline"
+                        }
+                        onClick={switchToSimple}
+                        className="flex items-center gap-2"
+                        disabled={isSubmitting || isUploading}
+                      >
+                        <Package className="h-4 w-4" />
+                        Simple Product
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={
+                          productType === "variable" ? "default" : "outline"
+                        }
+                        onClick={switchToVariable}
+                        className="flex items-center gap-2"
+                        disabled={isSubmitting || isUploading}
+                      >
+                        <Layers className="h-4 w-4" />
+                        Variable Product (Sizes)
+                      </Button>
+                    </div>
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        {productType === "simple"
+                          ? "Simple products have one price and no size variations."
+                          : "Variable products have multiple sizes with different prices. The main product price will be ignored."}
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+
+                  {/* Simple Product Pricing */}
+                  {productType === "simple" && (
+                    <div className="p-4 border rounded-lg bg-gray-50">
+                      <h4 className="font-medium mb-4">Product Price</h4>
+                      <div className="space-y-2">
+                        <Label htmlFor="price">Base Price ($) *</Label>
+                        <Controller
+                          control={control}
+                          name="price"
+                          render={({ field }) => (
+                            <PriceInput
+                              value={field.value || 0}
+                              onChange={field.onChange}
+                              placeholder="Price"
+                              currency="$"
+                              min={0}
+                              disabled={isSubmitting || isUploading}
+                            />
+                          )}
+                        />
+                        {errors.price && (
+                          <p className="text-sm text-destructive">
+                            {errors.price.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Variable Product Sizes */}
+                  {productType === "variable" && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium">Size Variations</h4>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={addSize}
+                          disabled={isSubmitting || isUploading}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Size
+                        </Button>
+                      </div>
+
+                      {sizeFields.length === 0 && (
+                        <Alert>
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription>
+                            No sizes configured. Add at least one size
+                            variation.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                      {sizeFields.map((size, index) => (
+                        <Card
+                          key={size.id}
+                          className="border-l-4 border-l-blue-500"
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between mb-4">
+                              <h5 className="font-medium">Size {index + 1}</h5>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeSize(index)}
+                                className="text-red-500 hover:text-red-700"
+                                disabled={isSubmitting || isUploading}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Size Name *</Label>
+                                <Controller
+                                  control={control}
+                                  name={`sizes.${index}.name`}
+                                  render={({ field }) => (
+                                    <Input
+                                      {...field}
+                                      placeholder="e.g., Small, Medium, Large"
+                                      disabled={isSubmitting || isUploading}
+                                    />
+                                  )}
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Price ($) *</Label>
+                                <Controller
+                                  control={control}
+                                  name={`sizes.${index}.price`}
+                                  render={({ field }) => (
+                                    <PriceInput
+                                      value={field.value || 0}
+                                      onChange={field.onChange}
+                                      placeholder="Price"
+                                      currency="$"
+                                      min={0}
+                                      disabled={isSubmitting || isUploading}
+                                    />
+                                  )}
+                                />
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Promotions Tab */}
+            <TabsContent value="promotion" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Percent className="h-5 w-5" />
+                      Promotion Settings
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={resetOnlyPromotions}
                       disabled={isSubmitting || isUploading}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select promotion type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="NONE">No Promotion</SelectItem>
-                        <SelectItem value="PERCENTAGE">
-                          Percentage Discount
-                        </SelectItem>
-                        <SelectItem value="FIXED_AMOUNT">
-                          Fixed Amount Discount
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.promotionType && (
-                  <p className="text-sm text-destructive">
-                    {errors.promotionType.message}
-                  </p>
-                )}
-              </div>
-
-              {/* Promotion Value */}
-              <div className="space-y-1">
-                <Label htmlFor="promotionValue">
-                  Promotion Value
-                  {promotionType === "PERCENTAGE" && " (%)"}
-                  {promotionType === "FIXED_AMOUNT" && " ($)"}
-                </Label>
-                <Controller
-                  control={control}
-                  name="promotionValue"
-                  render={({ field }) => (
-                    <Input
-                      {...field}
-                      id="promotionValue"
-                      type="number"
-                      step={promotionType === "PERCENTAGE" ? "1" : "0.01"}
-                      min="0"
-                      max={promotionType === "PERCENTAGE" ? "100" : undefined}
-                      placeholder={
-                        promotionType === "PERCENTAGE"
-                          ? "Enter percentage (0-100)"
-                          : promotionType === "FIXED_AMOUNT"
-                          ? "Enter amount"
-                          : "0"
-                      }
-                      disabled={isSubmitting || isUploading || !promotionType}
-                      className={errors.promotionValue ? "border-red-500" : ""}
-                      onChange={(e) =>
-                        field.onChange(parseFloat(e.target.value) || 0)
-                      }
-                    />
-                  )}
-                />
-                {errors.promotionValue && (
-                  <p className="text-sm text-destructive">
-                    {errors.promotionValue.message}
-                  </p>
-                )}
-              </div>
-
-              {/* Promotion From Date */}
-              <div className="space-y-1">
-                <Label
-                  htmlFor="promotionFromDate"
-                  className="flex items-center gap-1"
-                >
-                  <Calendar className="h-4 w-4" />
-                  Promotion Start Date
-                </Label>
-                <Controller
-                  control={control}
-                  name="promotionFromDate"
-                  render={({ field }) => (
-                    <Input
-                      {...field}
-                      id="promotionFromDate"
-                      type="datetime-local"
-                      disabled={isSubmitting || isUploading || !promotionType}
-                      className={
-                        errors.promotionFromDate ? "border-red-500" : ""
-                      }
-                    />
-                  )}
-                />
-                {errors.promotionFromDate && (
-                  <p className="text-sm text-destructive">
-                    {errors.promotionFromDate.message}
-                  </p>
-                )}
-              </div>
-
-              {/* Promotion To Date */}
-              <div className="space-y-1">
-                <Label
-                  htmlFor="promotionToDate"
-                  className="flex items-center gap-1"
-                >
-                  <Calendar className="h-4 w-4" />
-                  Promotion End Date
-                </Label>
-                <Controller
-                  control={control}
-                  name="promotionToDate"
-                  render={({ field }) => (
-                    <Input
-                      {...field}
-                      id="promotionToDate"
-                      type="datetime-local"
-                      disabled={isSubmitting || isUploading || !promotionType}
-                      className={errors.promotionToDate ? "border-red-500" : ""}
-                    />
-                  )}
-                />
-                {errors.promotionToDate && (
-                  <p className="text-sm text-destructive">
-                    {errors.promotionToDate.message}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Product Images Section */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>
-                Product Images <span className="text-red-500">*</span>
-              </Label>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <Star className="h-3 w-3 text-yellow-500" />
-                  Main: {counts.main}/1
-                </Badge>
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <ImageLucide className="h-3 w-3" />
-                  Gallery: {counts.gallery}
-                </Badge>
-                <Badge variant="secondary">Total: {counts.total}</Badge>
-              </div>
-            </div>
-            {/* Image Type Selector */}
-            <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
-              <Label className="text-sm font-medium">Upload as:</Label>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant={uploadImageType === "MAIN" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setUploadImageType("MAIN")}
-                  disabled={isSubmitting || isUploading}
-                  className="flex items-center gap-1"
-                >
-                  <Star className="h-3 w-3" />
-                  Main {hasMainImage() ? "(Replace)" : ""}
-                </Button>
-                <Button
-                  type="button"
-                  variant={
-                    uploadImageType === "GALLERY" ? "default" : "outline"
-                  }
-                  size="sm"
-                  onClick={() => setUploadImageType("GALLERY")}
-                  disabled={isSubmitting || isUploading}
-                  className="flex items-center gap-1"
-                >
-                  <ImageLucide className="h-3 w-3" />
-                  Gallery
-                </Button>
-              </div>
-              <p className="text-xs text-gray-500 ml-auto">
-                {uploadImageType === "MAIN"
-                  ? "Main image is used as product thumbnail"
-                  : "Gallery images are shown in product details"}
-              </p>
-            </div>
-            {/* Upload Area */}
-            <div
-              className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
-                dragActive
-                  ? "border-primary bg-primary/5"
-                  : "border-gray-300 hover:border-gray-400"
-              } ${isUploading ? "opacity-50" : ""}`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-            >
-              {isUploading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-lg z-10">
-                  <div className="text-center">
-                    <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-                    <p className="mt-2 text-sm text-gray-600">
-                      Uploading {uploadImageType.toLowerCase()} image...
-                    </p>
-                  </div>
-                </div>
-              )}
-              <div className="text-center">
-                <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
-                <div className="mt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isSubmitting || isUploading}
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    Add {uploadImageType} Image
-                  </Button>
-                  <p className="mt-2 text-sm text-gray-500">
-                    or drag and drop images here
-                  </p>
-                </div>
-                <p className="text-xs text-gray-400 mt-2">
-                  PNG, JPG, GIF up to 10MB each
-                </p>
-              </div>
-              <Input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileInputChange}
-                className="hidden"
-                disabled={isSubmitting || isUploading}
-              />
-            </div>
-            {/* Image Preview Grid */}
-            {imageFields.length > 0 && (
-              <div className="space-y-4">
-                {/* Main Images */}
-                {watchedImages?.filter(
-                  (img: ImageData) => img.imageType === "MAIN"
-                ).length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium mb-2 flex items-center gap-1">
-                      <Star className="h-4 w-4 text-yellow-500" />
-                      Main Image (Thumbnail)
-                    </h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {imageFields.map((image, index) => {
-                        const watchedImage = watchedImages[index];
-                        if (watchedImage?.imageType !== "MAIN") return null;
-                        return (
-                          <div key={image.id} className="relative group">
-                            <div className="relative">
-                              <img
-                                src={
-                                  getFullImageUrl(watchedImage.imageUrl) ||
-                                  "/placeholder.svg?height=96&width=96"
-                                }
-                                alt="Main product image"
-                                className="w-full h-24 object-cover rounded-lg border-2 border-yellow-400"
-                              />
-                              <div className="absolute top-1 left-1">
-                                <Badge className="bg-yellow-500 text-white text-xs px-1 rounded flex items-center gap-1">
-                                  <Star className="h-2 w-2" />
-                                  MAIN
-                                </Badge>
-                              </div>
-                            </div>
-                            <div className="absolute top-1 right-1 flex gap-1">
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                size="icon"
-                                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => toggleImageType(index)}
-                                disabled={isUploading}
-                                title="Convert to Gallery"
-                              >
-                                <ImageLucide className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="icon"
-                                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => removeImage(index)}
-                                disabled={isUploading}
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Gallery Images */}
-                {watchedImages?.filter(
-                  (img: ImageData) => img.imageType === "GALLERY"
-                ).length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium mb-2 flex items-center gap-1">
-                      <ImageLucide className="h-4 w-4" />
-                      Gallery Images ({counts.gallery})
-                    </h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {imageFields.map((image, index) => {
-                        const watchedImage = watchedImages[index];
-                        if (watchedImage?.imageType !== "GALLERY") return null;
-                        return (
-                          <div key={image.id} className="relative group">
-                            <div className="relative">
-                              <img
-                                src={
-                                  getFullImageUrl(watchedImage.imageUrl) ||
-                                  "/placeholder.svg?height=96&width=96"
-                                }
-                                alt={`Gallery image ${index + 1}`}
-                                className="w-full h-24 object-cover rounded-lg border"
-                              />
-                              <div className="absolute top-1 left-1">
-                                <Badge className="bg-gray-600 text-white text-xs px-1 rounded flex items-center gap-1">
-                                  <ImageLucide className="h-2 w-2" />
-                                  GALLERY
-                                </Badge>
-                              </div>
-                            </div>
-                            <div className="absolute top-1 right-1 flex gap-1">
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                size="icon"
-                                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => toggleImageType(index)}
-                                disabled={isUploading}
-                                title={
-                                  hasMainImage()
-                                    ? "Replace Main Image"
-                                    : "Set as Main Image"
-                                }
-                              >
-                                <Star className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="icon"
-                                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => removeImage(index)}
-                                disabled={isUploading}
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-            {/* Validation Messages */}
-            {counts.total === 0 && (
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Please add at least one product image.
-                </AlertDescription>
-              </Alert>
-            )}
-            {counts.total > 0 && counts.main === 0 && (
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Please set one image as the main image for the product
-                  thumbnail.
-                </AlertDescription>
-              </Alert>
-            )}
-            {counts.main > 1 && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  You can only have one main image. Please fix this before
-                  saving.
-                </AlertDescription>
-              </Alert>
-            )}
-            {counts.main === 1 && counts.total > 0 && (
-              <Alert>
-                <CheckCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Images configured correctly! You have 1 main image and{" "}
-                  {counts.gallery} gallery images.
-                </AlertDescription>
-              </Alert>
-            )}
-            {errors.images && (
-              <p className="text-sm text-destructive">
-                {errors.images.message}
-              </p>
-            )}
-
-            {fields.map((item, index) => {
-              const sizePromotionType = watch(`sizes.${index}.promotionType`);
-
-              return (
-                <div
-                  key={item.id}
-                  className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-md bg-white shadow-sm"
-                >
-                  {/* 🟦 Size Name */}
-                  <Controller
-                    control={control}
-                    name={`sizes.${index}.name`}
-                    render={({ field }) => (
-                      <Input
-                        {...field}
-                        placeholder="Enter size (e.g. Medium (24 oz))"
-                      />
-                    )}
-                  />
-
-                  {/* 🟦 Price */}
-                  <Controller
-                    control={control}
-                    name={`sizes.${index}.price`}
-                    render={({ field }) => (
-                      <PriceInput
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Price"
-                        currency="$"
-                        min={0}
-                      />
-                    )}
-                  />
-
-                  {/* 🟦 Promotion Type */}
-                  <Controller
-                    control={control}
-                    name={`sizes.${index}.promotionType`}
-                    render={({ field }) => (
-                      <Select
-                        value={field.value === "NONE" ? undefined : field.value}
-                        onValueChange={(value) =>
-                          field.onChange(value || undefined)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select promotion type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="NONE">No Promotion</SelectItem>
-                          <SelectItem value="PERCENTAGE">
-                            Percentage Discount
-                          </SelectItem>
-                          <SelectItem value="FIXED_AMOUNT">
-                            Fixed Amount Discount
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-
-                  {/* 🟦 Promotion Value */}
-                  {sizePromotionType !== "NONE" &&
-                    sizePromotionType !== undefined && (
+                      <RotateCcw className="h-3 w-3 mr-1" />
+                      Reset Promotions
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Promotion Type</Label>
                       <Controller
                         control={control}
-                        name={`sizes.${index}.promotionValue`}
+                        name="promotionType"
                         render={({ field }) => (
-                          <PriceInput
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Promotion Value"
-                            currency={
-                              watchedSizes?.[index]?.promotionType ===
-                              "PERCENTAGE"
-                                ? "%"
-                                : "$"
-                            }
-                            min={0}
-                          />
+                          <Select
+                            value={field.value || ""}
+                            onValueChange={field.onChange}
+                            disabled={isSubmitting || isUploading}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select promotion type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">No Promotion</SelectItem>
+                              <SelectItem value="PERCENTAGE">
+                                Percentage Discount
+                              </SelectItem>
+                              <SelectItem value="FIXED_AMOUNT">
+                                Fixed Amount Discount
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         )}
                       />
-                    )}
+                    </div>
 
-                  {/* 🟦 Promotion Dates */}
-                  {sizePromotionType !== "NONE" &&
-                    sizePromotionType !== undefined && (
+                    {promotionType && (
                       <>
-                        <Controller
-                          control={control}
-                          name={`sizes.${index}.promotionFromDate`}
-                          render={({ field }) => (
-                            <Input
-                              type="date"
-                              {...field}
-                              placeholder="From Date"
-                            />
-                          )}
-                        />
-                        <Controller
-                          control={control}
-                          name={`sizes.${index}.promotionToDate`}
-                          render={({ field }) => (
-                            <Input
-                              type="date"
-                              {...field}
-                              placeholder="To Date"
-                            />
-                          )}
-                        />
+                        <div className="space-y-2">
+                          <Label>
+                            Promotion Value
+                            {promotionType === "PERCENTAGE" && " (%)"}
+                            {promotionType === "FIXED_AMOUNT" && " ($)"}
+                          </Label>
+                          <Controller
+                            control={control}
+                            name="promotionValue"
+                            render={({ field }) => (
+                              <Input
+                                {...field}
+                                type="number"
+                                step={
+                                  promotionType === "PERCENTAGE" ? "1" : "0.01"
+                                }
+                                min="0"
+                                max={
+                                  promotionType === "PERCENTAGE"
+                                    ? "100"
+                                    : undefined
+                                }
+                                placeholder={
+                                  promotionType === "PERCENTAGE"
+                                    ? "0-100"
+                                    : "0.00"
+                                }
+                                onChange={(e) =>
+                                  field.onChange(
+                                    parseFloat(e.target.value) || 0
+                                  )
+                                }
+                                disabled={isSubmitting || isUploading}
+                              />
+                            )}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Start Date</Label>
+                          <Controller
+                            control={control}
+                            name="promotionFromDate"
+                            render={({ field }) => (
+                              <Input
+                                {...field}
+                                type="datetime-local"
+                                disabled={isSubmitting || isUploading}
+                              />
+                            )}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>End Date</Label>
+                          <Controller
+                            control={control}
+                            name="promotionToDate"
+                            render={({ field }) => (
+                              <Input
+                                {...field}
+                                type="datetime-local"
+                                disabled={isSubmitting || isUploading}
+                              />
+                            )}
+                          />
+                        </div>
                       </>
                     )}
-
-                  {/* 🗑 Remove Button (Full Width) */}
-                  <div className="col-span-1 md:col-span-2 text-right pt-2">
-                    <button
-                      type="button"
-                      onClick={() => remove(index)}
-                      className="text-sm text-red-500 underline"
-                    >
-                      Remove Size
-                    </button>
                   </div>
-                </div>
-              );
-            })}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
 
-            {/* 🔹 Add Size Button */}
-            <div>
+          {/* Form Actions */}
+          <div className="flex justify-between items-center pt-6 border-t">
+            <div className="flex gap-2">
               <Button
                 type="button"
-                onClick={() =>
-                  append({
-                    name: "",
-                    price: 0,
-                    promotionType: "NONE",
-                    promotionValue: 0,
-                    promotionFromDate: "",
-                    promotionToDate: "",
-                  })
-                }
-                className="text-sm font-sans px-2 py-2 rounded"
+                variant="outline"
+                onClick={resetFormCompletely}
+                disabled={isSubmitting || isUploading}
               >
-                Add Size
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Reset All
+              </Button>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={isSubmitting || isUploading}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmit(onSubmit)}
+                disabled={isSubmitting || isUploading || !hasValidImageSetup()}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {isCreate ? "Creating..." : "Updating..."}
+                  </>
+                ) : (
+                  <>{isCreate ? "Create Product" : "Update Product"}</>
+                )}
               </Button>
             </div>
           </div>
-
-          {/* Form Actions */}
-          <div className="flex justify-end gap-3 pt-2 border-t">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={isSubmitting || isUploading}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting || isUploading || counts.main !== 1}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isCreate ? "Creating..." : "Updating..."}
-                </>
-              ) : (
-                <>{isCreate ? "Create Product" : "Update Product"}</>
-              )}
-            </Button>
-          </div>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

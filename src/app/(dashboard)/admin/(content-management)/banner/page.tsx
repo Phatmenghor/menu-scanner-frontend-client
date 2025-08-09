@@ -36,7 +36,7 @@ import { getUserTableHeaders } from "@/constants/app-resource/table/table";
 import { ROUTES } from "@/constants/app-routed/routes";
 import { usePagination } from "@/hooks/use-pagination";
 import { cn } from "@/lib/utils";
-import { UploadBannerRequest } from "@/models/(content-manangement)/banner/banner.requeset";
+import { UploadBannerRequest } from "@/models/(content-manangement)/banner/banner.request";
 import {
   AllBanner,
   BannerModel,
