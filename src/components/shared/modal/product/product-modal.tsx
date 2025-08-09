@@ -8,7 +8,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,23 +28,19 @@ import {
   Loader2,
   Package,
   Star,
-  ImageIcon as ImageLucide,
   AlertCircle,
   CheckCircle,
-  Percent,
-  Calendar,
   Plus,
   Trash2,
   RotateCcw,
-  Layers,
   Settings,
+  Percent,
+  Calendar,
+  Info,
+  DollarSign,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import {
-  productFormData,
-  ProductFormSchema,
-} from "@/models/(content-manangement)/product/product.schema";
 import { ModalMode } from "@/constants/app-resource/status/status";
 import { ComboboxSelectCategory } from "../../combo-box/combobox-category";
 import { CategoryModel } from "@/models/(content-manangement)/category/category.response";
@@ -58,32 +53,55 @@ import { PriceInput } from "../../common/price-input";
 import { getCategoryByIdService } from "@/services/dashboard/content-management/category/category.service";
 import { getBrandByIdService } from "@/services/dashboard/content-management/brand/brand.service";
 
-// FIXED: Types with proper optional handling
+// Types
 type ImageType = "MAIN" | "GALLERY";
 type ImageData = {
   imageUrl: string;
   imageType: ImageType;
 };
 
-type ProductType = "simple" | "variable";
+type ProductFormData = {
+  id?: string;
+  name: string;
+  categoryId: string;
+  images: ImageData[];
+  description?: string;
+  brandId?: string;
+  price?: number;
+  promotionType?: string;
+  promotionValue?: number;
+  promotionFromDate?: string;
+  promotionToDate?: string;
+  sizes?: SizeData[];
+  status?: string;
+};
+
+type SizeData = {
+  name: string;
+  price: number;
+  promotionType?: string;
+  promotionValue?: number;
+  promotionFromDate?: string;
+  promotionToDate?: string;
+};
 
 type Props = {
   mode: ModalMode;
-  data: productFormData | null;
+  data: ProductFormData | null;
   onClose: () => void;
   isOpen: boolean;
   isSubmitting?: boolean;
-  onSave: (data: productFormData) => void;
+  onSave: (data: ProductFormData) => void;
 };
 
-// FIXED: Enhanced Image Management Hook with proper typing
+// Enhanced Image Management Hook
 const useEnhancedImageManagement = (
   control: any,
   setValue: any,
   watch: any
 ) => {
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadImageType, setUploadImageType] = useState<ImageType>("GALLERY");
+  const [uploadImageType, setUploadImageType] = useState<ImageType>("MAIN");
 
   const {
     fields: imageFields,
@@ -107,10 +125,6 @@ const useEnhancedImageManagement = (
   });
 
   const hasMainImage = () => getImageCounts().main > 0;
-  const hasValidImageSetup = () => {
-    const counts = getImageCounts();
-    return counts.total > 0 && counts.main === 1;
-  };
 
   const handleFileUpload = async (file: File, imageType: ImageType) => {
     if (!file || !file.type.startsWith("image/")) {
@@ -155,7 +169,6 @@ const useEnhancedImageManagement = (
         const response = await uploadImageService(payload);
         if (response?.imageUrl) {
           if (imageType === "MAIN" && hasMainImage()) {
-            // Replace existing main image
             const mainImageIndex = watchedImages.findIndex(
               (img) => img.imageType === "MAIN"
             );
@@ -166,7 +179,6 @@ const useEnhancedImageManagement = (
               });
             }
           } else {
-            // Add new image
             appendImage({
               imageUrl: response.imageUrl,
               imageType: imageType,
@@ -240,18 +252,12 @@ const useEnhancedImageManagement = (
     toggleImageType,
     getImageCounts,
     hasMainImage,
-    hasValidImageSetup,
     clearAllImages,
   };
 };
 
-// FIXED: Enhanced Size Management Hook with proper typing
-const useEnhancedSizeManagement = (
-  control: any,
-  setValue: any,
-  watch: any,
-  productType: ProductType
-) => {
+// Enhanced Size Management Hook
+const useEnhancedSizeManagement = (control: any, setValue: any, watch: any) => {
   const {
     fields: sizeFields,
     append: appendSize,
@@ -278,20 +284,7 @@ const useEnhancedSizeManagement = (
     setValue("sizes", []);
   };
 
-  const resetSizePromotions = () => {
-    const resetSizes = watchedSizes.map((size: any) => ({
-      ...size,
-      promotionType: "",
-      promotionValue: 0,
-      promotionFromDate: "",
-      promotionToDate: "",
-    }));
-    setValue("sizes", resetSizes);
-  };
-
-  const hasValidSizes = () => {
-    return productType === "variable" ? watchedSizes.length > 0 : true;
-  };
+  const hasSizes = () => watchedSizes.length > 0;
 
   return {
     sizeFields,
@@ -299,8 +292,7 @@ const useEnhancedSizeManagement = (
     addSize,
     removeSize,
     clearAllSizes,
-    resetSizePromotions,
-    hasValidSizes,
+    hasSizes,
   };
 };
 
@@ -320,7 +312,6 @@ export function ProductModal({
   const [selectedBrand, setSelectedBrand] = useState<BrandModel | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
-  const [productType, setProductType] = useState<ProductType>("simple");
 
   const {
     control,
@@ -329,8 +320,7 @@ export function ProductModal({
     setValue,
     watch,
     formState: { errors },
-  } = useForm<productFormData>({
-    resolver: zodResolver(ProductFormSchema),
+  } = useForm<ProductFormData>({
     defaultValues: {
       name: "",
       categoryId: "",
@@ -359,7 +349,6 @@ export function ProductModal({
     toggleImageType,
     getImageCounts,
     hasMainImage,
-    hasValidImageSetup,
     clearAllImages,
   } = useEnhancedImageManagement(control, setValue, watch);
 
@@ -369,56 +358,34 @@ export function ProductModal({
     addSize,
     removeSize,
     clearAllSizes,
-    resetSizePromotions,
-    hasValidSizes,
-  } = useEnhancedSizeManagement(control, setValue, watch, productType);
+    hasSizes,
+  } = useEnhancedSizeManagement(control, setValue, watch);
 
   // Watch form values
   const promotionType = watch("promotionType");
+  const productHasSizes = hasSizes();
 
-  // Enhanced: Product Type Switching
-  const switchToSimple = () => {
-    setProductType("simple");
-    clearAllSizes();
-    if (!watch("price")) {
-      setValue("price", 0);
-    }
-  };
-
-  const switchToVariable = () => {
-    setProductType("variable");
-    setValue("price", 0);
-
-    if (watchedSizes.length === 0) {
-      addSize();
-    }
-  };
-
-  // FIXED: Form Initialization with proper typing
+  // Form Initialization
   const initializeForm = useCallback(() => {
     if (data) {
-      const hasValidSizes = data.sizes && data.sizes.length > 0;
-      setProductType(hasValidSizes ? "variable" : "simple");
-
-      const formData: productFormData = {
+      const formData: ProductFormData = {
         id: data.id,
         name: data.name || "",
         categoryId: data.categoryId || "",
         images: data.images || [],
         description: data.description || "",
         brandId: data.brandId || "",
-        price: hasValidSizes ? 0 : data.price || 0,
+        price: data.price || 0,
         promotionType: data.promotionType || "",
         promotionValue: data.promotionValue || 0,
         promotionFromDate: data.promotionFromDate || "",
         promotionToDate: data.promotionToDate || "",
-        sizes: hasValidSizes ? data.sizes : [],
+        sizes: data.sizes || [],
         status: data.status || "ACTIVE",
       };
 
       reset(formData);
     } else {
-      setProductType("simple");
       reset({
         name: "",
         categoryId: "",
@@ -528,8 +495,8 @@ export function ProductModal({
     }
   };
 
-  // FIXED: Form Validation with proper null checking
-  const validateForm = (formData: productFormData) => {
+  // Simple Form Validation
+  const validateForm = (formData: ProductFormData) => {
     const counts = getImageCounts();
     const errors: string[] = [];
 
@@ -541,26 +508,15 @@ export function ProductModal({
       errors.push("Category is required");
     }
 
-    if (counts.total === 0) {
-      errors.push("At least one product image is required");
-    }
-
-    if (counts.main === 0) {
-      errors.push("Please set one image as the main image");
-    }
-
-    if (counts.main > 1) {
+    // Images are not required but if added, validate main image
+    if (counts.total > 0 && counts.main > 1) {
       errors.push("Only one main image is allowed");
     }
 
-    if (productType === "simple") {
-      if (!formData.price || formData.price <= 0) {
-        errors.push("Price is required for simple products");
-      }
-    } else if (productType === "variable") {
-      if (!formData.sizes || formData.sizes.length === 0) {
-        errors.push("At least one size is required for variable products");
-      } else {
+    // Pricing validation based on whether product has sizes
+    if (productHasSizes) {
+      // Has sizes - validate sizes, ignore simple product price
+      if (formData.sizes && formData.sizes.length > 0) {
         formData.sizes.forEach((size, index) => {
           if (!size.name?.trim()) {
             errors.push(`Size ${index + 1} name is required`);
@@ -569,16 +525,26 @@ export function ProductModal({
             errors.push(`Size ${index + 1} price is required`);
           }
         });
+      } else {
+        errors.push("At least one size is required when sizes are configured");
+      }
+    } else {
+      // No sizes - validate simple product price
+      if (!formData.price || formData.price <= 0) {
+        errors.push("Price is required for products without size variations");
       }
     }
 
-    // FIXED: Proper null checking for promotion validation
-    if (formData.promotionType && formData.promotionType !== "") {
+    // Promotion validation for simple product (only when no sizes)
+    if (
+      !productHasSizes &&
+      formData.promotionType &&
+      formData.promotionType !== ""
+    ) {
       const promotionValue = formData.promotionValue ?? 0;
       if (promotionValue <= 0) {
         errors.push("Promotion value is required when promotion type is set");
       }
-
       if (formData.promotionType === "PERCENTAGE" && promotionValue > 100) {
         errors.push("Percentage discount cannot exceed 100%");
       }
@@ -587,8 +553,8 @@ export function ProductModal({
     return errors;
   };
 
-  // FIXED: Form Submission with proper type handling
-  const onSubmit = (formData: productFormData) => {
+  // Form Submission
+  const onSubmit = (formData: ProductFormData) => {
     const validationErrors = validateForm(formData);
 
     if (validationErrors.length > 0) {
@@ -601,8 +567,8 @@ export function ProductModal({
       return;
     }
 
-    // FIXED: Prepare payload with proper null handling
-    const basePayload: Partial<productFormData> = {
+    // Prepare payload based on whether product has sizes
+    const basePayload: Partial<ProductFormData> = {
       ...formData,
       id: data?.id,
       name: formData.name.trim(),
@@ -611,59 +577,53 @@ export function ProductModal({
       brandId: formData.brandId?.trim(),
     };
 
-    // Clean up data based on product type
-    if (productType === "simple") {
-      basePayload.sizes = []; // Empty array for Spring Boot
-      basePayload.price = formData.price;
-    } else {
+    if (productHasSizes) {
+      // Has sizes - use sizes for pricing, clear simple product pricing
       basePayload.sizes = formData.sizes || [];
-      delete basePayload.price; // Remove price for variable products
-    }
-
-    // FIXED: Clean promotion data - properly handle empty strings
-    if (
-      formData.promotionType &&
-      formData.promotionType !== "" &&
-      formData.promotionType !== "NONE"
-    ) {
-      basePayload.promotionType = formData.promotionType;
-      basePayload.promotionValue = formData.promotionValue ?? 0;
-      basePayload.promotionFromDate = formData.promotionFromDate;
-      basePayload.promotionToDate = formData.promotionToDate;
-    } else {
-      // Remove promotion fields if no promotion
+      basePayload.price = 0; // Clear simple product price
       delete basePayload.promotionType;
       delete basePayload.promotionValue;
       delete basePayload.promotionFromDate;
       delete basePayload.promotionToDate;
+    } else {
+      // No sizes - use simple product pricing, clear sizes
+      basePayload.sizes = []; // Clear sizes
+      basePayload.price = formData.price;
+
+      // Handle simple product promotion
+      if (
+        formData.promotionType &&
+        formData.promotionType !== "" &&
+        formData.promotionType !== "NONE"
+      ) {
+        basePayload.promotionType = formData.promotionType;
+        basePayload.promotionValue = formData.promotionValue ?? 0;
+        basePayload.promotionFromDate = formData.promotionFromDate;
+        basePayload.promotionToDate = formData.promotionToDate;
+      } else {
+        delete basePayload.promotionType;
+        delete basePayload.promotionValue;
+        delete basePayload.promotionFromDate;
+        delete basePayload.promotionToDate;
+      }
     }
 
-    console.log("Payload for Spring Boot:", basePayload);
-    onSave(basePayload as productFormData);
+    console.log("Payload for API:", basePayload);
+    onSave(basePayload as ProductFormData);
   };
 
-  // Enhanced: Reset Functions
+  // Reset Functions
   const resetFormCompletely = () => {
     reset();
-    setProductType("simple");
     setSelectedCategory(null);
     setSelectedBrand(null);
   };
 
-  const resetOnlyImages = () => {
-    clearAllImages();
-  };
-
-  const resetOnlySizes = () => {
-    clearAllSizes();
-  };
-
-  const resetOnlyPromotions = () => {
+  const clearSimpleProductPromotion = () => {
     setValue("promotionType", "");
     setValue("promotionValue", 0);
     setValue("promotionFromDate", "");
     setValue("promotionToDate", "");
-    resetSizePromotions();
   };
 
   const counts = getImageCounts();
@@ -692,36 +652,33 @@ export function ProductModal({
 
         <div className="space-y-6 pt-4">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="basic" className="flex items-center gap-2">
                 <Settings className="h-4 w-4" />
-                Basic Info
+                Basic Info & Pricing
               </TabsTrigger>
               <TabsTrigger value="images" className="flex items-center gap-2">
                 <ImageIcon className="h-4 w-4" />
                 Images ({counts.total})
               </TabsTrigger>
-              <TabsTrigger value="pricing" className="flex items-center gap-2">
+              <TabsTrigger value="sizes" className="flex items-center gap-2">
                 <Package className="h-4 w-4" />
-                Pricing & Sizes
-              </TabsTrigger>
-              <TabsTrigger
-                value="promotion"
-                className="flex items-center gap-2"
-              >
-                <Star className="h-4 w-4" />
-                Promotions
+                Size Variations ({watchedSizes.length})
               </TabsTrigger>
             </TabsList>
 
-            {/* Basic Information Tab */}
+            {/* Basic Information & Pricing Tab */}
             <TabsContent value="basic" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Product Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Basic Product Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Info className="h-5 w-5" />
+                      Product Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
                     <div className="space-y-4">
                       {/* Product Name */}
                       <div className="space-y-1">
@@ -737,15 +694,9 @@ export function ProductModal({
                               id="name"
                               placeholder="Enter product name"
                               disabled={isSubmitting || isUploading}
-                              className={errors.name ? "border-red-500" : ""}
                             />
                           )}
                         />
-                        {errors.name && (
-                          <p className="text-sm text-destructive">
-                            {errors.name.message}
-                          </p>
-                        )}
                       </div>
 
                       {/* Category */}
@@ -763,15 +714,8 @@ export function ProductModal({
                             />
                           )}
                         />
-                        {errors.categoryId && (
-                          <p className="text-sm text-destructive">
-                            {errors.categoryId.message}
-                          </p>
-                        )}
                       </div>
-                    </div>
 
-                    <div className="space-y-4">
                       {/* Brand */}
                       <div className="space-y-1">
                         <Label htmlFor="brandId">Brand</Label>
@@ -816,27 +760,213 @@ export function ProductModal({
                         />
                       </div>
                     </div>
-                  </div>
 
-                  {/* Description */}
-                  <div className="space-y-1">
-                    <Label htmlFor="description">Description</Label>
-                    <Controller
-                      control={control}
-                      name="description"
-                      render={({ field }) => (
-                        <Textarea
-                          {...field}
-                          id="description"
-                          placeholder="Enter product description"
-                          disabled={isSubmitting || isUploading}
-                          className="min-h-[100px] resize-none"
-                        />
+                    {/* Description */}
+                    <div className="space-y-1">
+                      <Label htmlFor="description">Description</Label>
+                      <Controller
+                        control={control}
+                        name="description"
+                        render={({ field }) => (
+                          <Textarea
+                            {...field}
+                            id="description"
+                            placeholder="Enter product description"
+                            disabled={isSubmitting || isUploading}
+                            className="min-h-[100px] resize-none"
+                          />
+                        )}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Pricing & Promotion (Only for Simple Products) */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <DollarSign className="h-5 w-5" />
+                      Product Pricing
+                      {productHasSizes && (
+                        <Badge variant="secondary" className="ml-2">
+                          Managed by Size Variations
+                        </Badge>
                       )}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {productHasSizes ? (
+                      <Alert>
+                        <Info className="h-4 w-4" />
+                        <AlertDescription>
+                          This product has size variations. Pricing is managed
+                          in the "Size Variations" tab. The base price here will
+                          be ignored.
+                        </AlertDescription>
+                      </Alert>
+                    ) : (
+                      <>
+                        {/* Base Price */}
+                        <div className="space-y-2">
+                          <Label htmlFor="price">
+                            Base Price ($){" "}
+                            <span className="text-red-500">*</span>
+                          </Label>
+                          <Controller
+                            control={control}
+                            name="price"
+                            render={({ field }) => (
+                              <PriceInput
+                                value={field.value || 0}
+                                onChange={field.onChange}
+                                placeholder="Enter price"
+                                currency="$"
+                                min={0}
+                                disabled={isSubmitting || isUploading}
+                              />
+                            )}
+                          />
+                        </div>
+
+                        {/* Promotion Section */}
+                        <div className="space-y-4 p-4 border rounded-lg bg-orange-50">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium flex items-center gap-2">
+                              <Percent className="h-4 w-4" />
+                              Promotion (Optional)
+                            </h4>
+                            {promotionType && promotionType !== "" && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={clearSimpleProductPromotion}
+                                disabled={isSubmitting || isUploading}
+                              >
+                                <X className="h-3 w-3 mr-1" />
+                                Clear
+                              </Button>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Promotion Type</Label>
+                              <Controller
+                                control={control}
+                                name="promotionType"
+                                render={({ field }) => (
+                                  <Select
+                                    value={field.value || "NONE"}
+                                    onValueChange={(value) =>
+                                      field.onChange(
+                                        value === "NONE" ? "" : value
+                                      )
+                                    }
+                                    disabled={isSubmitting || isUploading}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select promotion type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="NONE">
+                                        No Promotion
+                                      </SelectItem>
+                                      <SelectItem value="PERCENTAGE">
+                                        Percentage Discount
+                                      </SelectItem>
+                                      <SelectItem value="FIXED_AMOUNT">
+                                        Fixed Amount Discount
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              />
+                            </div>
+
+                            {promotionType &&
+                              promotionType !== "" &&
+                              promotionType !== "NONE" && (
+                                <>
+                                  <div className="space-y-2">
+                                    <Label>
+                                      Discount Value
+                                      {promotionType === "PERCENTAGE" && " (%)"}
+                                      {promotionType === "FIXED_AMOUNT" &&
+                                        " ($)"}
+                                    </Label>
+                                    <Controller
+                                      control={control}
+                                      name="promotionValue"
+                                      render={({ field }) => (
+                                        <Input
+                                          {...field}
+                                          type="number"
+                                          step={
+                                            promotionType === "PERCENTAGE"
+                                              ? "1"
+                                              : "0.01"
+                                          }
+                                          min="0"
+                                          max={
+                                            promotionType === "PERCENTAGE"
+                                              ? "100"
+                                              : undefined
+                                          }
+                                          placeholder={
+                                            promotionType === "PERCENTAGE"
+                                              ? "0-100"
+                                              : "0.00"
+                                          }
+                                          onChange={(e) =>
+                                            field.onChange(
+                                              parseFloat(e.target.value) || 0
+                                            )
+                                          }
+                                          disabled={isSubmitting || isUploading}
+                                        />
+                                      )}
+                                    />
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    <Label>Start Date</Label>
+                                    <Controller
+                                      control={control}
+                                      name="promotionFromDate"
+                                      render={({ field }) => (
+                                        <Input
+                                          {...field}
+                                          type="datetime-local"
+                                          disabled={isSubmitting || isUploading}
+                                        />
+                                      )}
+                                    />
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    <Label>End Date</Label>
+                                    <Controller
+                                      control={control}
+                                      name="promotionToDate"
+                                      render={({ field }) => (
+                                        <Input
+                                          {...field}
+                                          type="datetime-local"
+                                          disabled={isSubmitting || isUploading}
+                                        />
+                                      )}
+                                    />
+                                  </div>
+                                </>
+                              )}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
             {/* Images Tab */}
@@ -846,7 +976,7 @@ export function ProductModal({
                   <CardTitle className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <ImageIcon className="h-5 w-5" />
-                      Product Images
+                      Product Images (Optional)
                     </span>
                     <div className="flex items-center gap-2">
                       <Badge
@@ -854,13 +984,13 @@ export function ProductModal({
                         className="flex items-center gap-1"
                       >
                         <Star className="h-3 w-3 text-yellow-500" />
-                        Main: {counts.main}/1
+                        Main: {counts.main}
                       </Badge>
                       <Badge
                         variant="outline"
                         className="flex items-center gap-1"
                       >
-                        <ImageLucide className="h-3 w-3" />
+                        <ImageIcon className="h-3 w-3" />
                         Gallery: {counts.gallery}
                       </Badge>
                       <Badge variant="secondary">Total: {counts.total}</Badge>
@@ -868,7 +998,7 @@ export function ProductModal({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Image Type Selector */}
+                  {/* Image Type Selector - Default to MAIN */}
                   <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
                     <Label className="text-sm font-medium">Upload as:</Label>
                     <div className="flex items-center gap-2">
@@ -895,7 +1025,7 @@ export function ProductModal({
                         disabled={isSubmitting || isUploading}
                         className="flex items-center gap-1"
                       >
-                        <ImageLucide className="h-3 w-3" />
+                        <ImageIcon className="h-3 w-3" />
                         Gallery
                       </Button>
                     </div>
@@ -904,8 +1034,10 @@ export function ProductModal({
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={resetOnlyImages}
-                        disabled={isSubmitting || isUploading}
+                        onClick={clearAllImages}
+                        disabled={
+                          isSubmitting || isUploading || counts.total === 0
+                        }
                       >
                         <RotateCcw className="h-3 w-3 mr-1" />
                         Clear All
@@ -975,7 +1107,7 @@ export function ProductModal({
                         <div>
                           <h4 className="text-sm font-medium mb-2 flex items-center gap-1">
                             <Star className="h-4 w-4 text-yellow-500" />
-                            Main Image (Thumbnail)
+                            Main Image
                           </h4>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {imageFields.map((image, index) => {
@@ -1009,7 +1141,7 @@ export function ProductModal({
                                       disabled={isUploading}
                                       title="Convert to Gallery"
                                     >
-                                      <ImageLucide className="h-3 w-3" />
+                                      <ImageIcon className="h-3 w-3" />
                                     </Button>
                                     <Button
                                       type="button"
@@ -1035,7 +1167,7 @@ export function ProductModal({
                       ).length > 0 && (
                         <div>
                           <h4 className="text-sm font-medium mb-2 flex items-center gap-1">
-                            <ImageLucide className="h-4 w-4" />
+                            <ImageIcon className="h-4 w-4" />
                             Gallery Images ({counts.gallery})
                           </h4>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1055,7 +1187,7 @@ export function ProductModal({
                                     />
                                     <div className="absolute top-1 left-1">
                                       <Badge className="bg-gray-600 text-white text-xs px-1 rounded flex items-center gap-1">
-                                        <ImageLucide className="h-2 w-2" />
+                                        <ImageIcon className="h-2 w-2" />
                                         GALLERY
                                       </Badge>
                                     </div>
@@ -1096,21 +1228,13 @@ export function ProductModal({
                     </div>
                   )}
 
-                  {/* Validation Messages */}
+                  {/* Info Message */}
                   {counts.total === 0 && (
                     <Alert>
-                      <AlertCircle className="h-4 w-4" />
+                      <Info className="h-4 w-4" />
                       <AlertDescription>
-                        Please add at least one product image.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {counts.total > 0 && counts.main === 0 && (
-                    <Alert>
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        Please set one image as the main image.
+                        Images are optional. You can add product images to make
+                        your product more appealing to customers.
                       </AlertDescription>
                     </Alert>
                   )}
@@ -1123,292 +1247,99 @@ export function ProductModal({
                       </AlertDescription>
                     </Alert>
                   )}
-
-                  {hasValidImageSetup() && (
-                    <Alert>
-                      <CheckCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        Images configured correctly! You have 1 main image and{" "}
-                        {counts.gallery} gallery images.
-                      </AlertDescription>
-                    </Alert>
-                  )}
                 </CardContent>
               </Card>
             </TabsContent>
 
-            {/* Pricing & Sizes Tab */}
-            <TabsContent value="pricing" className="space-y-6">
+            {/* Size Variations Tab */}
+            <TabsContent value="sizes" className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    Product Type & Pricing
+                    <span className="flex items-center gap-2">
+                      <Package className="h-5 w-5" />
+                      Size Variations
+                    </span>
                     <div className="flex gap-2">
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={resetOnlySizes}
+                        onClick={addSize}
                         disabled={isSubmitting || isUploading}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Size
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={clearAllSizes}
+                        disabled={
+                          isSubmitting ||
+                          isUploading ||
+                          watchedSizes.length === 0
+                        }
                       >
                         <RotateCcw className="h-3 w-3 mr-1" />
-                        Reset Sizes
+                        Clear All
                       </Button>
                     </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Product Type Selector */}
-                  <div className="space-y-4">
-                    <Label className="text-lg font-semibold">
-                      Product Type
-                    </Label>
-                    <div className="flex gap-4">
-                      <Button
-                        type="button"
-                        variant={
-                          productType === "simple" ? "default" : "outline"
-                        }
-                        onClick={switchToSimple}
-                        className="flex items-center gap-2"
-                        disabled={isSubmitting || isUploading}
-                      >
-                        <Package className="h-4 w-4" />
-                        Simple Product
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={
-                          productType === "variable" ? "default" : "outline"
-                        }
-                        onClick={switchToVariable}
-                        className="flex items-center gap-2"
-                        disabled={isSubmitting || isUploading}
-                      >
-                        <Layers className="h-4 w-4" />
-                        Variable Product (Sizes)
-                      </Button>
-                    </div>
-                    <Alert>
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        {productType === "simple"
-                          ? "Simple products have one price and no size variations."
-                          : "Variable products have multiple sizes with different prices. The main product price will be ignored."}
-                      </AlertDescription>
-                    </Alert>
-                  </div>
-
-                  {/* Simple Product Pricing */}
-                  {productType === "simple" && (
-                    <div className="p-4 border rounded-lg bg-gray-50">
-                      <h4 className="font-medium mb-4">Product Price</h4>
-                      <div className="space-y-2">
-                        <Label htmlFor="price">Base Price ($) *</Label>
-                        <Controller
-                          control={control}
-                          name="price"
-                          render={({ field }) => (
-                            <PriceInput
-                              value={field.value || 0}
-                              onChange={field.onChange}
-                              placeholder="Price"
-                              currency="$"
-                              min={0}
-                              disabled={isSubmitting || isUploading}
-                            />
-                          )}
-                        />
-                        {errors.price && (
-                          <p className="text-sm text-destructive">
-                            {errors.price.message}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Variable Product Sizes */}
-                  {productType === "variable" && (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium">Size Variations</h4>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={addSize}
-                          disabled={isSubmitting || isUploading}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Size
-                        </Button>
-                      </div>
-
-                      {sizeFields.length === 0 && (
-                        <Alert>
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertDescription>
-                            No sizes configured. Add at least one size
-                            variation.
-                          </AlertDescription>
-                        </Alert>
-                      )}
-
-                      {sizeFields.map((size, index) => (
-                        <Card
-                          key={size.id}
-                          className="border-l-4 border-l-blue-500"
-                        >
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between mb-4">
-                              <h5 className="font-medium">Size {index + 1}</h5>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeSize(index)}
-                                className="text-red-500 hover:text-red-700"
-                                disabled={isSubmitting || isUploading}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label>Size Name *</Label>
-                                <Controller
-                                  control={control}
-                                  name={`sizes.${index}.name`}
-                                  render={({ field }) => (
-                                    <Input
-                                      {...field}
-                                      placeholder="e.g., Small, Medium, Large"
-                                      disabled={isSubmitting || isUploading}
-                                    />
-                                  )}
-                                />
-                              </div>
-
-                              <div className="space-y-2">
-                                <Label>Price ($) *</Label>
-                                <Controller
-                                  control={control}
-                                  name={`sizes.${index}.price`}
-                                  render={({ field }) => (
-                                    <PriceInput
-                                      value={field.value || 0}
-                                      onChange={field.onChange}
-                                      placeholder="Price"
-                                      currency="$"
-                                      min={0}
-                                      disabled={isSubmitting || isUploading}
-                                    />
-                                  )}
-                                />
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Promotions Tab */}
-            <TabsContent value="promotion" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Percent className="h-5 w-5" />
-                      Promotion Settings
-                    </span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={resetOnlyPromotions}
-                      disabled={isSubmitting || isUploading}
-                    >
-                      <RotateCcw className="h-3 w-3 mr-1" />
-                      Reset Promotions
-                    </Button>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Promotion Type</Label>
-                      <Controller
-                        control={control}
-                        name="promotionType"
-                        render={({ field }) => (
-                          <Select
-                            value={field.value || "NONE"}
-                            onValueChange={(value) =>
-                              field.onChange(value === "NONE" ? "" : value)
-                            }
+                  {!productHasSizes ? (
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>
+                        No size variations configured. If you add sizes, the
+                        basic product price will be ignored and pricing will be
+                        managed per size. Each size can have its own price and
+                        promotions.
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <Alert>
+                      <CheckCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Size variations are configured. Product pricing is now
+                        managed per size. The basic product price in "Basic
+                        Info" is ignored.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {sizeFields.map((size, index) => (
+                    <Card
+                      key={size.id}
+                      className="border-l-4 border-l-blue-500"
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <h5 className="font-medium">Size {index + 1}</h5>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeSize(index)}
+                            className="text-red-500 hover:text-red-700"
                             disabled={isSubmitting || isUploading}
                           >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select promotion type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="NONE">No Promotion</SelectItem>
-                              <SelectItem value="PERCENTAGE">
-                                Percentage Discount
-                              </SelectItem>
-                              <SelectItem value="FIXED_AMOUNT">
-                                Fixed Amount Discount
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                    </div>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
 
-                    {promotionType &&
-                      promotionType !== "" &&
-                      promotionType !== "NONE" && (
-                        <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                           <div className="space-y-2">
-                            <Label>
-                              Promotion Value
-                              {promotionType === "PERCENTAGE" && " (%)"}
-                              {promotionType === "FIXED_AMOUNT" && " ($)"}
-                            </Label>
+                            <Label>Size Name *</Label>
                             <Controller
                               control={control}
-                              name="promotionValue"
+                              name={`sizes.${index}.name`}
                               render={({ field }) => (
                                 <Input
                                   {...field}
-                                  type="number"
-                                  step={
-                                    promotionType === "PERCENTAGE"
-                                      ? "1"
-                                      : "0.01"
-                                  }
-                                  min="0"
-                                  max={
-                                    promotionType === "PERCENTAGE"
-                                      ? "100"
-                                      : undefined
-                                  }
-                                  placeholder={
-                                    promotionType === "PERCENTAGE"
-                                      ? "0-100"
-                                      : "0.00"
-                                  }
-                                  onChange={(e) =>
-                                    field.onChange(
-                                      parseFloat(e.target.value) || 0
-                                    )
-                                  }
+                                  placeholder="e.g., Small, Medium, Large"
                                   disabled={isSubmitting || isUploading}
                                 />
                               )}
@@ -1416,37 +1347,187 @@ export function ProductModal({
                           </div>
 
                           <div className="space-y-2">
-                            <Label>Start Date</Label>
+                            <Label>Price ($) *</Label>
                             <Controller
                               control={control}
-                              name="promotionFromDate"
+                              name={`sizes.${index}.price`}
                               render={({ field }) => (
-                                <Input
-                                  {...field}
-                                  type="datetime-local"
+                                <PriceInput
+                                  value={field.value || 0}
+                                  onChange={field.onChange}
+                                  placeholder="Price"
+                                  currency="$"
+                                  min={0}
                                   disabled={isSubmitting || isUploading}
                                 />
                               )}
                             />
+                          </div>
+                        </div>
+
+                        {/* Inline Promotion for Each Size */}
+                        <div className="p-3 bg-orange-50 rounded-lg space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h6 className="font-medium flex items-center gap-2">
+                              <Percent className="h-4 w-4" />
+                              Size Promotion (Optional)
+                            </h6>
+                            {watch(`sizes.${index}.promotionType`) &&
+                              watch(`sizes.${index}.promotionType`) !== "" && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setValue(
+                                      `sizes.${index}.promotionType`,
+                                      ""
+                                    );
+                                    setValue(
+                                      `sizes.${index}.promotionValue`,
+                                      0
+                                    );
+                                    setValue(
+                                      `sizes.${index}.promotionFromDate`,
+                                      ""
+                                    );
+                                    setValue(
+                                      `sizes.${index}.promotionToDate`,
+                                      ""
+                                    );
+                                  }}
+                                  disabled={isSubmitting || isUploading}
+                                >
+                                  <X className="h-3 w-3 mr-1" />
+                                  Clear
+                                </Button>
+                              )}
                           </div>
 
-                          <div className="space-y-2">
-                            <Label>End Date</Label>
-                            <Controller
-                              control={control}
-                              name="promotionToDate"
-                              render={({ field }) => (
-                                <Input
-                                  {...field}
-                                  type="datetime-local"
-                                  disabled={isSubmitting || isUploading}
-                                />
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Promotion Type</Label>
+                              <Controller
+                                control={control}
+                                name={`sizes.${index}.promotionType`}
+                                render={({ field }) => (
+                                  <Select
+                                    value={field.value || "NONE"}
+                                    onValueChange={(value) =>
+                                      field.onChange(
+                                        value === "NONE" ? "" : value
+                                      )
+                                    }
+                                    disabled={isSubmitting || isUploading}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select promotion type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="NONE">
+                                        No Promotion
+                                      </SelectItem>
+                                      <SelectItem value="PERCENTAGE">
+                                        Percentage Discount
+                                      </SelectItem>
+                                      <SelectItem value="FIXED_AMOUNT">
+                                        Fixed Amount Discount
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              />
+                            </div>
+
+                            {watch(`sizes.${index}.promotionType`) &&
+                              watch(`sizes.${index}.promotionType`) !== "" &&
+                              watch(`sizes.${index}.promotionType`) !==
+                                "NONE" && (
+                                <>
+                                  <div className="space-y-2">
+                                    <Label>
+                                      Discount Value
+                                      {watch(`sizes.${index}.promotionType`) ===
+                                        "PERCENTAGE" && " (%)"}
+                                      {watch(`sizes.${index}.promotionType`) ===
+                                        "FIXED_AMOUNT" && " ($)"}
+                                    </Label>
+                                    <Controller
+                                      control={control}
+                                      name={`sizes.${index}.promotionValue`}
+                                      render={({ field }) => (
+                                        <Input
+                                          {...field}
+                                          type="number"
+                                          step={
+                                            watch(
+                                              `sizes.${index}.promotionType`
+                                            ) === "PERCENTAGE"
+                                              ? "1"
+                                              : "0.01"
+                                          }
+                                          min="0"
+                                          max={
+                                            watch(
+                                              `sizes.${index}.promotionType`
+                                            ) === "PERCENTAGE"
+                                              ? "100"
+                                              : undefined
+                                          }
+                                          placeholder={
+                                            watch(
+                                              `sizes.${index}.promotionType`
+                                            ) === "PERCENTAGE"
+                                              ? "0-100"
+                                              : "0.00"
+                                          }
+                                          onChange={(e) =>
+                                            field.onChange(
+                                              parseFloat(e.target.value) || 0
+                                            )
+                                          }
+                                          disabled={isSubmitting || isUploading}
+                                        />
+                                      )}
+                                    />
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    <Label>Start Date</Label>
+                                    <Controller
+                                      control={control}
+                                      name={`sizes.${index}.promotionFromDate`}
+                                      render={({ field }) => (
+                                        <Input
+                                          {...field}
+                                          type="datetime-local"
+                                          disabled={isSubmitting || isUploading}
+                                        />
+                                      )}
+                                    />
+                                  </div>
+
+                                  <div className="space-y-2">
+                                    <Label>End Date</Label>
+                                    <Controller
+                                      control={control}
+                                      name={`sizes.${index}.promotionToDate`}
+                                      render={({ field }) => (
+                                        <Input
+                                          {...field}
+                                          type="datetime-local"
+                                          disabled={isSubmitting || isUploading}
+                                        />
+                                      )}
+                                    />
+                                  </div>
+                                </>
                               )}
-                            />
                           </div>
-                        </>
-                      )}
-                  </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -1477,7 +1558,7 @@ export function ProductModal({
               </Button>
               <Button
                 onClick={handleSubmit(onSubmit)}
-                disabled={isSubmitting || isUploading || !hasValidImageSetup()}
+                disabled={isSubmitting || isUploading}
               >
                 {isSubmitting ? (
                   <>

@@ -19,7 +19,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -34,16 +33,12 @@ import {
   STATUS_FILTER,
 } from "@/constants/app-resource/status/status";
 import { productTableHeaders } from "@/constants/app-resource/table/product";
-import { getUserTableHeaders } from "@/constants/app-resource/table/table";
 import { ROUTES } from "@/constants/app-routed/routes";
 import { usePagination } from "@/hooks/use-pagination";
-import { cn } from "@/lib/utils";
-import { ProductFormData } from "@/models/(content-manangement)/product/product.request";
 import {
   AllProduct,
   ProductModel,
 } from "@/models/(content-manangement)/product/product.response";
-import { productFormData } from "@/models/(content-manangement)/product/product.schema";
 import {
   createProductService,
   deletedProductService,
@@ -60,6 +55,33 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+// Product Form Data Type (simplified without schema)
+type ProductFormData = {
+  id?: string;
+  name: string;
+  categoryId: string;
+  images: Array<{
+    imageUrl: string;
+    imageType: string;
+  }>;
+  description?: string;
+  brandId?: string;
+  price?: number;
+  promotionType?: string;
+  promotionValue?: number;
+  promotionFromDate?: string;
+  promotionToDate?: string;
+  sizes?: Array<{
+    name: string;
+    price: number;
+    promotionType?: string;
+    promotionValue?: number;
+    promotionFromDate?: string;
+    promotionToDate?: string;
+  }>;
+  status?: string;
+};
+
 export default function ProductPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [products, setProducts] = useState<AllProduct | null>(null);
@@ -69,7 +91,7 @@ export default function ProductPage() {
   const [mode, setMode] = useState<ModalMode>(ModalMode.CREATE_MODE);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [initializeProduct, setInitializeProduct] =
-    useState<productFormData | null>(null);
+    useState<ProductFormData | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<ProductModel | null>(
     null
   );
@@ -77,22 +99,16 @@ export default function ProductPage() {
     useState<ProductModel | null>(null);
   const [isUserDetailOpen, setIsUserDetailOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedProductToggle, setSelectedProductToggle] =
-    useState<ProductModel | null>(null);
 
   const t = useTranslations("user");
-  const headers = getUserTableHeaders(t);
   const locale = useLocale();
   const pathname = usePathname();
 
   const user = getUserInfo();
-  const { currentPage, updateUrlWithPage, handlePageChange, getDisplayIndex } =
-    usePagination({
-      baseRoute: ROUTES.ADMIN.PRODUCTS,
-      defaultPageSize: 10,
-    });
-
-  console.log("Page Debug:", { locale, pathname });
+  const { currentPage, updateUrlWithPage, handlePageChange } = usePagination({
+    baseRoute: ROUTES.ADMIN.PRODUCTS,
+    defaultPageSize: 10,
+  });
 
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
 
@@ -110,46 +126,73 @@ export default function ProductPage() {
       setProducts(response);
     } catch (error: any) {
       console.log("Failed to fetch products: ", error);
+      AppToast({
+        type: "error",
+        message: "Failed to load products",
+        duration: 3000,
+        position: "top-right",
+      });
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedSearchQuery, statusFilter, currentPage]);
+  }, [debouncedSearchQuery, statusFilter, currentPage, user?.businessId]);
 
   useEffect(() => {
     loadProducts();
-  }, [loadProducts, debouncedSearchQuery, statusFilter]);
+  }, [loadProducts]);
 
-  // Simplified search change handler - just updates the state, debouncing handles the rest
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
 
-  async function handleSubmit(formData: productFormData) {
+  // Convert ProductModel to ProductFormData for editing
+  const convertProductModelToFormData = (
+    product: ProductModel
+  ): ProductFormData => {
+    return {
+      id: product.id,
+      name: product.name,
+      categoryId: product.categoryId,
+      images: product.images || [],
+      description: product.description,
+      brandId: product.brandId,
+      price: product.price,
+      promotionType: product.promotionType,
+      promotionValue: product.promotionValue,
+      promotionFromDate: product.promotionFromDate,
+      promotionToDate: product.promotionToDate,
+      sizes: product.sizes || [],
+      status: product.status,
+    };
+  };
+
+  async function handleSubmit(formData: ProductFormData) {
     console.log("Submitting form:", formData, "mode:", mode);
 
     setIsSubmitting(true);
     try {
       const isCreate = mode === ModalMode.CREATE_MODE;
 
-      if (isCreate) {
-        const createPayload: ProductFormData = {
-          categoryId: formData.categoryId,
-          images: formData.images,
-          name: formData.name,
-          brandId: formData.brandId,
-          description: formData.description,
-          price: formData.price,
-          promotionFromDate: formData.promotionFromDate,
-          promotionToDate: formData.promotionToDate,
-          promotionType: formData.promotionType,
-          promotionValue: formData.promotionValue,
-          sizes: formData.sizes,
-          status: formData.status,
-        };
+      // Prepare the payload for the API
+      const payload = {
+        name: formData.name,
+        categoryId: formData.categoryId,
+        images: formData.images,
+        description: formData.description,
+        brandId: formData.brandId || undefined,
+        price: formData.price,
+        promotionType: formData.promotionType || undefined,
+        promotionValue: formData.promotionValue || undefined,
+        promotionFromDate: formData.promotionFromDate || undefined,
+        promotionToDate: formData.promotionToDate || undefined,
+        sizes: formData.sizes || [],
+        status: formData.status || "ACTIVE",
+      };
 
-        const response = await createProductService(createPayload);
+      let response;
+      if (isCreate) {
+        response = await createProductService(payload);
         if (response) {
-          // Update products list
           setProducts((prev) =>
             prev
               ? {
@@ -172,42 +215,24 @@ export default function ProductPage() {
 
           AppToast({
             type: "success",
-            message: `Product uploaded successfully`,
+            message: "Product created successfully",
             duration: 4000,
             position: "top-right",
           });
-
-          setIsModalOpen(false);
         }
       } else {
         if (!formData.id) {
           throw new Error("Product ID is required for update");
         }
 
-        const updatePayload: ProductFormData = {
-          categoryId: formData.categoryId,
-          images: formData.images,
-          name: formData.name,
-          brandId: formData.brandId,
-          description: formData.description,
-          price: formData.price,
-          promotionFromDate: formData.promotionFromDate,
-          promotionToDate: formData.promotionToDate,
-          promotionType: formData.promotionType,
-          promotionValue: formData.promotionValue,
-          sizes: formData.sizes,
-          status: formData.status,
-        };
-
-        const response = await updateProductService(formData.id, updatePayload);
+        response = await updateProductService(formData.id, payload);
         if (response) {
-          // Update products list
           setProducts((prev) =>
             prev
               ? {
                   ...prev,
-                  content: prev.content.map((user) =>
-                    user.id === formData.id ? response : user
+                  content: prev.content.map((product) =>
+                    product.id === formData.id ? response : product
                   ),
                 }
               : prev
@@ -215,36 +240,48 @@ export default function ProductPage() {
 
           AppToast({
             type: "success",
-            message: `Product updated successfully`,
+            message: "Product updated successfully",
             duration: 4000,
             position: "top-right",
           });
-
-          setIsModalOpen(false);
         }
       }
+
+      setIsModalOpen(false);
+      setInitializeProduct(null);
     } catch (error: any) {
       console.error("Error submitting Product form:", error);
-      toast.error(error.message || "An unexpected error occurred");
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "An unexpected error occurred";
+
+      AppToast({
+        type: "error",
+        message: errorMessage,
+        duration: 4000,
+        position: "top-right",
+      });
     } finally {
       setIsSubmitting(false);
     }
   }
 
   async function handleDeleteProduct() {
-    if (!selectedProduct || !selectedProduct.id) return;
+    if (!selectedProductToDelete || !selectedProductToDelete.id) return;
 
     setIsSubmitting(true);
     try {
-      const response = await deletedProductService(selectedProduct.id);
+      const response = await deletedProductService(selectedProductToDelete.id);
 
       if (response) {
         AppToast({
           type: "success",
-          message: `Product deleted successfully`,
+          message: "Product deleted successfully",
           duration: 4000,
           position: "top-right",
         });
+
         // After deletion, check if we need to go back a page
         if (products && products.content.length === 1 && currentPage > 1) {
           updateUrlWithPage(currentPage - 1);
@@ -254,17 +291,27 @@ export default function ProductPage() {
       } else {
         AppToast({
           type: "error",
-          message: `Failed to delete Product`,
+          message: "Failed to delete Product",
           duration: 4000,
           position: "top-right",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting Product:", error);
-      toast.error("An error occurred while deleting the Product");
+      const errorMessage =
+        error?.response?.data?.message ||
+        "An error occurred while deleting the product";
+
+      AppToast({
+        type: "error",
+        message: errorMessage,
+        duration: 4000,
+        position: "top-right",
+      });
     } finally {
       setIsSubmitting(false);
       setIsDeleteDialogOpen(false);
+      setSelectedProductToDelete(null);
     }
   }
 
@@ -288,31 +335,42 @@ export default function ProductPage() {
     return `$${(product.displayPrice || product.price || 0).toFixed(2)}`;
   };
 
-  // const handleToggleStatus = (Product: ProductModel | null) => {
-  //   setSelectedProductToggle(Product);
-  //   setIsToggleStatusDialogOpen(true);
-  // };
-
-  const handleEdit = (Product: productFormData) => {
-    setInitializeProduct(Product);
+  const handleEdit = (product: ProductModel) => {
+    const formData = convertProductModelToFormData(product);
+    setInitializeProduct(formData);
     setMode(ModalMode.UPDATE_MODE);
-    setIsModalOpen(!isModalOpen);
+    setIsModalOpen(true);
   };
 
-  const handleDelete = (Product: ProductModel) => {
-    setSelectedProductToDelete(Product);
+  const handleDelete = (product: ProductModel) => {
+    setSelectedProductToDelete(product);
     setIsDeleteDialogOpen(true);
   };
 
-  // Handle status filter change - directly updates the filter value
   const handleStatusChange = (status: Status) => {
     setStatusFilter(status);
   };
 
-  // Handle status filter change - directly updates the filter value
-  const handleViewProductDetail = (Product: ProductModel) => {
-    setSelectedProduct(Product);
+  const handleViewProductDetail = (product: ProductModel) => {
+    setSelectedProduct(product);
     setIsUserDetailOpen(true);
+  };
+
+  const handleCreateNew = () => {
+    setInitializeProduct(null);
+    setMode(ModalMode.CREATE_MODE);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setInitializeProduct(null);
+    setSelectedProduct(null);
+  };
+
+  const handleCloseDetailModal = () => {
+    setIsUserDetailOpen(false);
+    setSelectedProduct(null);
   };
 
   return (
@@ -359,13 +417,8 @@ export default function ProductPage() {
                 </Select>
               </div>
               <div>
-                <Button
-                  onClick={() => {
-                    setMode(ModalMode.CREATE_MODE);
-                    setIsModalOpen(true);
-                  }}
-                >
-                  New
+                <Button onClick={handleCreateNew} disabled={isSubmitting}>
+                  New Product
                 </Button>
               </div>
             </div>
@@ -572,7 +625,8 @@ export default function ProductPage() {
                                     handleViewProductDetail(product)
                                   }
                                   className="hover:text-primary h-8 w-8 p-0 border-blue-200 hover:bg-blue-50"
-                                  title="Edit product"
+                                  title="View product details"
+                                  disabled={isSubmitting}
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
@@ -582,6 +636,7 @@ export default function ProductPage() {
                                   onClick={() => handleEdit(product)}
                                   className="hover:text-primary h-8 w-8 p-0 border-blue-200 hover:bg-blue-50"
                                   title="Edit product"
+                                  disabled={isSubmitting}
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
@@ -591,6 +646,7 @@ export default function ProductPage() {
                                   onClick={() => handleDelete(product)}
                                   className="text-destructive hover:text-red-700 hover:bg-red-50 border-red-200 h-8 w-8 p-0"
                                   title="Delete product"
+                                  disabled={isSubmitting}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -606,41 +662,7 @@ export default function ProductPage() {
             </div>
           </div>
 
-          <ProductDetailModal
-            product={selectedProduct}
-            open={isUserDetailOpen}
-            onClose={() => {
-              setSelectedProduct(null);
-              setIsModalOpen(false);
-            }}
-          />
-
-          <ProductModal
-            data={initializeProduct}
-            isOpen={isModalOpen}
-            mode={mode}
-            onClose={() => {
-              setInitializeProduct(null);
-              setSelectedProduct(null);
-              setIsModalOpen(false);
-            }}
-            onSave={handleSubmit}
-          />
-
-          <DeleteConfirmationDialog
-            isOpen={isDeleteDialogOpen}
-            onClose={() => {
-              setIsDeleteDialogOpen(false);
-              setSelectedProductToDelete(null);
-            }}
-            onDelete={handleDeleteProduct}
-            title="Delete Product"
-            description={`Are you sure you want to delete this product`}
-            itemName={selectedProduct?.name || selectedProduct?.brandName}
-            isSubmitting={isSubmitting}
-          />
-
-          {/* Pagination could go here if needed */}
+          {/* Pagination */}
           {products && products.totalElements > 0 && (
             <div className="flex-shrink-0 flex items-center justify-between pt-4 border-t">
               <div className="text-sm text-muted-foreground">
@@ -649,13 +671,42 @@ export default function ProductPage() {
               </div>
               <PaginationPage
                 currentPage={currentPage}
-                totalPages={products?.totalPages ?? 10}
+                totalPages={products?.totalPages ?? 1}
                 onPageChange={handlePageChange}
               />
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Modals */}
+      <ProductDetailModal
+        product={selectedProduct}
+        open={isUserDetailOpen}
+        onClose={handleCloseDetailModal}
+      />
+
+      <ProductModal
+        data={initializeProduct}
+        isOpen={isModalOpen}
+        mode={mode}
+        onClose={handleCloseModal}
+        onSave={handleSubmit}
+        isSubmitting={isSubmitting}
+      />
+
+      <DeleteConfirmationDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => {
+          setIsDeleteDialogOpen(false);
+          setSelectedProductToDelete(null);
+        }}
+        onDelete={handleDeleteProduct}
+        title="Delete Product"
+        description="Are you sure you want to delete this product? This action cannot be undone."
+        itemName={selectedProductToDelete?.name}
+        isSubmitting={isSubmitting}
+      />
     </div>
   );
 }
