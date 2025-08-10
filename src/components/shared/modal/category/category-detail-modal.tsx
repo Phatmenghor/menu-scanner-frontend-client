@@ -11,8 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tag, ImageIcon, Edit, Trash2 } from "lucide-react";
 import { z } from "zod";
-import { CategoryModel } from "@/models/(content-manangement)/category/category.response";
-import { CategoryFormData } from "@/models/(content-manangement)/category/category.schema";
+import { CategoryModel } from "@/models/content-manangement/category/category.response";
+import { CategoryFormData } from "@/models/content-manangement/category/category.schema";
 import { DeleteConfirmationDialog } from "../../dialog/dialog-delete";
 
 type Props = {

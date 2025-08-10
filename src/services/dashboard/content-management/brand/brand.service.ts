@@ -1,7 +1,7 @@
 import {
   AllBrandRequest,
   BrandRequest,
-} from "@/models/(content-manangement)/brand/brand.request";
+} from "@/models/content-manangement/brand/brand.request";
 import { axiosClientWithAuth } from "@/utils/axios";
 
 export async function getAllBrandService(data: AllBrandRequest) {

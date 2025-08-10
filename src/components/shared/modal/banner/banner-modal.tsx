@@ -35,7 +35,7 @@ import {
 import {
   UploadBannerFormData,
   UploadBannerSchema,
-} from "@/models/(content-manangement)/banner/banner.schema";
+} from "@/models/content-manangement/banner/banner.schema";
 import { uploadImageService } from "@/services/dashboard/image/image.service";
 import { UploadImageRequest } from "@/models/image/image.request";
 

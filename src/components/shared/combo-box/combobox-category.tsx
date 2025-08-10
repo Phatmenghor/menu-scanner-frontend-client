@@ -15,7 +15,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { CategoryModel } from "@/models/(content-manangement)/category/category.response";
+import { CategoryModel } from "@/models/content-manangement/category/category.response";
 import { getAllCategoryService } from "@/services/dashboard/content-management/category/category.service";
 import { debounce } from "@/utils/debounce/debounce";
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react";

@@ -34,21 +34,21 @@ import {
   Settings,
   ExternalLink,
 } from "lucide-react";
-import { BusinessSettingModel } from "@/models/(business)/business-setting/business-setting.response";
+import { BusinessSettingModel } from "@/models/business-group/business-setting/business-setting.response";
 import { Controller, useForm } from "react-hook-form";
 import {
   MyBusinessFormData,
   updateMyBusinessSchema,
-} from "@/models/(business)/business-setting/business-setting.schema";
+} from "@/models/business-group/business-setting/business-setting.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { UploadImageRequest } from "@/models/image/image.request";
 import { uploadImageService } from "@/services/dashboard/image/image.service";
 import {
   getMyBusinessSettingService,
   updateMyBusinessSettingService,
-} from "@/services/dashboard/(business)/business-setting/business-setting.service";
+} from "@/services/dashboard/business/business-setting/business-setting.service";
 import { cleanValue } from "@/lib/utils";
-import { UpdateMyBusinessSetting } from "@/models/(business)/business-setting/business-setting.request";
+import { UpdateMyBusinessSetting } from "@/models/business-group/business-setting/business-setting.request";
 import { AppToast } from "@/components/app/components/app-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";

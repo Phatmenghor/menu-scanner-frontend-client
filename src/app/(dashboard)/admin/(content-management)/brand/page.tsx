@@ -37,12 +37,12 @@ import { getUserTableHeaders } from "@/constants/app-resource/table/table";
 import { ROUTES } from "@/constants/app-routed/routes";
 import { usePagination } from "@/hooks/use-pagination";
 import { cn } from "@/lib/utils";
-import { BrandRequest } from "@/models/(content-manangement)/brand/brand.request";
+import { BrandRequest } from "@/models/content-manangement/brand/brand.request";
 import {
   AllBrand,
   BrandModel,
-} from "@/models/(content-manangement)/brand/brand.response";
-import { BrandFormData } from "@/models/(content-manangement)/brand/brand.schema";
+} from "@/models/content-manangement/brand/brand.response";
+import { BrandFormData } from "@/models/content-manangement/brand/brand.schema";
 import {
   createBrandService,
   deletedBrandService,

@@ -22,7 +22,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { UploadImageRequest } from "@/models/image/image.request";
 import { uploadImageService } from "@/services/dashboard/image/image.service";
-import { BusinessModel } from "@/models/(business)/business/business.response";
+import { BusinessModel } from "@/models/business-group/business/business.response";
 import {
   BUSINESS_USER_ROLE_OPTIONS,
   BusinessUserType,

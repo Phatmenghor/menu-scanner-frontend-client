@@ -15,7 +15,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { BrandModel } from "@/models/(content-manangement)/brand/brand.response";
+import { BrandModel } from "@/models/content-manangement/brand/brand.response";
 import { getAllBrandService } from "@/services/dashboard/content-management/brand/brand.service";
 import { debounce } from "@/utils/debounce/debounce";
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react";

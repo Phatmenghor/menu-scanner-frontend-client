@@ -64,6 +64,10 @@ export const ROUTES = {
     PROFILE: "/admin/profile",
     ACCOUNT: "/admin/account",
   },
+
+  CUSTOMER: {
+    DASHBOARD: "/dashboard",
+  },
 } as const;
 
 // Route utilities

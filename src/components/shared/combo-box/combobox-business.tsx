@@ -34,8 +34,8 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
-import { BusinessModel } from "@/models/(business)/business/business.response";
-import { getAllBusinessService } from "@/services/dashboard/(business)/business/business.service";
+import { BusinessModel } from "@/models/business-group/business/business.response";
+import { getAllBusinessService } from "@/services/dashboard/business/business/business.service";
 
 interface ComboboxSelectedProps {
   dataSelect: BusinessModel | null;

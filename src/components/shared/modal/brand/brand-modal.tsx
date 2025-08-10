@@ -34,11 +34,11 @@ import {
   ModalMode,
   STATUS_USER_OPTIONS,
 } from "@/constants/app-resource/status/status";
-import { BrandRequest } from "@/models/(content-manangement)/brand/brand.request";
+import { BrandRequest } from "@/models/content-manangement/brand/brand.request";
 import {
   BrandFormData,
   BrandSchema,
-} from "@/models/(content-manangement)/brand/brand.schema";
+} from "@/models/content-manangement/brand/brand.schema";
 import { uploadImageService } from "@/services/dashboard/image/image.service";
 import { UploadImageRequest } from "@/models/image/image.request";
 

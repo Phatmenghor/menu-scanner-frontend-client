@@ -1,7 +1,7 @@
 import {
   AllProductRequest,
   ProductFormData,
-} from "@/models/(content-manangement)/product/product.request";
+} from "@/models/content-manangement/product/product.request";
 import { axiosClientWithAuth } from "@/utils/axios";
 
 export async function getAllProductService(data: AllProductRequest) {

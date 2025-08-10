@@ -1,4 +1,4 @@
-import { UpdateMyBusinessSetting } from "@/models/(business)/business-setting/business-setting.request";
+import { UpdateMyBusinessSetting } from "@/models/business-group/business-setting/business-setting.request";
 import { axiosClientWithAuth } from "@/utils/axios";
 
 export async function getMyBusinessSettingService() {

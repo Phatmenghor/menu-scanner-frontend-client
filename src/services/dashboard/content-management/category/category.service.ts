@@ -1,11 +1,11 @@
 import {
   AllBrandRequest,
   BrandRequest,
-} from "@/models/(content-manangement)/brand/brand.request";
+} from "@/models/content-manangement/brand/brand.request";
 import {
   AllCategoryRequest,
   CategoryRequest,
-} from "@/models/(content-manangement)/category/category.request";
+} from "@/models/content-manangement/category/category.request";
 import { axiosClientWithAuth } from "@/utils/axios";
 
 export async function getAllCategoryService(data: AllCategoryRequest) {

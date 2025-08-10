@@ -27,7 +27,7 @@ import {
 import {
   CategoryFormData,
   CategoryFormSchema,
-} from "@/models/(content-manangement)/category/category.schema";
+} from "@/models/content-manangement/category/category.schema";
 import { uploadImageService } from "@/services/dashboard/image/image.service";
 import { UploadImageRequest } from "@/models/image/image.request";
 

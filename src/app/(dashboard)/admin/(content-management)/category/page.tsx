@@ -37,12 +37,12 @@ import { getUserTableHeaders } from "@/constants/app-resource/table/table";
 import { ROUTES } from "@/constants/app-routed/routes";
 import { usePagination } from "@/hooks/use-pagination";
 import { cn } from "@/lib/utils";
-import { CategoryRequest } from "@/models/(content-manangement)/category/category.request";
+import { CategoryRequest } from "@/models/content-manangement/category/category.request";
 import {
   AllCategories,
   CategoryModel,
-} from "@/models/(content-manangement)/category/category.response";
-import { CategoryFormData } from "@/models/(content-manangement)/category/category.schema";
+} from "@/models/content-manangement/category/category.response";
+import { CategoryFormData } from "@/models/content-manangement/category/category.schema";
 import {
   createCategoryService,
   deletedCategoriesService,

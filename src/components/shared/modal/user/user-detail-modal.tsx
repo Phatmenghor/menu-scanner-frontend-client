@@ -42,10 +42,10 @@ import {
   ProductModel,
   Size,
   Image as ProductImage,
-} from "@/models/(content-manangement)/product/product.response";
-import { BusinessModel } from "@/models/(business)/business/business.response";
-import { CategoryModel } from "@/models/(content-manangement)/category/category.response";
-import { BrandModel } from "@/models/(content-manangement)/brand/brand.response";
+} from "@/models/content-manangement/product/product.response";
+import { BusinessModel } from "@/models/business-group/business/business.response";
+import { CategoryModel } from "@/models/content-manangement/category/category.response";
+import { BrandModel } from "@/models/content-manangement/brand/brand.response";
 
 interface AdminProductModalProps {
   product: ProductModel | null;

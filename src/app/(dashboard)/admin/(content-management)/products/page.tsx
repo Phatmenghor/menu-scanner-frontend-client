@@ -38,7 +38,7 @@ import { usePagination } from "@/hooks/use-pagination";
 import {
   AllProduct,
   ProductModel,
-} from "@/models/(content-manangement)/product/product.response";
+} from "@/models/content-manangement/product/product.response";
 import {
   createProductService,
   deletedProductService,

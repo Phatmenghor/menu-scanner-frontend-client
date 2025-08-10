@@ -6,14 +6,17 @@ export default function middleware(req: NextRequest) {
 
   console.log(`Middleware: ${pathname}, Token: ${token ? "exists" : "none"}`);
 
-  // Redirect root to login if no token, admin if has token
+  // If you want "/" to load normally, remove the forced redirect here
   if (pathname === "/") {
+    // Example: only redirect if you explicitly want to skip root for logged-in users
     if (token) {
-      console.log("Root access with token -> redirecting to /admin");
-      return NextResponse.redirect(new URL("/admin", req.url));
+      console.log(
+        "Root access with token -> letting it load instead of redirecting"
+      );
+      return NextResponse.next();
     } else {
-      console.log("Root access without token -> redirecting to /login");
-      return NextResponse.redirect(new URL("/login", req.url));
+      console.log("Root access without token -> letting it load");
+      return NextResponse.next();
     }
   }
 

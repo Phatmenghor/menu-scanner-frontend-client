@@ -36,12 +36,12 @@ import { getUserTableHeaders } from "@/constants/app-resource/table/table";
 import { ROUTES } from "@/constants/app-routed/routes";
 import { usePagination } from "@/hooks/use-pagination";
 import { cn } from "@/lib/utils";
-import { UploadBannerRequest } from "@/models/(content-manangement)/banner/banner.request";
+import { UploadBannerRequest } from "@/models/content-manangement/banner/banner.request";
 import {
   AllBanner,
   BannerModel,
-} from "@/models/(content-manangement)/banner/banner.response";
-import { UploadBannerFormData } from "@/models/(content-manangement)/banner/banner.schema";
+} from "@/models/content-manangement/banner/banner.response";
+import { UploadBannerFormData } from "@/models/content-manangement/banner/banner.schema";
 import { AllUserResponse } from "@/models/user/user.response.model";
 import {
   deletedBannerService,

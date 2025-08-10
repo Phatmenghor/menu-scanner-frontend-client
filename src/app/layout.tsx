@@ -7,6 +7,8 @@ import "@/styles/globals.css";
 import { LocaleProvider } from "@/context/locale-provider";
 import { type Locale } from "@/i18n/request";
 import { ToastProvider } from "@/components/app/components/app-toast";
+import { Header } from "@/components/app/public/header";
+import { Footer } from "@/components/app/public/footer";
 
 const geistSans = localFont({
   src: "../../public/fonts/GeistVF.woff",

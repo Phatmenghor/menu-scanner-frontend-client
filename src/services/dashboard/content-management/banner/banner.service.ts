@@ -1,7 +1,7 @@
 import {
   AllBannerRequest,
   UploadBannerRequest,
-} from "@/models/(content-manangement)/banner/banner.request";
+} from "@/models/content-manangement/banner/banner.request";
 import { axiosClientWithAuth } from "@/utils/axios";
 
 export async function getAllBannerService(data: AllBannerRequest) {

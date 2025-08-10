@@ -12,16 +12,15 @@ import { useEffect, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getUserInfo } from "@/utils/local-storage/userInfo";
 import Image from "next/image";
-import { ROUTES } from "@/constants/app-routed/routes";
-import { sidebarItems } from "@/constants/app-routed/admin-navigation-config";
 import { UserAuthResponse } from "@/models/auth/auth.response";
+import { CustomerSidebarItems } from "@/constants/app-routed/customer-navigation-config";
 
 interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
 }
 
-export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
+export function CustomerDashboardSidebar({ isOpen, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const [authUser, setAuthUser] = useState<UserAuthResponse | null>(null);
@@ -68,7 +67,7 @@ export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
 
   const renderNavItems = (isCollapsed = false) => (
     <nav className="flex flex-col gap-1">
-      {sidebarItems.map((route) => {
+      {CustomerSidebarItems.map((route) => {
         const isActive = route.href ? pathname === route.href : false;
 
         if (route.subroutes) {
@@ -248,28 +247,6 @@ export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
         <ScrollArea className="flex-1 py-6">
           <nav className="px-4 space-y-2">{renderNavItems(collapsed)}</nav>
         </ScrollArea>
-
-        {/* Modern Footer with user info */}
-        {!collapsed && authUser && (
-          <div className="border-t border-border/50 p-4">
-            <Link href={ROUTES.ADMIN.PROFILE}>
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-accent/30 hover:bg-accent/50 transition-colors duration-300 cursor-pointer group">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white text-sm font-bold shadow-sm">
-                  {authUser.fullName?.charAt(0) || "U"}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">
-                    {authUser.fullName || "GUEST USER"}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {authUser.email || "user@example.com"}
-                  </p>
-                </div>
-                <div className="w-2 h-2 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
-              </div>
-            </Link>
-          </div>
-        )}
 
         {/* Collapsed user info */}
         {collapsed && authUser && (
