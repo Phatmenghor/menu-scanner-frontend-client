@@ -63,18 +63,6 @@ export const navigationConfig: NavSection[] = [
             icon: Users,
             description: "View all users",
           },
-          {
-            title: "User Roles",
-            href: ROUTES.ADMIN.USER_ROLES,
-            icon: Shield,
-            description: "Manage user roles",
-          },
-          {
-            title: "Permissions",
-            href: ROUTES.ADMIN.PERMISSIONS,
-            icon: UserCheck,
-            description: "Set user permissions",
-          },
         ],
       },
       {
@@ -115,12 +103,6 @@ export const navigationConfig: NavSection[] = [
             icon: Boxes, // Represents multiple items/groups = category
             description: "Manage category",
           },
-          {
-            title: "Product",
-            href: ROUTES.ADMIN.PRODUCTS,
-            icon: Package, // Represents a product/package
-            description: "Manage product",
-          },
         ],
       },
       {
@@ -142,10 +124,10 @@ export const navigationConfig: NavSection[] = [
         description: "Product management",
         subroutes: [
           {
-            title: "All Products",
+            title: "Product",
             href: ROUTES.ADMIN.PRODUCTS,
-            icon: Package,
-            description: "View all products",
+            icon: Package, // Represents a product/package
+            description: "Manage product",
           },
           {
             title: "Categories",

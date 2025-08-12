@@ -100,6 +100,9 @@ export default function ProductPage() {
   const [isUserDetailOpen, setIsUserDetailOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
+  //Pagination
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   const t = useTranslations("user");
   const locale = useLocale();
   const pathname = usePathname();
@@ -314,6 +317,16 @@ export default function ProductPage() {
       setSelectedProductToDelete(null);
     }
   }
+
+  // Handle items per page change
+  const handleItemsPerPageChange = useCallback(
+    (newItemsPerPage: number) => {
+      setItemsPerPage(newItemsPerPage);
+      // Reset to page 1 when changing items per page to avoid confusion
+      updateUrlWithPage(1);
+    },
+    [updateUrlWithPage]
+  );
 
   const getAdminDisplayPrice = (product: ProductModel): string => {
     // If product has sizes, show price range
@@ -671,8 +684,13 @@ export default function ProductPage() {
               </div>
               <PaginationPage
                 currentPage={currentPage}
-                totalPages={products?.totalPages ?? 1}
+                totalItems={products.totalElements}
+                itemsPerPage={itemsPerPage}
                 onPageChange={handlePageChange}
+                onItemsPerPageChange={handleItemsPerPageChange}
+                showItemsPerPage={true}
+                itemsPerPageOptions={[5, 10, 20, 50]}
+                showResultsText={true}
               />
             </div>
           )}

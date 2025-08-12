@@ -39,8 +39,8 @@ export default function DashboardLayout({
         </div>
 
         {/* Main content - Flexible height */}
-        <main className="dashboard-main flex-1 overflow-hidden px-4 pt-4 md:pt-6 md:px-6">
-          <div className="h-full overflow-hidden">{children}</div>
+        <main className="dashboard-main flex-1 min-h-screen overflow-y-auto px-4 pt-4 md:pt-6 md:px-6">
+          <div className="h-full">{children}</div>
         </main>
       </div>
     </div>

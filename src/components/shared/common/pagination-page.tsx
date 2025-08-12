@@ -1,265 +1,331 @@
 "use client";
 
-import { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
+import { Button } from "@/components/ui/button";
 import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-interface CustomPaginationProps {
+interface PaginationProps {
   currentPage: number;
-  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
   onPageChange: (page: number) => void;
+  onItemsPerPageChange?: (itemsPerPage: number) => void;
   className?: string;
+  showItemsPerPage?: boolean;
+  itemsPerPageOptions?: number[];
+  showResultsText?: boolean;
+  showFirstLast?: boolean;
+  maxVisiblePages?: number;
+  size?: "sm" | "default" | "lg";
+  disabled?: boolean;
 }
 
-export default function PaginationPage({
+type PaginationItem = number | "ellipsis" | "first" | "last";
+
+export default function ImprovedPagination({
   currentPage,
-  totalPages,
+  totalItems,
+  itemsPerPage,
   onPageChange,
-  className = "",
-}: CustomPaginationProps) {
-  // Handle previous page
-  const handlePreviousPage = useCallback(() => {
-    if (currentPage > 1) {
-      onPageChange(currentPage - 1);
-    }
-  }, [currentPage, onPageChange]);
+  onItemsPerPageChange,
+  className,
+  showItemsPerPage = true,
+  itemsPerPageOptions = [10, 20, 50, 100],
+  showResultsText = true,
+  showFirstLast = false,
+  maxVisiblePages = 7,
+  size = "default",
+  disabled = false,
+}: PaginationProps) {
+  // Memoized calculations
+  const paginationData = useMemo(() => {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startItem =
+      totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+    const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
-  // Handle next page
-  const handleNextPage = useCallback(() => {
-    if (currentPage < totalPages) {
-      onPageChange(currentPage + 1);
-    }
-  }, [currentPage, totalPages, onPageChange]);
+    return {
+      totalPages,
+      startItem,
+      endItem,
+      hasPrevious: currentPage > 1,
+      hasNext: currentPage < totalPages,
+    };
+  }, [currentPage, totalItems, itemsPerPage]);
 
-  // Generate page numbers with ellipsis logic
-  const getPaginationItems = useCallback((): (number | "ellipsis")[] => {
-    const items: (number | "ellipsis")[] = [];
+  // Generate pagination items
+  const paginationItems = useMemo((): PaginationItem[] => {
+    const { totalPages } = paginationData;
+    const items: PaginationItem[] = [];
 
-    if (totalPages <= 7) {
-      // Show all pages if 7 or fewer
+    if (totalPages <= maxVisiblePages) {
+      // Show all pages if total is less than max visible
       for (let i = 1; i <= totalPages; i++) {
         items.push(i);
       }
     } else {
-      // Always show first page
-      items.push(1);
+      // Complex pagination logic
+      const sidePages = Math.floor((maxVisiblePages - 3) / 2); // Reserve space for first, last, and ellipsis
 
-      // Determine the range around current page
-      let start = Math.max(2, currentPage - 1);
-      let end = Math.min(totalPages - 1, currentPage + 1);
-
-      // Adjust range if current page is near the beginning
-      if (currentPage <= 3) {
-        start = 2;
-        end = 4;
+      if (showFirstLast) {
+        items.push("first");
+      } else {
+        items.push(1);
       }
 
-      // Adjust range if current page is near the end
-      if (currentPage >= totalPages - 2) {
-        start = totalPages - 3;
-        end = totalPages - 1;
+      let start = Math.max(2, currentPage - sidePages);
+      let end = Math.min(totalPages - 1, currentPage + sidePages);
+
+      // Adjust range if we're near the beginning
+      if (currentPage <= sidePages + 1) {
+        end = Math.min(totalPages - 1, maxVisiblePages - 2);
       }
 
-      // Add ellipsis after first page if needed
+      // Adjust range if we're near the end
+      if (currentPage >= totalPages - sidePages) {
+        start = Math.max(2, totalPages - maxVisiblePages + 3);
+      }
+
+      // Add ellipsis before start if needed
       if (start > 2) {
         items.push("ellipsis");
       }
 
-      // Add middle pages
+      // Add page numbers
       for (let i = start; i <= end; i++) {
         items.push(i);
       }
 
-      // Add ellipsis before last page if needed
+      // Add ellipsis after end if needed
       if (end < totalPages - 1) {
         items.push("ellipsis");
       }
 
-      // Always show last page
-      items.push(totalPages);
+      // Add last page
+      if (showFirstLast) {
+        items.push("last");
+      } else if (totalPages > 1) {
+        items.push(totalPages);
+      }
     }
 
     return items;
-  }, [currentPage, totalPages]);
+  }, [currentPage, paginationData.totalPages, maxVisiblePages, showFirstLast]);
 
-  // Don't render if there's only one page or no pages
-  if (totalPages <= 1) {
-    return null;
+  // Event handlers
+  const handlePageChange = useCallback(
+    (page: number) => {
+      if (disabled || page === currentPage) return;
+      onPageChange(Math.max(1, Math.min(page, paginationData.totalPages)));
+    },
+    [currentPage, paginationData.totalPages, onPageChange, disabled]
+  );
+
+  const handleItemsPerPageChange = useCallback(
+    (newItemsPerPage: number) => {
+      if (disabled || !onItemsPerPageChange) return;
+
+      // Maintain the first visible item when changing items per page
+      const currentFirstItem = (currentPage - 1) * itemsPerPage + 1;
+      const newPage = Math.ceil(currentFirstItem / newItemsPerPage);
+
+      onItemsPerPageChange(newItemsPerPage);
+      onPageChange(Math.max(1, newPage));
+    },
+    [currentPage, itemsPerPage, onItemsPerPageChange, onPageChange, disabled]
+  );
+
+  // Handle special page navigation
+  const handleSpecialPage = useCallback(
+    (item: PaginationItem) => {
+      switch (item) {
+        case "first":
+          handlePageChange(1);
+          break;
+        case "last":
+          handlePageChange(paginationData.totalPages);
+          break;
+        case "ellipsis":
+          // Do nothing for ellipsis
+          break;
+        default:
+          handlePageChange(item);
+      }
+    },
+    [handlePageChange, paginationData.totalPages]
+  );
+
+  // Size variants
+  const sizeClasses = {
+    sm: "text-xs",
+    default: "text-sm",
+    lg: "text-base",
+  };
+
+  const buttonSizes = {
+    sm: "sm" as const,
+    default: "sm" as const,
+    lg: "default" as const,
+  };
+
+  if (totalItems === 0) {
+    return (
+      <div className={cn("flex items-center justify-center py-4", className)}>
+        <p className={cn("text-muted-foreground", sizeClasses[size])}>
+          No items to display
+        </p>
+      </div>
+    );
   }
 
   return (
-    <div className={`p-4 ${className}`}>
-      {/* Desktop Pagination */}
-      <div className="hidden md:block">
-        <div className="flex justify-center items-center gap-2">
-          <button
-            onClick={handlePreviousPage}
-            disabled={currentPage === 1}
-            className={`flex items-center gap-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-              currentPage === 1
-                ? "opacity-50 cursor-not-allowed text-gray-400 border-gray-200"
-                : "text-gray-700 border-gray-300 hover:bg-gray-50 cursor-pointer"
-            }`}
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            Previous
-          </button>
+    <div className={cn("", className)}>
+      {/* Pagination navigation and controls in a single row */}
+      <div className="flex items-center justify-between gap-4">
+        {/* Left side: Results text */}
+        {showResultsText && (
+          <p className={cn("text-muted-foreground", sizeClasses[size])}>
+            Showing{" "}
+            <span className="font-medium text-foreground">
+              {paginationData.startItem.toLocaleString()}
+            </span>{" "}
+            to{" "}
+            <span className="font-medium text-foreground">
+              {paginationData.endItem.toLocaleString()}
+            </span>{" "}
+            of{" "}
+            <span className="font-medium text-foreground">
+              {totalItems.toLocaleString()}
+            </span>{" "}
+            results
+          </p>
+        )}
 
-          {getPaginationItems().map((item, index) => {
-            if (item === "ellipsis") {
+        {/* Center: Pagination navigation */}
+        <nav
+          className="flex items-center gap-1"
+          aria-label="Pagination navigation"
+        >
+          {/* Previous button */}
+          <Button
+            variant="outline"
+            size={buttonSizes[size]}
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={!paginationData.hasPrevious || disabled}
+            aria-label="Go to previous page"
+            className="gap-1"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">Previous</span>
+          </Button>
+
+          {/* Page numbers */}
+          <div className="flex items-center gap-1">
+            {paginationItems.map((item, index) => {
+              if (item === "ellipsis") {
+                return (
+                  <div
+                    key={`ellipsis-${index}`}
+                    className="flex h-9 w-9 items-center justify-center"
+                    aria-hidden="true"
+                  >
+                    <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                );
+              }
+
+              const isCurrentPage =
+                item === currentPage ||
+                (item === "first" && currentPage === 1) ||
+                (item === "last" && currentPage === paginationData.totalPages);
+
+              const displayText =
+                item === "first"
+                  ? "1"
+                  : item === "last"
+                  ? paginationData.totalPages.toString()
+                  : item.toString();
+
               return (
-                <span key={`ellipsis-${index}`} className="px-2 text-gray-400">
-                  ...
-                </span>
+                <Button
+                  key={item}
+                  variant={isCurrentPage ? "default" : "outline"}
+                  size={buttonSizes[size]}
+                  onClick={() => handleSpecialPage(item)}
+                  disabled={isCurrentPage || disabled}
+                  aria-label={
+                    item === "first"
+                      ? "Go to first page"
+                      : item === "last"
+                      ? "Go to last page"
+                      : `Go to page ${item}`
+                  }
+                  aria-current={isCurrentPage ? "page" : undefined}
+                  className="h-9 w-9 p-0"
+                >
+                  {displayText}
+                </Button>
               );
-            }
+            })}
+          </div>
 
-            return (
-              <button
-                key={item}
-                onClick={() => onPageChange(item)}
-                className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${
-                  currentPage === item
-                    ? "bg-black text-white"
-                    : "text-gray-700 border border-gray-300 hover:bg-gray-50"
-                }`}
+          {/* Next button */}
+          <Button
+            variant="outline"
+            size={buttonSizes[size]}
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={!paginationData.hasNext || disabled}
+            aria-label="Go to next page"
+            className="gap-1"
+          >
+            <span className="hidden sm:inline">Next</span>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </nav>
+
+        {/* Right side: Items per page selector */}
+        {showItemsPerPage && onItemsPerPageChange && (
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                "text-muted-foreground whitespace-nowrap",
+                sizeClasses[size]
+              )}
+            >
+              Items per page:
+            </span>
+            <Select
+              value={itemsPerPage.toString()}
+              onValueChange={(value) => handleItemsPerPageChange(Number(value))}
+              disabled={disabled}
+            >
+              <SelectTrigger
+                className={cn(
+                  "w-20",
+                  size === "sm" && "h-8 text-xs",
+                  size === "lg" && "h-11 text-base"
+                )}
               >
-                {item}
-              </button>
-            );
-          })}
-
-          <button
-            onClick={handleNextPage}
-            disabled={currentPage === totalPages}
-            className={`flex items-center gap-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-              currentPage === totalPages
-                ? "opacity-50 cursor-not-allowed text-gray-400 border-gray-200"
-                : "text-gray-700 border-gray-300 hover:bg-gray-50 cursor-pointer"
-            }`}
-          >
-            Next
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Pagination - Matches the design in your image */}
-      <div className="flex justify-center items-center gap-2 md:hidden">
-        <button
-          onClick={handlePreviousPage}
-          disabled={currentPage === 1}
-          className={`flex items-center gap-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-            currentPage === 1
-              ? "opacity-50 cursor-not-allowed text-gray-400 border-gray-200"
-              : "text-gray-700 border-gray-300 hover:bg-gray-50"
-          }`}
-        >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-          Previous
-        </button>
-
-        {/* Show limited page numbers on mobile */}
-        {(() => {
-          const mobilePagesToShow = [];
-
-          if (totalPages <= 4) {
-            // Show all pages if 4 or fewer
-            for (let i = 1; i <= totalPages; i++) {
-              mobilePagesToShow.push(i);
-            }
-          } else {
-            // Show current page and adjacent pages
-            const start = Math.max(1, currentPage - 1);
-            const end = Math.min(totalPages, currentPage + 1);
-
-            for (let i = start; i <= end; i++) {
-              mobilePagesToShow.push(i);
-            }
-          }
-
-          return mobilePagesToShow.map((pageNumber) => (
-            <button
-              key={pageNumber}
-              onClick={() => onPageChange(pageNumber)}
-              className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${
-                currentPage === pageNumber
-                  ? "bg-black text-white"
-                  : "text-gray-700 border border-gray-300 hover:bg-gray-50"
-              }`}
-            >
-              {pageNumber}
-            </button>
-          ));
-        })()}
-
-        <button
-          onClick={handleNextPage}
-          disabled={currentPage === totalPages}
-          className={`flex items-center gap-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-            currentPage === totalPages
-              ? "opacity-50 cursor-not-allowed text-gray-400 border-gray-200"
-              : "text-gray-700 border-gray-300 hover:bg-gray-50"
-          }`}
-        >
-          Next
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </button>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {itemsPerPageOptions.map((option) => (
+                  <SelectItem key={option} value={option.toString()}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
     </div>
   );
