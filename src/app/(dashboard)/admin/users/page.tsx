@@ -446,9 +446,9 @@ export default function UserPage() {
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex flex-col">
       <Card className="flex flex-col">
-        <CardContent className="space-y-4 p-4 mb-16">
+        <CardContent className="space-y-4 p-4">
           <div className="flex flex-wrap items-center justify-start gap-4 w-full">
             <div className="relative w-full md:w-[350px]">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -725,23 +725,22 @@ export default function UserPage() {
             Data={initializeUser}
             mode={mode}
           />
-
-          {!isLoading && users && users.totalElements > 0 && (
-            <div className="mt-4">
-              <PaginationPage
-                currentPage={currentPage}
-                totalItems={users.totalElements}
-                itemsPerPage={itemsPerPage}
-                onPageChange={handlePageChange}
-                onItemsPerPageChange={handleItemsPerPageChange}
-                showItemsPerPage={true}
-                itemsPerPageOptions={[5, 10, 20, 50]}
-                showResultsText={true}
-              />
-            </div>
-          )}
         </CardContent>
       </Card>
+      {!isLoading && users && users.totalElements > 0 && (
+        <div className="p-5 mb-16">
+          <PaginationPage
+            currentPage={currentPage}
+            totalItems={users.totalElements}
+            itemsPerPage={itemsPerPage}
+            onPageChange={handlePageChange}
+            onItemsPerPageChange={handleItemsPerPageChange}
+            showItemsPerPage={true}
+            itemsPerPageOptions={[5, 10, 20, 50]}
+            showResultsText={true}
+          />
+        </div>
+      )}
     </div>
   );
 }

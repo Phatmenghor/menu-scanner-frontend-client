@@ -389,7 +389,7 @@ export default function ProductPage() {
   return (
     <div className="h-full flex flex-col">
       <Card className="flex flex-col">
-        <CardContent className="space-y-6 p-6 flex-1 flex flex-col min-h-0">
+        <CardContent className="space-y-4 p-4 flex-1 flex flex-col min-h-0">
           {/* Fixed Header Section */}
           <div className="flex-shrink-0 space-y-4">
             <div className="flex flex-wrap items-center justify-start gap-4 w-full">
@@ -499,7 +499,7 @@ export default function ProductPage() {
                             className="text-sm hover:bg-muted/50"
                           >
                             {/* Index */}
-                            <TableCell className="font-medium text-center w-[60px]">
+                            <TableCell className="font-medium text-center">
                               {indexDisplay(
                                 products.pageNo,
                                 products.pageSize,
@@ -508,7 +508,7 @@ export default function ProductPage() {
                             </TableCell>
 
                             {/* Image */}
-                            <TableCell className="w-[80px]">
+                            <TableCell>
                               <Avatar className="h-12 w-12 border">
                                 <AvatarImage
                                   src={imageUrl}
@@ -675,56 +675,56 @@ export default function ProductPage() {
             </div>
           </div>
 
-          {/* Pagination */}
-          {products && products.totalElements > 0 && (
-            <div className="flex-shrink-0 flex items-center justify-between pt-4 border-t">
-              <div className="text-sm text-muted-foreground">
-                Showing {products.content.length} of {products.totalElements}{" "}
-                products
-              </div>
-              <PaginationPage
-                currentPage={currentPage}
-                totalItems={products.totalElements}
-                itemsPerPage={itemsPerPage}
-                onPageChange={handlePageChange}
-                onItemsPerPageChange={handleItemsPerPageChange}
-                showItemsPerPage={true}
-                itemsPerPageOptions={[5, 10, 20, 50]}
-                showResultsText={true}
-              />
-            </div>
-          )}
+          {/* Modals */}
+          <ProductDetailModal
+            product={selectedProduct}
+            open={isUserDetailOpen}
+            onClose={handleCloseDetailModal}
+          />
+
+          <ProductModal
+            data={initializeProduct}
+            isOpen={isModalOpen}
+            mode={mode}
+            onClose={handleCloseModal}
+            onSave={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+
+          <DeleteConfirmationDialog
+            isOpen={isDeleteDialogOpen}
+            onClose={() => {
+              setIsDeleteDialogOpen(false);
+              setSelectedProductToDelete(null);
+            }}
+            onDelete={handleDeleteProduct}
+            title="Delete Product"
+            description="Are you sure you want to delete this product? This action cannot be undone."
+            itemName={selectedProductToDelete?.name}
+            isSubmitting={isSubmitting}
+          />
         </CardContent>
       </Card>
 
-      {/* Modals */}
-      <ProductDetailModal
-        product={selectedProduct}
-        open={isUserDetailOpen}
-        onClose={handleCloseDetailModal}
-      />
-
-      <ProductModal
-        data={initializeProduct}
-        isOpen={isModalOpen}
-        mode={mode}
-        onClose={handleCloseModal}
-        onSave={handleSubmit}
-        isSubmitting={isSubmitting}
-      />
-
-      <DeleteConfirmationDialog
-        isOpen={isDeleteDialogOpen}
-        onClose={() => {
-          setIsDeleteDialogOpen(false);
-          setSelectedProductToDelete(null);
-        }}
-        onDelete={handleDeleteProduct}
-        title="Delete Product"
-        description="Are you sure you want to delete this product? This action cannot be undone."
-        itemName={selectedProductToDelete?.name}
-        isSubmitting={isSubmitting}
-      />
+      {/* Pagination */}
+      {products && products.totalElements > 0 && (
+        <div className="flex-shrink-0 flex items-center justify-between p-5 mb-16 border-t">
+          <div className="text-sm text-muted-foreground">
+            Showing {products.content.length} of {products.totalElements}{" "}
+            products
+          </div>
+          <PaginationPage
+            currentPage={currentPage}
+            totalItems={products.totalElements}
+            itemsPerPage={itemsPerPage}
+            onPageChange={handlePageChange}
+            onItemsPerPageChange={handleItemsPerPageChange}
+            showItemsPerPage={true}
+            itemsPerPageOptions={[5, 10, 20, 50]}
+            showResultsText={true}
+          />
+        </div>
+      )}
     </div>
   );
 }
