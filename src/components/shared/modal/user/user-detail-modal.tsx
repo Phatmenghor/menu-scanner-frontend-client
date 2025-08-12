@@ -46,25 +46,26 @@ const getStatusConfig = (status: string) => {
   switch (status.toLowerCase()) {
     case "active":
       return {
-        color: "bg-emerald-50 text-emerald-700 border-emerald-200",
+        color:
+          "bg-emerald-50 hover:bg-emerald-300 text-emerald-700 border-emerald-200",
         icon: <CheckCircle className="h-3.5 w-3.5" />,
         dot: "bg-emerald-500",
       };
     case "pending":
       return {
-        color: "bg-amber-50 text-amber-700 border-amber-200",
+        color: "bg-amber-50 hover:bg-amber-300 text-amber-700 border-amber-200",
         icon: <AlertTriangle className="h-3.5 w-3.5" />,
         dot: "bg-amber-500",
       };
     case "suspended":
       return {
-        color: "bg-red-50 text-red-700 border-red-200",
+        color: "bg-red-50 hover:bg-red-300 text-red-700 border-red-200",
         icon: <XCircle className="h-3.5 w-3.5" />,
         dot: "bg-red-500",
       };
     default:
       return {
-        color: "bg-gray-50 text-gray-700 border-gray-200",
+        color: "bg-gray-50 hover:bg-gray-300 text-gray-700 border-gray-200",
         icon: <XCircle className="h-3.5 w-3.5" />,
         dot: "bg-gray-500",
       };
@@ -75,17 +76,18 @@ const getUserTypeConfig = (userType: string | null) => {
   switch (userType?.toLowerCase()) {
     case "platform_user":
       return {
-        color: "bg-purple-50 text-purple-700 border-purple-200",
+        color:
+          "bg-purple-50 hover:bg-purple-300 text-purple-700 border-purple-200",
         icon: <Crown className="h-3.5 w-3.5" />,
       };
     case "business_user":
       return {
-        color: "bg-blue-50 text-blue-700 border-blue-200",
+        color: "bg-blue-50 hover:bg-blue-300 text-blue-700 border-blue-200",
         icon: <UserCheck className="h-3.5 w-3.5" />,
       };
     default:
       return {
-        color: "bg-gray-50 text-gray-700 border-gray-200",
+        color: "bg-gray-50 hover:bg-gray-300 text-gray-700 border-gray-200",
         icon: <User className="h-3.5 w-3.5" />,
       };
   }
@@ -151,7 +153,7 @@ export function UserDetailModal({ onClose, open, user }: UserDetailModalProps) {
         </DialogHeader>
 
         {/* Enhanced Header */}
-        <div className="relative bg-gradient-to-r from-slate-50 to-slate-100 border-b p-6 flex-shrink-0">
+        <div className="relative bg-gradient-to-r from-slate-50 to-slate-100 border-b p-4 flex-shrink-0">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4">
               <div className="relative">
@@ -220,7 +222,7 @@ export function UserDetailModal({ onClose, open, user }: UserDetailModalProps) {
             onValueChange={setActiveTab}
             className="h-full flex flex-col"
           >
-            <TabsList className="grid w-full grid-cols-4 rounded-none border-b bg-transparent h-12">
+            <TabsList className="grid w-full grid-cols-4 rounded-none border-b bg-transparent">
               <TabsTrigger
                 value="overview"
                 className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
@@ -254,9 +256,9 @@ export function UserDetailModal({ onClose, open, user }: UserDetailModalProps) {
             {/* Overview Tab */}
             <TabsContent
               value="overview"
-              className="flex-1 p-6 overflow-y-auto"
+              className="flex-1 p-4 overflow-y-auto"
             >
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {/* Quick Info Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Card className="border-l-4 border-l-blue-500">
