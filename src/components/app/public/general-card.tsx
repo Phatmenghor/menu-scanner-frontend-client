@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 
-interface ProductCardProps {
+interface CardProps {
   imageSrc: string;
   imageAlt: string;
   title: string;
@@ -11,7 +11,7 @@ interface ProductCardProps {
   isOutOfStock?: boolean;
 }
 
-export function ProductCard({
+export function GeneralCard({
   imageSrc,
   imageAlt,
   title,
@@ -19,7 +19,7 @@ export function ProductCard({
   buttonText,
   badgeText,
   isOutOfStock = false,
-}: ProductCardProps) {
+}: CardProps) {
   return (
     <div className="relative bg-white text-primary rounded-lg shadow-md overflow-hidden group">
       {badgeText && (

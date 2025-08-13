@@ -1,5 +1,11 @@
-import { LoginCredentials } from "@/models/auth/auth.request";
-import { UserAuthResponse } from "@/models/auth/auth.response";
+import {
+  LoginCredentials,
+  RegisterCredentials,
+} from "@/models/auth/auth.request";
+import {
+  RegisterAuthResponse,
+  UserAuthResponse,
+} from "@/models/auth/auth.response";
 import { axiosClient } from "@/utils/axios";
 import { storeRoles } from "@/utils/local-storage/roles";
 import { storeToken } from "@/utils/local-storage/token";
@@ -30,6 +36,24 @@ export async function loginService(credentials: LoginCredentials) {
     // Re-throw or transform error if needed
     throw {
       errorMessage: "An unexpected error occurred during login.",
+      rawError: error,
+    };
+  }
+}
+
+export async function signUpService(credentials: RegisterCredentials) {
+  try {
+    const user = await axiosClient.post("/api/v1/auth/register", credentials);
+
+    const userData = user.data.data as RegisterAuthResponse;
+
+    return userData;
+  } catch (error) {
+    console.error("Register service error:", error);
+
+    // Re-throw or transform error if needed
+    throw {
+      errorMessage: "An unexpected error occurred during register.",
       rawError: error,
     };
   }

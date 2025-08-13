@@ -415,7 +415,7 @@ export default function BusinessPage() {
                         <Upload className="w-4 h-4" />
                         Upload Logo
                       </Button>
-                      <input
+                      <Input
                         type="file"
                         ref={fileInputRef}
                         accept="image/*"

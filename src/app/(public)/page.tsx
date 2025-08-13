@@ -1,73 +1,128 @@
+"use client";
 import Image from "next/image";
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ProductCard } from "@/components/app/public/product-card";
+import { useCallback, useEffect, useState } from "react";
+import {
+  AllCategories,
+  CategoryModel,
+} from "@/models/content-manangement/category/category.response";
+import { getAllCategoryService } from "@/services/dashboard/content-management/category/category.service";
+import { getAllProductService } from "@/services/dashboard/content-management/product/product.service";
+import { usePagination } from "@/hooks/use-pagination";
+import { ROUTES } from "@/constants/app-routed/routes";
+import { useDebounce } from "@/utils/debounce/debounce";
+import { getUserInfo } from "@/utils/local-storage/userInfo";
+import { AppToast } from "@/components/app/components/app-toast";
+import { AllProduct } from "@/models/content-manangement/product/product.response";
+import { GeneralCard } from "@/components/app/public/general-card";
+import { ProductCard } from "@/components/app/public/product/product-card";
+import { CategoryCard } from "@/components/app/public/category-card";
+import { AllBanner } from "@/models/content-manangement/banner/banner.response";
+import { getAllBannerService } from "@/services/dashboard/content-management/banner/banner.service";
+import { BannerCarousel } from "@/components/app/public/banner/banner-carousel";
 
 export default function HomePage() {
+  const [categories, setCategories] = useState<AllCategories | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [products, setProducts] = useState<AllProduct | null>(null);
+  const [banners, setBanners] = useState<AllBanner | null>(null);
+
+  const user = getUserInfo();
+  const { currentPage, updateUrlWithPage, handlePageChange } = usePagination({
+    baseRoute: ROUTES.HOME,
+    defaultPageSize: 10,
+  });
+
+  const debouncedSearchQuery = useDebounce(searchQuery, 400);
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+
+    try {
+      const [bannersRes, categoriesRes, productsRes] = await Promise.all([
+        getAllBannerService({
+          search: debouncedSearchQuery,
+          pageNo: currentPage,
+          businessId: user?.businessId,
+          pageSize: 10,
+        }),
+        getAllCategoryService({
+          search: debouncedSearchQuery,
+          pageNo: currentPage,
+          businessId: user?.businessId,
+          pageSize: 10,
+        }),
+        getAllProductService({
+          search: debouncedSearchQuery,
+          pageNo: currentPage,
+          businessId: user?.businessId,
+          pageSize: 10,
+        }),
+      ]);
+
+      console.log("Fetched banners:", bannersRes);
+      console.log("Fetched categories:", categoriesRes);
+      console.log("Fetched products:", productsRes);
+
+      setBanners(bannersRes);
+      setCategories(categoriesRes);
+      setProducts(productsRes);
+    } catch (error: any) {
+      console.log("Failed to load data:", error);
+      AppToast?.({
+        type: "error",
+        message: "Failed to load some data",
+        duration: 3000,
+        position: "top-right",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [debouncedSearchQuery, currentPage, user?.businessId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
   return (
     <div className="min-h-screen text-primary bg-gray-50">
       <main className="container mx-auto px-4 py-8 md:py-12">
         {/* Hero Section */}
         <section className="mb-12">
           <div className="relative w-full h-[300px] md:h-[450px] lg:h-[550px] rounded-lg overflow-hidden">
-            <Image
-              src="/star-angel-carousel.png"
-              alt="Star Angel Product Carousel"
-              layout="fill"
-              objectFit="cover"
-              className="rounded-lg"
+            <BannerCarousel
+              banners={banners?.content ?? []}
+              autoPlay={true}
+              onBannerClick={() => {}}
+              autoPlayInterval={7000}
+              showIndicators={true}
+              showControls={true}
             />
-            <div className="absolute inset-0 flex items-center justify-between p-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                className=" bg-black/30 hover:bg-black/50 rounded-full"
-              >
-                {"<"}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className=" bg-black/30 hover:bg-black/50 rounded-full"
-              >
-                {">"}
-              </Button>
-            </div>
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-              <span className="w-2 h-2 rounded-full opacity-70"></span>
-              <span className="w-2 h-2 rounded-full"></span>
-              <span className="w-2 h-2 rounded-full opacity-70"></span>
-              <span className="w-2 h-2 rounded-full opacity-70"></span>
-            </div>
           </div>
         </section>
 
+        <section></section>
         {/* LICK FAMILY Section */}
         <section className="mb-12">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6 text-primary-pink">
             LICK FAMILY
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <ProductCard
-              imageSrc="/placeholder-uz64k.png"
-              imageAlt="Best Duo Combo Set"
-              title="Best Duo"
-              description="Description for Best Duo"
-              buttonText="Combo Set"
-            />
-            <ProductCard
-              imageSrc="/placeholder-65spu.png"
-              imageAlt="Coquette Princess Bottle"
-              title="Coquette Princess"
-              description="Description for Coquette Princess"
-              buttonText="Coquette Princess"
-            />
-            <ProductCard
-              imageSrc="/placeholder-6fqle.png"
-              imageAlt="Duckies 1000ml Bottles"
-              title="Duckies 1000ml"
-              description="Description for Duckies 1000ml"
-            />
+            {categories?.content.map((category) => (
+              <CategoryCard
+                category={category}
+                key={category.id}
+                onCategoryClick={() => {}}
+                showProductCount={true}
+                size="small"
+              />
+            ))}
           </div>
           <div className="flex justify-center mt-8">
             <Button className="bg-primary-pink hover:bg-primary-pink/90  px-8 py-3 rounded-full flex items-center gap-2">
@@ -82,31 +137,14 @@ export default function HomePage() {
             BEST PRODUCT
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            <ProductCard
-              imageSrc="/best-sellers-star-charm.png"
-              imageAlt="Best Sellers Star Charm"
-              title="Star Charm"
-              badgeText="BEST SELLERS"
-            />
-            <ProductCard
-              imageSrc="/snow-angel-bestsellers.png"
-              imageAlt="Best Sellers Snow Angel"
-              title="Snow Angel"
-              badgeText="BEST SELLERS"
-            />
-            <ProductCard
-              imageSrc="/best-sellers-superstar.png"
-              imageAlt="Best Sellers Superstar"
-              title="Superstar"
-              badgeText="BEST SELLERS"
-            />
-            <ProductCard
-              imageSrc="/placeholder-9w6r3.png"
-              imageAlt="Out of Stock Monkey"
-              title="Monkey"
-              badgeText="OUT OF STOCK"
-              isOutOfStock={true}
-            />
+            {products?.content.map((product) => (
+              <ProductCard
+                product={product}
+                key={product.id}
+                onProductClick={() => {}}
+                onWishlistToggle={() => {}}
+              />
+            ))}
           </div>
         </section>
       </main>

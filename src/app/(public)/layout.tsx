@@ -8,15 +8,22 @@ export const metadata: Metadata = {
   description: "Admin panel for Menu Scanner application",
 };
 
-export default async function RootLayout({
+export default async function PublicLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div>
+    <div className="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
+      {/* Header */}
       <Header />
-      {children}
+
+      {/* Main content */}
+      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-lg shadow-sm p-6">{children}</div>
+      </main>
+
+      {/* Footer */}
       <Footer />
     </div>
   );
