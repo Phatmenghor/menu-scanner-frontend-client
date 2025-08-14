@@ -15,4 +15,9 @@ export const addressTableHeaders = [
     label: "Has Coordinates",
     className: "max-w-[20%]",
   },
+  {
+    value: "action",
+    label: "Action",
+    className: "max-w-[20%]",
+  },
 ];

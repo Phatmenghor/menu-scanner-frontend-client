@@ -31,7 +31,7 @@ export default function middleware(req: NextRequest) {
   }
 
   // Redirect to admin if accessing login with token
-  if (pathname === "/login" && token) {
+  if (pathname === "/admin/login" && token) {
     console.log("Login access with token -> redirecting to /admin");
     return NextResponse.redirect(new URL("/admin", req.url));
   }

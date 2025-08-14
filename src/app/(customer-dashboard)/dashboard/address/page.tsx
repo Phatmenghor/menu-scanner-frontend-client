@@ -429,22 +429,19 @@ export default function AddressPage() {
                         <TableCell>{index + 1}</TableCell>
 
                         {/* Address data cells */}
-                        <TableCell>{address.village}</TableCell>
-                        <TableCell>{address.commune}</TableCell>
-                        <TableCell>{address.district}</TableCell>
-                        <TableCell>{address.province}</TableCell>
-                        <TableCell>{address.streetNumber}</TableCell>
-                        <TableCell>{address.houseNumber}</TableCell>
-                        <TableCell>{address.note}</TableCell>
-                        <TableCell>{address.latitude}</TableCell>
-                        <TableCell>{address.longitude}</TableCell>
+                        <TableCell>{address?.village ?? "---"}</TableCell>
+                        <TableCell>{address?.commune ?? "---"}</TableCell>
+                        <TableCell>{address?.district ?? "---"}</TableCell>
+                        <TableCell>{address?.province ?? "---"}</TableCell>
+                        <TableCell>{address?.streetNumber ?? "---"}</TableCell>
+                        <TableCell>{address?.houseNumber ?? "---"}</TableCell>
+                        <TableCell>{address?.note ?? "---"}</TableCell>
+                        <TableCell>{address?.latitude ?? "---"}</TableCell>
+                        <TableCell>{address?.longitude ?? "---"}</TableCell>
                         <TableCell>
-                          {address.isDefault ? "Yes" : "No"}
+                          {address?.isDefault ? "Yes" : "No"}
                         </TableCell>
-                        <TableCell>{address.fullAddress}</TableCell>
-                        <TableCell>
-                          {address.hasCoordinates ? "Yes" : "No"}
-                        </TableCell>
+                        <TableCell>{address?.fullAddress ?? "---"}</TableCell>
 
                         {/* Actions */}
                         <TableCell>

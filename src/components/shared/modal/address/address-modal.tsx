@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,50 +13,18 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { MapPin, Navigation, Maximize, Minimize } from "lucide-react";
+import { MapPin, Navigation, Maximize, Minimize, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { z } from "zod";
 import { ModalMode } from "@/constants/app-resource/status/status";
-import {
-  GoogleMap,
-  InfoWindow,
-  MarkerF,
-  useJsApiLoader,
-} from "@react-google-maps/api";
-
-// TypeScript declarations for Leaflet
-declare global {
-  interface Window {
-    L: any;
-  }
-}
-
-// Leaflet types
-interface LeafletMap {
-  setView: (center: [number, number], zoom: number) => LeafletMap;
-  on: (event: string, handler: (e: any) => void) => LeafletMap;
-  remove: () => void;
-  invalidateSize: () => void;
-  getZoom: () => number;
-}
-
-interface LeafletMarker {
-  setLatLng: (latlng: [number, number]) => LeafletMarker;
-  on: (event: string, handler: (e: any) => void) => LeafletMarker;
-  getLatLng: () => { lat: number; lng: number };
-}
-
-interface LeafletEvent {
-  latlng: { lat: number; lng: number };
-  target: { getLatLng: () => { lat: number; lng: number } };
-}
+import { GoogleMap, MarkerF, useJsApiLoader } from "@react-google-maps/api";
 
 const AddressRequestSchema = z.object({
   id: z.string().optional(),
   village: z.string().optional(),
   commune: z.string().optional(),
-  district: z.string().min(1, "District is required"),
-  province: z.string().min(1, "Province is required"),
+  district: z.string().optional(),
+  province: z.string().optional(),
   streetNumber: z.string().optional(),
   houseNumber: z.string().optional(),
   note: z.string().optional(),
@@ -76,6 +44,43 @@ type Props = {
   onSave: (data: AddressFormData) => void;
 };
 
+interface AddressComponent {
+  long_name: string;
+  short_name: string;
+  types: string[];
+}
+
+interface GeocodeResult {
+  address_components: AddressComponent[];
+  formatted_address: string;
+  geometry: {
+    location: google.maps.LatLng;
+  };
+}
+
+const libraries: ("places" | "geometry")[] = ["places"];
+
+const mapContainerStyle = {
+  width: "100%",
+  height: "100%",
+};
+
+// Default center (Phnom Penh, Cambodia)
+const defaultCenter = {
+  lat: 11.5564,
+  lng: 104.9282,
+};
+
+const mapOptions = {
+  disableDefaultUI: false,
+  zoomControl: true,
+  streetViewControl: false,
+  mapTypeControl: false,
+  fullscreenControl: false,
+  gestureHandling: "cooperative" as const,
+  clickableIcons: false,
+};
+
 export default function ModalAddress({
   isOpen,
   onClose,
@@ -86,164 +91,37 @@ export default function ModalAddress({
 }: Props) {
   const isCreate = mode === ModalMode.CREATE_MODE;
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [isGeocodingLocation, setIsGeocodingLocation] = useState(false);
   const [mapExpanded, setMapExpanded] = useState(false);
-  const mapRef = useRef<LeafletMap | null>(null);
-  const markerRef = useRef<LeafletMarker | null>(null);
-  const [mapReady, setMapReady] = useState(false);
-
-  // Load Leaflet CSS and initialize map
-  useEffect(() => {
-    if (!isOpen) return;
-
-    // Load Leaflet CSS
-    const cssLink = document.createElement("link");
-    cssLink.rel = "stylesheet";
-    cssLink.href =
-      "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css";
-    cssLink.integrity = "sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=";
-    cssLink.crossOrigin = "anonymous";
-
-    if (!document.querySelector(`link[href="${cssLink.href}"]`)) {
-      document.head.appendChild(cssLink);
-    }
-
-    // Load Leaflet JS
-    const script = document.createElement("script");
-    script.src =
-      "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js";
-    script.integrity = "sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=";
-    script.crossOrigin = "anonymous";
-
-    const existingScript = document.querySelector(
-      `script[src="${script.src}"]`
-    );
-
-    if (!existingScript) {
-      script.onload = () => {
-        setMapReady(true);
-        setTimeout(initializeMap, 100);
-      };
-      document.head.appendChild(script);
-    } else {
-      if (window.L) {
-        setMapReady(true);
-        setTimeout(initializeMap, 100);
-      }
-    }
-
-    return () => {
-      // Cleanup on unmount
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-        markerRef.current = null;
-      }
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [geocoder, setGeocoder] = useState<google.maps.Geocoder | null>(null);
+  const [markerPosition, setMarkerPosition] =
+    useState<google.maps.LatLngLiteral>({
+      lat: data?.latitude || defaultCenter.lat,
+      lng: data?.longitude || defaultCenter.lng,
+    });
+  const [addressInfo, setAddressInfo] = useState<{
+    formatted_address: string;
+    components: {
+      province?: string;
+      district?: string;
+      commune?: string;
+      village?: string;
+      streetNumber?: string;
+      houseNumber?: string;
     };
-  }, [isOpen]);
+  }>({
+    formatted_address: "",
+    components: {},
+  });
 
-  const initializeMap = () => {
-    if (!window.L || !isOpen || mapRef.current) return;
-
-    const mapContainer = document.getElementById("address-map");
-    if (!mapContainer) return;
-
-    try {
-      // Default to Phnom Penh coordinates
-      const defaultLat = data?.latitude || 11.5564;
-      const defaultLng = data?.longitude || 104.9282;
-
-      const map = window.L.map("address-map", {
-        center: [defaultLat, defaultLng],
-        zoom: 13,
-        scrollWheelZoom: true,
-        touchZoom: true,
-        doubleClickZoom: true,
-        boxZoom: true,
-        keyboard: true,
-      });
-
-      // Add OpenStreetMap tile layer
-      window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
-      }).addTo(map);
-
-      // Custom marker icon using HTML
-      const customIcon = window.L.divIcon({
-        html: `<div style="
-          background-color: #dc2626; 
-          width: 24px; 
-          height: 24px; 
-          border-radius: 50%; 
-          border: 3px solid white; 
-          box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-          position: relative;
-        "></div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
-        className: "custom-marker",
-      });
-
-      // Add draggable marker
-      const marker = window.L.marker([defaultLat, defaultLng], {
-        icon: customIcon,
-        draggable: true,
-      }).addTo(map);
-
-      // Update coordinates when marker is dragged
-      marker.on("dragend", (e: LeafletEvent) => {
-        const position = e.target.getLatLng();
-        setValue("latitude", Number(position.lat.toFixed(6)), {
-          shouldValidate: true,
-          shouldDirty: true,
-        });
-        setValue("longitude", Number(position.lng.toFixed(6)), {
-          shouldValidate: true,
-          shouldDirty: true,
-        });
-      });
-
-      // Update marker position when clicking on map
-      map.on("click", (e: LeafletEvent) => {
-        const { lat, lng } = e.latlng;
-        marker.setLatLng([lat, lng]);
-        setValue("latitude", Number(lat.toFixed(6)), {
-          shouldValidate: true,
-          shouldDirty: true,
-        });
-        setValue("longitude", Number(lng.toFixed(6)), {
-          shouldValidate: true,
-          shouldDirty: true,
-        });
-      });
-
-      // Store references
-      mapRef.current = map;
-      markerRef.current = marker;
-
-      // Invalidate size after a short delay to ensure proper rendering
-      setTimeout(() => {
-        if (mapRef.current) {
-          mapRef.current.invalidateSize();
-        }
-      }, 250);
-    } catch (error) {
-      console.error("Error initializing map:", error);
-    }
-  };
-
-  // Update marker position when coordinates change programmatically
-  const updateMarkerPosition = (lat: number, lng: number) => {
-    if (markerRef.current && mapRef.current && lat !== 0 && lng !== 0) {
-      try {
-        markerRef.current.setLatLng([lat, lng]);
-        mapRef.current.setView([lat, lng], mapRef.current.getZoom());
-      } catch (error) {
-        console.error("Error updating marker position:", error);
-      }
-    }
-  };
+  // Load Google Maps API
+  const { isLoaded, loadError } = useJsApiLoader({
+    id: "google-map-script",
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_API_KEY || "",
+    libraries,
+    version: "weekly",
+  });
 
   const {
     control,
@@ -263,8 +141,8 @@ export default function ModalAddress({
       streetNumber: "",
       houseNumber: "",
       note: "",
-      latitude: data?.latitude || 11.5564,
-      longitude: data?.longitude || 104.9282,
+      latitude: data?.latitude || defaultCenter.lat,
+      longitude: data?.longitude || defaultCenter.lng,
       isDefault: false,
     },
     mode: "onChange",
@@ -272,6 +150,100 @@ export default function ModalAddress({
 
   const latitude = watch("latitude");
   const longitude = watch("longitude");
+
+  // Initialize geocoder when Maps API is loaded
+  useEffect(() => {
+    if (isLoaded && window.google && window.google.maps) {
+      setGeocoder(new window.google.maps.Geocoder());
+    }
+  }, [isLoaded]);
+
+  // Parse address components based on Cambodia's administrative structure
+  const parseAddressComponents = (components: AddressComponent[]) => {
+    const parsed = {
+      province: "",
+      district: "",
+      commune: "",
+      village: "",
+      streetNumber: "",
+      houseNumber: "",
+    };
+
+    components.forEach((component) => {
+      const types = component.types;
+
+      // Cambodia administrative levels mapping
+      if (types.includes("administrative_area_level_1")) {
+        parsed.province = component.long_name;
+      } else if (types.includes("administrative_area_level_2")) {
+        parsed.district = component.long_name;
+      } else if (types.includes("administrative_area_level_3")) {
+        parsed.commune = component.long_name;
+      } else if (types.includes("locality") || types.includes("sublocality")) {
+        parsed.village = component.long_name;
+      } else if (types.includes("street_number")) {
+        parsed.houseNumber = component.long_name;
+      } else if (types.includes("route")) {
+        parsed.streetNumber = component.long_name;
+      }
+    });
+
+    return parsed;
+  };
+
+  // Reverse geocode coordinates to get address
+  const reverseGeocode = useCallback(
+    async (lat: number, lng: number) => {
+      if (!geocoder) return;
+
+      setIsGeocodingLocation(true);
+
+      try {
+        const response = await new Promise<google.maps.GeocoderResponse>(
+          (resolve, reject) => {
+            geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+              if (status === "OK") {
+                resolve({ results: results || [], status });
+              } else {
+                reject(new Error(`Geocoding failed: ${status}`));
+              }
+            });
+          }
+        );
+
+        if (response.results && response.results.length > 0) {
+          const result = response.results[0];
+          const components = parseAddressComponents(result.address_components);
+
+          // Update form with geocoded data
+          setValue("province", components.province, { shouldValidate: true });
+          setValue("district", components.district, { shouldValidate: true });
+          setValue("commune", components.commune, { shouldValidate: true });
+          setValue("village", components.village, { shouldValidate: true });
+          setValue("streetNumber", components.streetNumber, {
+            shouldValidate: true,
+          });
+          setValue("houseNumber", components.houseNumber, {
+            shouldValidate: true,
+          });
+
+          setAddressInfo({
+            formatted_address: result.formatted_address,
+            components,
+          });
+        }
+      } catch (error) {
+        console.error("Reverse geocoding error:", error);
+        setAddressInfo({
+          formatted_address: "Unable to determine address",
+          components: {},
+        });
+      } finally {
+        setIsGeocodingLocation(false);
+      }
+    },
+    [geocoder, setValue]
+  );
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -285,30 +257,91 @@ export default function ModalAddress({
         streetNumber: data?.streetNumber || "",
         houseNumber: data?.houseNumber || "",
         note: data?.note || "",
-        latitude: data?.latitude || 11.5564,
-        longitude: data?.longitude || 104.9282,
+        latitude: data?.latitude || defaultCenter.lat,
+        longitude: data?.longitude || defaultCenter.lng,
         isDefault: data?.isDefault || false,
       };
 
       reset(formData);
-    }
-  }, [isOpen, data, reset]);
+      setMarkerPosition({
+        lat: formData.latitude,
+        lng: formData.longitude,
+      });
 
-  // Update marker when coordinates change
-  useEffect(() => {
-    if (mapReady && latitude && longitude) {
-      updateMarkerPosition(latitude, longitude);
+      // If we have existing data, reverse geocode to show address info
+      if (data?.latitude && data?.longitude && geocoder) {
+        reverseGeocode(data.latitude, data.longitude);
+      }
     }
-  }, [latitude, longitude, mapReady]);
+  }, [isOpen, data, reset, geocoder, reverseGeocode]);
 
-  // Handle map resize when expanded/minimized
+  // Update marker position when coordinates change programmatically
   useEffect(() => {
-    if (mapRef.current) {
-      setTimeout(() => {
-        mapRef?.current?.invalidateSize();
-      }, 300);
+    if (latitude && longitude) {
+      const newPosition = { lat: latitude, lng: longitude };
+      setMarkerPosition(newPosition);
+
+      // Center map on new position
+      if (map) {
+        map.panTo(newPosition);
+      }
+
+      // Reverse geocode new position
+      if (geocoder) {
+        reverseGeocode(latitude, longitude);
+      }
     }
-  }, [mapExpanded]);
+  }, [latitude, longitude, map, geocoder, reverseGeocode]);
+
+  const onMapLoad = useCallback((map: google.maps.Map) => {
+    setMap(map);
+  }, []);
+
+  const onMapUnmount = useCallback(() => {
+    setMap(null);
+  }, []);
+
+  // Handle map click
+  const onMapClick = useCallback(
+    (event: google.maps.MapMouseEvent) => {
+      if (event.latLng) {
+        const lat = Number(event.latLng.lat().toFixed(6));
+        const lng = Number(event.latLng.lng().toFixed(6));
+
+        setMarkerPosition({ lat, lng });
+        setValue("latitude", lat, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+        setValue("longitude", lng, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+      }
+    },
+    [setValue]
+  );
+
+  // Handle marker drag
+  const onMarkerDragEnd = useCallback(
+    (event: google.maps.MapMouseEvent) => {
+      if (event.latLng) {
+        const lat = Number(event.latLng.lat().toFixed(6));
+        const lng = Number(event.latLng.lng().toFixed(6));
+
+        setMarkerPosition({ lat, lng });
+        setValue("latitude", lat, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+        setValue("longitude", lng, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+      }
+    },
+    [setValue]
+  );
 
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -331,7 +364,14 @@ export default function ModalAddress({
           shouldDirty: true,
         });
 
-        updateMarkerPosition(lat, lng);
+        setMarkerPosition({ lat, lng });
+
+        // Center map on new location
+        if (map) {
+          map.panTo({ lat, lng });
+          map.setZoom(15);
+        }
+
         setIsGettingLocation(false);
       },
       (error) => {
@@ -369,8 +409,8 @@ export default function ModalAddress({
       ...(formData.id && { id: formData.id }),
       village: formData.village?.trim() || undefined,
       commune: formData.commune?.trim() || undefined,
-      district: formData.district.trim(),
-      province: formData.province.trim(),
+      district: formData.district?.trim() || undefined,
+      province: formData.province?.trim() || undefined,
       streetNumber: formData.streetNumber?.trim() || undefined,
       houseNumber: formData.houseNumber?.trim() || undefined,
       note: formData.note?.trim() || undefined,
@@ -385,20 +425,10 @@ export default function ModalAddress({
   };
 
   const handleClose = () => {
-    // Clean up map
-    if (mapRef.current) {
-      try {
-        mapRef.current.remove();
-      } catch (error) {
-        console.error("Error cleaning up map:", error);
-      }
-      mapRef.current = null;
-      markerRef.current = null;
-    }
-
     reset();
     setMapExpanded(false);
-    setMapReady(false);
+    setMap(null);
+    setAddressInfo({ formatted_address: "", components: {} });
     onClose();
   };
 
@@ -408,6 +438,21 @@ export default function ModalAddress({
       type === "lat" ? (value > 0 ? "N" : "S") : value > 0 ? "E" : "W";
     return `${Math.abs(value).toFixed(6)}° ${direction}`;
   };
+
+  if (loadError) {
+    return (
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent>
+          <div className="text-center py-8">
+            <p className="text-red-500">Error loading Google Maps</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Please check your API key configuration
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -419,178 +464,19 @@ export default function ModalAddress({
           </DialogTitle>
           <DialogDescription>
             {isCreate
-              ? "Fill out the form to add a new address."
-              : "Update address information below."}
+              ? "Select a location on the map to add a new address."
+              : "Update the location by clicking on the map or dragging the marker."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Location Details Section */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Location Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Province and District - Required Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label htmlFor="province">
-                    Province <span className="text-red-500">*</span>
-                  </Label>
-                  <Controller
-                    control={control}
-                    name="province"
-                    render={({ field }) => (
-                      <Input
-                        {...field}
-                        id="province"
-                        type="text"
-                        placeholder="Enter province"
-                        disabled={isSubmitting}
-                        className={errors.province ? "border-red-500" : ""}
-                      />
-                    )}
-                  />
-                  {errors.province && (
-                    <p className="text-sm text-destructive">
-                      {errors.province.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="district">
-                    District <span className="text-red-500">*</span>
-                  </Label>
-                  <Controller
-                    control={control}
-                    name="district"
-                    render={({ field }) => (
-                      <Input
-                        {...field}
-                        id="district"
-                        type="text"
-                        placeholder="Enter district"
-                        disabled={isSubmitting}
-                        className={errors.district ? "border-red-500" : ""}
-                      />
-                    )}
-                  />
-                  {errors.district && (
-                    <p className="text-sm text-destructive">
-                      {errors.district.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Commune and Village */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label htmlFor="commune">Commune</Label>
-                  <Controller
-                    control={control}
-                    name="commune"
-                    render={({ field }) => (
-                      <Input
-                        {...field}
-                        id="commune"
-                        type="text"
-                        placeholder="Enter commune"
-                        disabled={isSubmitting}
-                        className={errors.commune ? "border-red-500" : ""}
-                      />
-                    )}
-                  />
-                  {errors.commune && (
-                    <p className="text-sm text-destructive">
-                      {errors.commune.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="village">Village</Label>
-                  <Controller
-                    control={control}
-                    name="village"
-                    render={({ field }) => (
-                      <Input
-                        {...field}
-                        id="village"
-                        type="text"
-                        placeholder="Enter village"
-                        disabled={isSubmitting}
-                        className={errors.village ? "border-red-500" : ""}
-                      />
-                    )}
-                  />
-                  {errors.village && (
-                    <p className="text-sm text-destructive">
-                      {errors.village.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Street Number and House Number */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label htmlFor="streetNumber">Street Number</Label>
-                  <Controller
-                    control={control}
-                    name="streetNumber"
-                    render={({ field }) => (
-                      <Input
-                        {...field}
-                        id="streetNumber"
-                        type="text"
-                        placeholder="e.g., Street 271"
-                        disabled={isSubmitting}
-                        className={errors.streetNumber ? "border-red-500" : ""}
-                      />
-                    )}
-                  />
-                  {errors.streetNumber && (
-                    <p className="text-sm text-destructive">
-                      {errors.streetNumber.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="houseNumber">House Number</Label>
-                  <Controller
-                    control={control}
-                    name="houseNumber"
-                    render={({ field }) => (
-                      <Input
-                        {...field}
-                        id="houseNumber"
-                        type="text"
-                        placeholder="e.g., #123"
-                        disabled={isSubmitting}
-                        className={errors.houseNumber ? "border-red-500" : ""}
-                      />
-                    )}
-                  />
-                  {errors.houseNumber && (
-                    <p className="text-sm text-destructive">
-                      {errors.houseNumber.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Interactive Map Section */}
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
-                  Location Map <span className="text-red-500">*</span>
+                  Select Location <span className="text-red-500">*</span>
                 </CardTitle>
                 <Button
                   type="button"
@@ -626,23 +512,113 @@ export default function ModalAddress({
                 </Button>
               </div>
 
-              {/* Map Container */}
+              {/* Google Map Container */}
               <div
-                id="address-map"
                 className={`w-full border border-gray-300 rounded-lg transition-all duration-300 ${
                   mapExpanded ? "h-96" : "h-64"
                 }`}
-                style={{
-                  minHeight: mapExpanded ? "384px" : "256px",
-                  background: mapReady ? "transparent" : "#f3f4f6",
-                }}
               >
-                {!mapReady && (
-                  <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">
-                    Loading map...
+                {isLoaded ? (
+                  <GoogleMap
+                    mapContainerStyle={mapContainerStyle}
+                    center={markerPosition}
+                    zoom={13}
+                    options={mapOptions}
+                    onClick={onMapClick}
+                    onLoad={onMapLoad}
+                    onUnmount={onMapUnmount}
+                  >
+                    <MarkerF
+                      position={markerPosition}
+                      draggable={true}
+                      onDragEnd={onMarkerDragEnd}
+                      icon={{
+                        url:
+                          "data:image/svg+xml;charset=UTF-8," +
+                          encodeURIComponent(`
+                          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="16" cy="16" r="12" fill="#dc2626" stroke="white" stroke-width="4"/>
+                          </svg>
+                        `),
+                        scaledSize: new window.google.maps.Size(32, 32),
+                        anchor: new window.google.maps.Point(16, 16),
+                      }}
+                    />
+                  </GoogleMap>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-sm text-gray-500 bg-gray-50 rounded-lg">
+                    Loading Google Maps...
                   </div>
                 )}
               </div>
+
+              {/* Address Information Display */}
+              {(addressInfo.formatted_address || isGeocodingLocation) && (
+                <Card className="bg-muted/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      {isGeocodingLocation && (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      )}
+                      Address Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {isGeocodingLocation ? (
+                      <p className="text-sm text-muted-foreground">
+                        Getting address information...
+                      </p>
+                    ) : (
+                      <>
+                        <div className="text-sm">
+                          <p className="font-medium">
+                            {addressInfo.formatted_address}
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                          {addressInfo.components.province && (
+                            <div>
+                              <span className="font-medium">Province:</span>{" "}
+                              {addressInfo.components.province}
+                            </div>
+                          )}
+                          {addressInfo.components.district && (
+                            <div>
+                              <span className="font-medium">District:</span>{" "}
+                              {addressInfo.components.district}
+                            </div>
+                          )}
+                          {addressInfo.components.commune && (
+                            <div>
+                              <span className="font-medium">Commune:</span>{" "}
+                              {addressInfo.components.commune}
+                            </div>
+                          )}
+                          {addressInfo.components.village && (
+                            <div>
+                              <span className="font-medium">Village:</span>{" "}
+                              {addressInfo.components.village}
+                            </div>
+                          )}
+                          {addressInfo.components.streetNumber && (
+                            <div>
+                              <span className="font-medium">Street:</span>{" "}
+                              {addressInfo.components.streetNumber}
+                            </div>
+                          )}
+                          {addressInfo.components.houseNumber && (
+                            <div>
+                              <span className="font-medium">House No:</span>{" "}
+                              {addressInfo.components.houseNumber}
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Coordinates Display */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -731,7 +707,7 @@ export default function ModalAddress({
 
               {(latitude !== 0 || longitude !== 0) && (
                 <div className="p-3 bg-muted/50 rounded-lg">
-                  <p className="text-sm font-medium">Selected Location:</p>
+                  <p className="text-sm font-medium">Selected Coordinates:</p>
                   <p className="text-sm text-muted-foreground">
                     {formatCoordinate(latitude, "lat")},{" "}
                     {formatCoordinate(longitude, "lng")}
@@ -812,10 +788,10 @@ export default function ModalAddress({
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isGeocodingLocation}
               onClick={handleSubmit(onSubmit)}
             >
-              {isSubmitting
+              {isSubmitting || isGeocodingLocation
                 ? "Processing..."
                 : isCreate
                 ? "Add Address"
