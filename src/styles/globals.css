@@ -195,9 +195,6 @@
   /* Enhanced table styling with better UX */
   table {
     @apply w-full table-auto text-sm;
-    border-collapse: collapse;
-    border: 2px solid var(--table-border-strong);
-    border-radius: var(--card-radius);
     overflow: hidden;
     box-shadow: var(--shadow-lg);
     background: white;

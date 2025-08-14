@@ -67,6 +67,7 @@ export const ROUTES = {
 
   CUSTOMER: {
     DASHBOARD: "/dashboard",
+    ADDRESS: "/dashboard/address",
   },
 } as const;
 

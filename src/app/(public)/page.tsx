@@ -1,12 +1,8 @@
 "use client";
-import Image from "next/image";
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCallback, useEffect, useState } from "react";
-import {
-  AllCategories,
-  CategoryModel,
-} from "@/models/content-manangement/category/category.response";
+import { AllCategories } from "@/models/content-manangement/category/category.response";
 import { getAllCategoryService } from "@/services/dashboard/content-management/category/category.service";
 import { getAllProductService } from "@/services/dashboard/content-management/product/product.service";
 import { usePagination } from "@/hooks/use-pagination";
@@ -15,7 +11,6 @@ import { useDebounce } from "@/utils/debounce/debounce";
 import { getUserInfo } from "@/utils/local-storage/userInfo";
 import { AppToast } from "@/components/app/components/app-toast";
 import { AllProduct } from "@/models/content-manangement/product/product.response";
-import { GeneralCard } from "@/components/app/public/general-card";
 import { ProductCard } from "@/components/app/public/product/product-card";
 import { CategoryCard } from "@/components/app/public/category-card";
 import { AllBanner } from "@/models/content-manangement/banner/banner.response";
@@ -92,10 +87,10 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen text-primary bg-gray-50">
-      <main className="container mx-auto px-4 py-8 md:py-12">
+      <main className="container mx-auto px-4 py-4">
         {/* Hero Section */}
         <section className="mb-12">
-          <div className="relative w-full h-[300px] md:h-[450px] lg:h-[550px] rounded-lg overflow-hidden">
+          <div className="relative w-full rounded-lg overflow-hidden">
             <BannerCarousel
               banners={banners?.content ?? []}
               autoPlay={true}
@@ -125,7 +120,7 @@ export default function HomePage() {
             ))}
           </div>
           <div className="flex justify-center mt-8">
-            <Button className="bg-primary-pink hover:bg-primary-pink/90  px-8 py-3 rounded-full flex items-center gap-2">
+            <Button className="bg-primary px-8 py-3 rounded-full flex items-center gap-2">
               View All <span className="text-xl">&rarr;</span>
             </Button>
           </div>

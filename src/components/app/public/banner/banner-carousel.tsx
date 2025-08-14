@@ -18,7 +18,7 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({
   autoPlayInterval = 5000,
   showControls = true,
   showIndicators = true,
-  height = "h-[300px] md:h-[450px] lg:h-[550px]",
+  height = "h-[300px]",
   onBannerClick,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
