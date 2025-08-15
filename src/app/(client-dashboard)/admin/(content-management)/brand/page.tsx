@@ -1,6 +1,7 @@
 "use client";
 
 import { AppToast } from "@/components/app/components/app-toast";
+import PaginationPage from "@/components/shared/common/pagination-page";
 import { ConfirmDialog } from "@/components/shared/dialog/dialog-confirm";
 import { DeleteConfirmationDialog } from "@/components/shared/dialog/dialog-delete";
 import UploadbrandModal from "@/components/shared/modal/brand/brand-modal";
@@ -78,6 +79,9 @@ export default function BrandPage() {
   const [isToggleStatusDialogOpen, setIsToggleStatusDialogOpen] =
     useState(false);
 
+  //Pagination
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   const t = useTranslations("user");
   const headers = getUserTableHeaders(t);
   const locale = useLocale();
@@ -116,6 +120,16 @@ export default function BrandPage() {
   useEffect(() => {
     loadBrands();
   }, [loadBrands, debouncedSearchQuery, statusFilter]);
+
+  // Handle items per page change
+  const handleItemsPerPageChange = useCallback(
+    (newItemsPerPage: number) => {
+      setItemsPerPage(newItemsPerPage);
+      // Reset to page 1 when changing items per page to avoid confusion
+      updateUrlWithPage(1);
+    },
+    [updateUrlWithPage]
+  );
 
   // Simplified search change handler - just updates the state, debouncing handles the rest
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -331,230 +345,251 @@ export default function BrandPage() {
   };
 
   return (
-    <Card>
-      <CardContent className="space-y-6 p-6">
-        <div className="flex flex-wrap items-center justify-start gap-4 w-full">
-          <div className="relative w-full md:w-[350px]">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              aria-label="search-brand"
-              autoComplete="search-brand"
-              type="search"
-              placeholder={t("search")}
-              value={searchQuery}
-              onChange={handleSearchChange}
-              className="pl-8 w-full min-w-[200px] text-xs md:min-w-[300px] h-9"
-              disabled={isSubmitting}
-            />
-          </div>
+    <div className="h-full flex flex-col">
+      <Card>
+        <CardContent className="space-y-6 p-6">
+          <div className="flex flex-wrap items-center justify-start gap-4 w-full">
+            <div className="relative w-full md:w-[350px]">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                aria-label="search-brand"
+                autoComplete="search-brand"
+                type="search"
+                placeholder={t("search")}
+                value={searchQuery}
+                onChange={handleSearchChange}
+                className="pl-8 w-full min-w-[200px] text-xs md:min-w-[300px] h-9"
+                disabled={isSubmitting}
+              />
+            </div>
 
-          <div className="flex items-center gap-2">
-            <Select
-              value={statusFilter}
-              onValueChange={handleStatusChange}
-              disabled={isSubmitting}
-            >
-              <SelectTrigger className="w-[150px] text-xs h-9">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_FILTER.map((option) => (
-                  <SelectItem
-                    className="text-xs"
-                    key={option.value}
-                    value={option.value}
-                  >
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Button
-              onClick={() => {
-                setMode(ModalMode.CREATE_MODE);
-                setIsModalOpen(true);
-              }}
-            >
-              New
-            </Button>
-          </div>
-        </div>
-
-        <div className="w-full">
-          <Separator className="bg-gray-300" />
-        </div>
-
-        <div>
-          <div className="rounded-md border overflow-x-auto whitespace-nowrap">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {brandTableHeaders.map((header) => (
-                    <TableHead
-                      key={header.key}
-                      className="text-xs font-semibold text-muted-foreground"
-                      style={{ width: "20%" }}
+            <div className="flex items-center gap-2">
+              <Select
+                value={statusFilter}
+                onValueChange={handleStatusChange}
+                disabled={isSubmitting}
+              >
+                <SelectTrigger className="w-[150px] text-xs h-9">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_FILTER.map((option) => (
+                    <SelectItem
+                      className="text-xs"
+                      key={option.value}
+                      value={option.value}
                     >
-                      {header.label}
-                    </TableHead>
+                      {option.label}
+                    </SelectItem>
                   ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {!brands || brands.content.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={brandTableHeaders.length + 2} // +2 for index and image
-                      className="text-center py-8 text-muted-foreground"
-                    >
-                      No brands found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  brands.content.map((brand, index) => {
-                    const imageUrl = brand.imageUrl
-                      ? `${process.env.NEXT_PUBLIC_API_BASE_URL}${brand.imageUrl}`
-                      : "";
-
-                    return (
-                      <TableRow key={brand.id} className="text-sm">
-                        {/* Index */}
-                        <TableCell>
-                          {indexDisplay(brands.pageNo, brands.pageSize, index)}
-                        </TableCell>
-
-                        {/* Image */}
-                        <TableCell>
-                          <Avatar className="h-10 w-10 border">
-                            <AvatarImage src={imageUrl} alt="Brand Image" />
-                            <AvatarFallback>
-                              {brand?.businessName?.charAt(0).toUpperCase() ||
-                                "B"}
-                            </AvatarFallback>
-                          </Avatar>
-                        </TableCell>
-
-                        {/* Brand Name */}
-                        <TableCell className="font-medium">
-                          {brand.name}
-                        </TableCell>
-
-                        {/* Status */}
-                        <TableCell>
-                          <Switch
-                            checked={brand?.status === "ACTIVE"}
-                            onCheckedChange={() => handleToggleStatus(brand)}
-                            disabled={isSubmitting}
-                            aria-label="Toggle brand status"
-                            className={cn(
-                              "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
-                              1
-                                ? "bg-gray-300 dark:bg-gray-600 data-[state=checked]:bg-primary dark:data-[state=checked]:bg-primary"
-                                : "bg-gray-300 dark:bg-primary opacity-50 cursor-not-allowed"
-                            )}
-                          >
-                            <div
-                              className={cn(
-                                "inline-block h-6 w-6 transform rounded-full bg-white dark:bg-gray-100 shadow-md transition-transform",
-                                "translate-x-1 data-[state=checked]:translate-x-5"
-                              )}
-                            >
-                              {brand.status === "ACTIVE" && (
-                                <Check className="h-6 w-6 m-auto text-orange-600 dark:text-orange-300" />
-                              )}
-                            </div>
-                          </Switch>
-                        </TableCell>
-
-                        {/* Total Products */}
-                        <TableCell>{brand.totalProducts}</TableCell>
-
-                        {/* Active Products */}
-                        <TableCell>{brand.activeProducts}</TableCell>
-
-                        {/* Actions */}
-                        <TableCell>
-                          <div className="flex items-center gap-2 justify-end">
-                            <Button
-                              variant="outline"
-                              onClick={() => handleEdit(brand)}
-                              className="hover:text-primary"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              onClick={() => handleDelete(brand)}
-                              className="text-destructive hover:text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Button
+                onClick={() => {
+                  setMode(ModalMode.CREATE_MODE);
+                  setIsModalOpen(true);
+                }}
+              >
+                New
+              </Button>
+            </div>
           </div>
-        </div>
-        {/* 
+
+          <div className="w-full">
+            <Separator className="bg-gray-300" />
+          </div>
+
+          <div>
+            <div className="rounded-md border overflow-x-auto whitespace-nowrap">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {brandTableHeaders.map((header) => (
+                      <TableHead
+                        key={header.key}
+                        className="text-xs font-semibold text-muted-foreground"
+                        style={{ width: "20%" }}
+                      >
+                        {header.label}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {!brands || brands.content.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={brandTableHeaders.length + 2} // +2 for index and image
+                        className="text-center py-8 text-muted-foreground"
+                      >
+                        No brands found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    brands.content.map((brand, index) => {
+                      const imageUrl = brand.imageUrl
+                        ? `${brand.imageUrl}`
+                        : "";
+
+                      return (
+                        <TableRow key={brand.id} className="text-sm">
+                          {/* Index */}
+                          <TableCell>
+                            {indexDisplay(
+                              brands.pageNo,
+                              brands.pageSize,
+                              index
+                            )}
+                          </TableCell>
+
+                          {/* Image */}
+                          <TableCell>
+                            <Avatar className="h-10 w-10 border">
+                              <AvatarImage src={imageUrl} alt="Brand Image" />
+                              <AvatarFallback>
+                                {brand?.businessName?.charAt(0).toUpperCase() ||
+                                  "B"}
+                              </AvatarFallback>
+                            </Avatar>
+                          </TableCell>
+
+                          {/* Brand Name */}
+                          <TableCell className="font-medium">
+                            {brand.name}
+                          </TableCell>
+
+                          {/* Status */}
+                          <TableCell>
+                            <Switch
+                              checked={brand?.status === "ACTIVE"}
+                              onCheckedChange={() => handleToggleStatus(brand)}
+                              disabled={isSubmitting}
+                              aria-label="Toggle brand status"
+                              className={cn(
+                                "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+                                1
+                                  ? "bg-gray-300 dark:bg-gray-600 data-[state=checked]:bg-primary dark:data-[state=checked]:bg-primary"
+                                  : "bg-gray-300 dark:bg-primary opacity-50 cursor-not-allowed"
+                              )}
+                            >
+                              <div
+                                className={cn(
+                                  "inline-block h-6 w-6 transform rounded-full bg-white dark:bg-gray-100 shadow-md transition-transform",
+                                  "translate-x-1 data-[state=checked]:translate-x-5"
+                                )}
+                              >
+                                {brand.status === "ACTIVE" && (
+                                  <Check className="h-6 w-6 m-auto text-orange-600 dark:text-orange-300" />
+                                )}
+                              </div>
+                            </Switch>
+                          </TableCell>
+
+                          {/* Total Products */}
+                          <TableCell>{brand.totalProducts}</TableCell>
+
+                          {/* Active Products */}
+                          <TableCell>{brand.activeProducts}</TableCell>
+
+                          {/* Actions */}
+                          <TableCell>
+                            <div className="flex items-center gap-2 justify-end">
+                              <Button
+                                variant="outline"
+                                onClick={() => handleEdit(brand)}
+                                className="hover:text-primary"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                onClick={() => handleDelete(brand)}
+                                className="text-destructive hover:text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+          {/* 
         <UserDetailModal
           open={isUserDetailOpen}
           onClose={() => setIsUserDetailOpen(false)}
           user={selectedBrand}
         /> */}
 
-        <ConfirmDialog
-          open={isToggleStatusDialogOpen}
-          onOpenChange={() => {
-            setIsToggleStatusDialogOpen(false);
-            setSelectedBrandToggle(null);
-          }}
-          centered={true}
-          title="Change User Status"
-          description={`Are you sure you want to ${
-            selectedBrandToggle?.status === "ACTIVE" ? "disable" : "enable"
-          } this brand?`}
-          confirmButton={{
-            text: `${
-              selectedBrandToggle?.status === "ACTIVE" ? "Disable" : "Enable"
-            }`,
-            onClick: () => handleToggleStatus(selectedBrandToggle),
-            variant: "primary",
-          }}
-          cancelButton={{ text: "Cancel", variant: "secondary" }}
-          onConfirm={() => handleStatusToggle(selectedBrandToggle)}
-        />
+          <ConfirmDialog
+            open={isToggleStatusDialogOpen}
+            onOpenChange={() => {
+              setIsToggleStatusDialogOpen(false);
+              setSelectedBrandToggle(null);
+            }}
+            centered={true}
+            title="Change User Status"
+            description={`Are you sure you want to ${
+              selectedBrandToggle?.status === "ACTIVE" ? "disable" : "enable"
+            } this brand?`}
+            confirmButton={{
+              text: `${
+                selectedBrandToggle?.status === "ACTIVE" ? "Disable" : "Enable"
+              }`,
+              onClick: () => handleToggleStatus(selectedBrandToggle),
+              variant: "primary",
+            }}
+            cancelButton={{ text: "Cancel", variant: "secondary" }}
+            onConfirm={() => handleStatusToggle(selectedBrandToggle)}
+          />
 
-        <DeleteConfirmationDialog
-          isOpen={isDeleteDialogOpen}
-          onClose={() => {
-            setIsDeleteDialogOpen(false);
-            setSelectedBrand(null);
-          }}
-          onDelete={handleDeleteBrand}
-          title="Delete Admin"
-          description={`Are you sure you want to delete the admin`}
-          itemName={selectedBrand?.businessName}
-          isSubmitting={isSubmitting}
-        />
+          <DeleteConfirmationDialog
+            isOpen={isDeleteDialogOpen}
+            onClose={() => {
+              setIsDeleteDialogOpen(false);
+              setSelectedBrand(null);
+            }}
+            onDelete={handleDeleteBrand}
+            title="Delete Admin"
+            description={`Are you sure you want to delete the admin`}
+            itemName={selectedBrand?.businessName}
+            isSubmitting={isSubmitting}
+          />
 
-        <BrandModal
-          isOpen={isModalOpen}
-          onClose={() => {
-            setInitializeBrand(null);
-            setIsModalOpen(false);
-          }}
-          isSubmitting={isSubmitting}
-          onSave={handleSubmit}
-          data={initializeBrand}
-          mode={mode}
-        />
-      </CardContent>
-    </Card>
+          <BrandModal
+            isOpen={isModalOpen}
+            onClose={() => {
+              setInitializeBrand(null);
+              setIsModalOpen(false);
+            }}
+            isSubmitting={isSubmitting}
+            onSave={handleSubmit}
+            data={initializeBrand}
+            mode={mode}
+          />
+        </CardContent>
+      </Card>
+      {/* Pagination */}
+      {brands && brands.totalElements > 0 && (
+        <div className="flex-shrink-0 flex items-center justify-between p-5 mb-16 border-t">
+          <PaginationPage
+            currentPage={currentPage}
+            totalItems={brands.totalElements}
+            itemsPerPage={itemsPerPage}
+            onPageChange={handlePageChange}
+            onItemsPerPageChange={handleItemsPerPageChange}
+            showItemsPerPage={true}
+            itemsPerPageOptions={[5, 10, 20, 50]}
+            showResultsText={true}
+          />
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { AppToast } from "@/components/app/components/app-toast";
+import PaginationPage from "@/components/shared/common/pagination-page";
 import { ConfirmDialog } from "@/components/shared/dialog/dialog-confirm";
 import { DeleteConfirmationDialog } from "@/components/shared/dialog/dialog-delete";
 import UploadBannerModal from "@/components/shared/modal/banner/banner-modal";
@@ -84,6 +85,9 @@ export default function BannerPage() {
   const [isToggleStatusDialogOpen, setIsToggleStatusDialogOpen] =
     useState(false);
 
+  //Pagination
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   const t = useTranslations("user");
   const headers = getUserTableHeaders(t);
   const locale = useLocale();
@@ -128,6 +132,15 @@ export default function BannerPage() {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
+  // Handle items per page change
+  const handleItemsPerPageChange = useCallback(
+    (newItemsPerPage: number) => {
+      setItemsPerPage(newItemsPerPage);
+      // Reset to page 1 when changing items per page to avoid confusion
+      updateUrlWithPage(1);
+    },
+    [updateUrlWithPage]
+  );
 
   async function handleSubmit(formData: UploadBannerFormData) {
     console.log("Submitting form:", formData, "mode:", mode);
@@ -336,240 +349,258 @@ export default function BannerPage() {
   };
 
   return (
-    <Card>
-      <CardContent className="space-y-6 p-6">
-        <div className="flex flex-wrap items-center justify-start gap-4 w-full">
-          <div className="relative w-full md:w-[350px]">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              aria-label="search-user"
-              autoComplete="search-user"
-              type="search"
-              placeholder={t("search")}
-              value={searchQuery}
-              onChange={handleSearchChange}
-              className="pl-8 w-full min-w-[200px] text-xs md:min-w-[300px] h-9"
-              disabled={isSubmitting}
-            />
-          </div>
+    <div className="h-full flex flex-col">
+      <Card>
+        <CardContent className="space-y-6 p-6">
+          <div className="flex flex-wrap items-center justify-start gap-4 w-full">
+            <div className="relative w-full md:w-[350px]">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                aria-label="search-user"
+                autoComplete="search-user"
+                type="search"
+                placeholder={t("search")}
+                value={searchQuery}
+                onChange={handleSearchChange}
+                className="pl-8 w-full min-w-[200px] text-xs md:min-w-[300px] h-9"
+                disabled={isSubmitting}
+              />
+            </div>
 
-          <div className="flex items-center gap-2">
-            <Select
-              value={statusFilter}
-              onValueChange={handleStatusChange}
-              disabled={isSubmitting}
-            >
-              <SelectTrigger className="w-[150px] text-xs h-9">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_FILTER.map((option) => (
-                  <SelectItem
-                    className="text-xs"
-                    key={option.value}
-                    value={option.value}
-                  >
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Button
-              onClick={() => {
-                setMode(ModalMode.CREATE_MODE);
-                setIsModalOpen(true);
-              }}
-            >
-              New
-            </Button>
-          </div>
-        </div>
-
-        <div className="w-full">
-          <Separator className="bg-gray-300" />
-        </div>
-
-        <div>
-          <div className="rounded-md border overflow-x-auto whitespace-nowrap">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {bannerTableHead.map((header) => (
-                    <TableHead
-                      key={header.key}
-                      className="text-xs font-semibold text-muted-foreground"
-                      style={{ width: "20%" }}
+            <div className="flex items-center gap-2">
+              <Select
+                value={statusFilter}
+                onValueChange={handleStatusChange}
+                disabled={isSubmitting}
+              >
+                <SelectTrigger className="w-[150px] text-xs h-9">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_FILTER.map((option) => (
+                    <SelectItem
+                      className="text-xs"
+                      key={option.value}
+                      value={option.value}
                     >
-                      {header.label}
-                    </TableHead>
+                      {option.label}
+                    </SelectItem>
                   ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {!banners || banners.content.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={bannerTableHead.length}
-                      className="text-center py-8 text-muted-foreground"
-                    >
-                      No banners found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  banners.content.map((banner, index) => {
-                    const imageUrl = banner.imageUrl
-                      ? `${process.env.NEXT_PUBLIC_API_BASE_URL}${banner.imageUrl}`
-                      : "";
-
-                    return (
-                      <TableRow key={banner.id} className="text-sm">
-                        {/* Index */}
-                        <TableCell>
-                          {indexDisplay(
-                            banners.pageNo,
-                            banners.pageSize,
-                            index
-                          )}
-                        </TableCell>
-
-                        {/* Image */}
-                        <TableCell>
-                          <Avatar className="h-10 w-10 border">
-                            <AvatarImage src={imageUrl} alt="Banner Image" />
-                            <AvatarFallback>
-                              {banner?.businessName?.charAt(0).toUpperCase() ||
-                                "B"}
-                            </AvatarFallback>
-                          </Avatar>
-                        </TableCell>
-
-                        {/* Link URL */}
-                        <TableCell className="whitespace-nowrap text-blue-600 hover:underline">
-                          <a
-                            href={banner.linkUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {banner?.linkUrl || "---"}
-                          </a>
-                        </TableCell>
-
-                        {/* Status */}
-                        <TableCell>
-                          <Switch
-                            checked={banner?.status === "ACTIVE"}
-                            onCheckedChange={() => handleToggleStatus(banner)}
-                            disabled={isSubmitting}
-                            aria-label="Toggle user status"
-                            className={cn(
-                              "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
-                              // canModify
-                              1
-                                ? "bg-gray-300 dark:bg-gray-600 data-[state=checked]:bg-primary dark:data-[state=checked]:bg-primary"
-                                : "bg-gray-300 dark:bg-primary opacity-50 cursor-not-allowed"
-                            )}
-                          >
-                            <div
-                              className={cn(
-                                "inline-block h-6 w-6 transform rounded-full bg-white dark:bg-gray-100 shadow-md transition-transform",
-                                "translate-x-1 data-[state=checked]:translate-x-5"
-                              )}
-                            >
-                              {banner.status === "ACTIVE" && (
-                                <Check className="h-6 w-6 m-auto text-orange-600 dark:text-orange-300" />
-                              )}
-                            </div>
-                          </Switch>
-                        </TableCell>
-
-                        {/* Created At */}
-                        <TableCell className="text-muted-foreground">
-                          {DateTimeFormat(banner?.createdAt || "---")}
-                        </TableCell>
-
-                        {/* Actions */}
-                        <TableCell>
-                          <div className="flex items-center gap-2 justify-end">
-                            <Button
-                              variant="outline"
-                              onClick={() => handleEditBanner(banner)}
-                              className="hover:text-primary"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              onClick={() => handleDelete(banner)}
-                              className="text-destructive hover:text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Button
+                onClick={() => {
+                  setMode(ModalMode.CREATE_MODE);
+                  setIsModalOpen(true);
+                }}
+              >
+                New
+              </Button>
+            </div>
           </div>
-        </div>
-        {/* 
+
+          <div className="w-full">
+            <Separator className="bg-gray-300" />
+          </div>
+
+          <div>
+            <div className="rounded-md border overflow-x-auto whitespace-nowrap">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {bannerTableHead.map((header) => (
+                      <TableHead
+                        key={header.key}
+                        className="text-xs font-semibold text-muted-foreground"
+                        style={{ width: "20%" }}
+                      >
+                        {header.label}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {!banners || banners.content.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={bannerTableHead.length}
+                        className="text-center py-8 text-muted-foreground"
+                      >
+                        No banners found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    banners.content.map((banner, index) => {
+                      const imageUrl = banner.imageUrl
+                        ? `${banner.imageUrl}`
+                        : "";
+
+                      return (
+                        <TableRow key={banner.id} className="text-sm">
+                          {/* Index */}
+                          <TableCell>
+                            {indexDisplay(
+                              banners.pageNo,
+                              banners.pageSize,
+                              index
+                            )}
+                          </TableCell>
+
+                          {/* Image */}
+                          <TableCell>
+                            <Avatar className="h-10 w-10 border">
+                              <AvatarImage src={imageUrl} alt="Banner Image" />
+                              <AvatarFallback>
+                                {banner?.businessName
+                                  ?.charAt(0)
+                                  .toUpperCase() || "B"}
+                              </AvatarFallback>
+                            </Avatar>
+                          </TableCell>
+
+                          {/* Link URL */}
+                          <TableCell className="whitespace-nowrap text-blue-600 hover:underline">
+                            <a
+                              href={banner.linkUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {banner?.linkUrl || "---"}
+                            </a>
+                          </TableCell>
+
+                          {/* Status */}
+                          <TableCell>
+                            <Switch
+                              checked={banner?.status === "ACTIVE"}
+                              onCheckedChange={() => handleToggleStatus(banner)}
+                              disabled={isSubmitting}
+                              aria-label="Toggle user status"
+                              className={cn(
+                                "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+                                // canModify
+                                1
+                                  ? "bg-gray-300 dark:bg-gray-600 data-[state=checked]:bg-primary dark:data-[state=checked]:bg-primary"
+                                  : "bg-gray-300 dark:bg-primary opacity-50 cursor-not-allowed"
+                              )}
+                            >
+                              <div
+                                className={cn(
+                                  "inline-block h-6 w-6 transform rounded-full bg-white dark:bg-gray-100 shadow-md transition-transform",
+                                  "translate-x-1 data-[state=checked]:translate-x-5"
+                                )}
+                              >
+                                {banner.status === "ACTIVE" && (
+                                  <Check className="h-6 w-6 m-auto text-orange-600 dark:text-orange-300" />
+                                )}
+                              </div>
+                            </Switch>
+                          </TableCell>
+
+                          {/* Created At */}
+                          <TableCell className="text-muted-foreground">
+                            {DateTimeFormat(banner?.createdAt || "---")}
+                          </TableCell>
+
+                          {/* Actions */}
+                          <TableCell>
+                            <div className="flex items-center gap-2 justify-end">
+                              <Button
+                                variant="outline"
+                                onClick={() => handleEditBanner(banner)}
+                                className="hover:text-primary"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                onClick={() => handleDelete(banner)}
+                                className="text-destructive hover:text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+          {/* 
         <UserDetailModal
           open={isUserDetailOpen}
           onClose={() => setIsUserDetailOpen(false)}
           user={selectedBanner}
         /> */}
 
-        <ConfirmDialog
-          open={isToggleStatusDialogOpen}
-          onOpenChange={() => {
-            setIsToggleStatusDialogOpen(false);
-            setSelectedBannerToggle(null);
-          }}
-          centered={true}
-          title="Change User Status"
-          description={`Are you sure you want to ${
-            selectedBannerToggle?.status === "ACTIVE" ? "disable" : "enable"
-          } this banner?`}
-          confirmButton={{
-            text: `${
-              selectedBannerToggle?.status === "ACTIVE" ? "Disable" : "Enable"
-            }`,
-            onClick: () => handleToggleStatus(selectedBannerToggle),
-            variant: "primary",
-          }}
-          cancelButton={{ text: "Cancel", variant: "secondary" }}
-          onConfirm={() => handleStatusToggle(selectedBannerToggle)}
-        />
+          <ConfirmDialog
+            open={isToggleStatusDialogOpen}
+            onOpenChange={() => {
+              setIsToggleStatusDialogOpen(false);
+              setSelectedBannerToggle(null);
+            }}
+            centered={true}
+            title="Change User Status"
+            description={`Are you sure you want to ${
+              selectedBannerToggle?.status === "ACTIVE" ? "disable" : "enable"
+            } this banner?`}
+            confirmButton={{
+              text: `${
+                selectedBannerToggle?.status === "ACTIVE" ? "Disable" : "Enable"
+              }`,
+              onClick: () => handleToggleStatus(selectedBannerToggle),
+              variant: "primary",
+            }}
+            cancelButton={{ text: "Cancel", variant: "secondary" }}
+            onConfirm={() => handleStatusToggle(selectedBannerToggle)}
+          />
 
-        <DeleteConfirmationDialog
-          isOpen={isDeleteDialogOpen}
-          onClose={() => {
-            setIsDeleteDialogOpen(false);
-            setSelectedBanner(null);
-          }}
-          onDelete={handleDeleteBanner}
-          title="Delete Admin"
-          description={`Are you sure you want to delete the admin`}
-          itemName={selectedBanner?.businessName}
-          isSubmitting={isSubmitting}
-        />
+          <DeleteConfirmationDialog
+            isOpen={isDeleteDialogOpen}
+            onClose={() => {
+              setIsDeleteDialogOpen(false);
+              setSelectedBanner(null);
+            }}
+            onDelete={handleDeleteBanner}
+            title="Delete Admin"
+            description={`Are you sure you want to delete the admin`}
+            itemName={selectedBanner?.businessName}
+            isSubmitting={isSubmitting}
+          />
 
-        <UploadBannerModal
-          isOpen={isModalOpen}
-          onClose={() => {
-            setInitializeBanner(null);
-            setIsModalOpen(false);
-          }}
-          isSubmitting={isSubmitting}
-          onSave={handleSubmit}
-          data={initializeBanner}
-          mode={mode}
-        />
-      </CardContent>
-    </Card>
+          <UploadBannerModal
+            isOpen={isModalOpen}
+            onClose={() => {
+              setInitializeBanner(null);
+              setIsModalOpen(false);
+            }}
+            isSubmitting={isSubmitting}
+            onSave={handleSubmit}
+            data={initializeBanner}
+            mode={mode}
+          />
+        </CardContent>
+      </Card>
+      {/* Pagination */}
+      {banners && banners.totalElements > 0 && (
+        <div className="flex-shrink-0 flex items-center justify-between p-5 mb-16 border-t">
+          <PaginationPage
+            currentPage={currentPage}
+            totalItems={banners.totalElements}
+            itemsPerPage={itemsPerPage}
+            onPageChange={handlePageChange}
+            onItemsPerPageChange={handleItemsPerPageChange}
+            showItemsPerPage={true}
+            itemsPerPageOptions={[5, 10, 20, 50]}
+            showResultsText={true}
+          />
+        </div>
+      )}
+    </div>
   );
 }

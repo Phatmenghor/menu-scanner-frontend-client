@@ -160,15 +160,21 @@ export default function ModalUser({
 
         const response = await uploadImageService(payload);
         if (response?.imageUrl) {
-          setValue("profileImageUrl", response?.imageUrl, {
-            shouldValidate: true,
-          });
+          setValue(
+            "profileImageUrl",
+            process.env.NEXT_PUBLIC_API_BASE_URL + response?.imageUrl,
+            {
+              shouldValidate: true,
+            }
+          );
           console.log(
             "Image Preview URL:",
             process.env.NEXT_PUBLIC_API_BASE_URL + response.imageUrl
           );
 
-          setLogoPreview(response?.imageUrl);
+          setLogoPreview(
+            process.env.NEXT_PUBLIC_API_BASE_URL + response?.imageUrl
+          );
         }
       };
       reader.readAsDataURL(file);
@@ -185,9 +191,7 @@ export default function ModalUser({
   };
 
   const getImageSource = () => {
-    return logoPreview?.startsWith("http")
-      ? logoPreview
-      : (process.env.NEXT_PUBLIC_API_BASE_URL ?? "") + logoPreview;
+    return logoPreview?.startsWith("http") ? logoPreview : logoPreview;
   };
 
   const onSubmit = (data: UserFormData) => {

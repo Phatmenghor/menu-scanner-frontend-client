@@ -30,7 +30,7 @@ interface PaginationProps {
 
 type PaginationItem = number | "ellipsis" | "first" | "last";
 
-export default function ImprovedPagination({
+export default function PaginationPage({
   currentPage,
   totalItems,
   itemsPerPage,
@@ -290,42 +290,6 @@ export default function ImprovedPagination({
             <ChevronRight className="h-4 w-4" />
           </Button>
         </nav>
-
-        {/* Right side: Items per page selector */}
-        {showItemsPerPage && onItemsPerPageChange && (
-          <div className="flex items-center gap-2">
-            <span
-              className={cn(
-                "text-muted-foreground whitespace-nowrap",
-                sizeClasses[size]
-              )}
-            >
-              Items per page:
-            </span>
-            <Select
-              value={itemsPerPage.toString()}
-              onValueChange={(value) => handleItemsPerPageChange(Number(value))}
-              disabled={disabled}
-            >
-              <SelectTrigger
-                className={cn(
-                  "w-20",
-                  size === "sm" && "h-8 text-xs",
-                  size === "lg" && "h-11 text-base"
-                )}
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {itemsPerPageOptions.map((option) => (
-                  <SelectItem key={option} value={option.toString()}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -2,7 +2,6 @@
 
 import { AppToast } from "@/components/app/components/app-toast";
 import PaginationPage from "@/components/shared/common/pagination-page";
-import { ConfirmDialog } from "@/components/shared/dialog/dialog-confirm";
 import { DeleteConfirmationDialog } from "@/components/shared/dialog/dialog-delete";
 import ProductDetailModal from "@/components/shared/modal/product/product-detail-modal";
 import { ProductModal } from "@/components/shared/modal/product/product-modal";
@@ -53,7 +52,6 @@ import { Edit, Eye, Search, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
 
 // Product Form Data Type (simplified without schema)
 type ProductFormData = {
@@ -192,7 +190,7 @@ export default function ProductPage() {
         status: formData.status || "ACTIVE",
       };
 
-      let response;
+      let response: any;
       if (isCreate) {
         response = await createProductService(payload);
         if (response) {
@@ -490,7 +488,7 @@ export default function ProductPage() {
                         );
 
                         const imageUrl = findThumbnail
-                          ? `${process.env.NEXT_PUBLIC_API_BASE_URL}${findThumbnail.imageUrl}`
+                          ? `${findThumbnail.imageUrl}`
                           : "";
 
                         return (
@@ -709,10 +707,6 @@ export default function ProductPage() {
       {/* Pagination */}
       {products && products.totalElements > 0 && (
         <div className="flex-shrink-0 flex items-center justify-between p-5 mb-16 border-t">
-          <div className="text-sm text-muted-foreground">
-            Showing {products.content.length} of {products.totalElements}{" "}
-            products
-          </div>
           <PaginationPage
             currentPage={currentPage}
             totalItems={products.totalElements}

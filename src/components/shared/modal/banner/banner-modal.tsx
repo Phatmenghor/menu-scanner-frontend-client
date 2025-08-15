@@ -109,16 +109,16 @@ function UploadBannerModal({
   // Update preview when imageUrl changes
   useEffect(() => {
     if (watchedImageUrl && !selectedFile) {
-      setPreviewUrl(getImageSource(watchedImageUrl));
+      setPreviewUrl(
+        getImageSource(process.env.NEXT_PUBLIC_API_BASE_URL + watchedImageUrl)
+      );
     }
   }, [watchedImageUrl, selectedFile]);
 
   // Get full image URL
   const getImageSource = (imageUrl: string) => {
     if (!imageUrl) return "";
-    return imageUrl.startsWith("http")
-      ? imageUrl
-      : (process.env.NEXT_PUBLIC_API_BASE_URL ?? "") + imageUrl;
+    return imageUrl.startsWith("http") ? imageUrl : imageUrl;
   };
 
   // Handle file upload via API
@@ -140,9 +140,13 @@ function UploadBannerModal({
 
           const response = await uploadImageService(payload);
           if (response?.imageUrl) {
-            setValue("imageUrl", response.imageUrl, {
-              shouldValidate: true,
-            });
+            setValue(
+              "imageUrl",
+              process.env.NEXT_PUBLIC_API_BASE_URL + response.imageUrl,
+              {
+                shouldValidate: true,
+              }
+            );
             setPreviewUrl(getImageSource(response.imageUrl));
             console.log("Image uploaded successfully:", response.imageUrl);
           }

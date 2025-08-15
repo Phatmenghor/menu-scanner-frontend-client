@@ -22,7 +22,7 @@ export default function DashboardLayout({
   }, [pathname, isMobile]);
 
   return (
-    <div className="flex overflow-hidden h-screen w-full bg-background">
+    <div className="flex min-h-screen w-full bg-background">
       <DashboardSidebar
         isOpen={isSidebarOpen}
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -39,8 +39,8 @@ export default function DashboardLayout({
         </div>
 
         {/* Main content - Flexible height */}
-        <main className="dashboard-main flex-1 min-h-screen overflow-y-auto px-4 pt-4 md:pt-6 md:px-6">
-          <div className="h-full">{children}</div>
+        <main className="dashboard-main flex-1 overflow-y-auto px-4 pt-4 md:pt-6 md:px-6">
+          {children}
         </main>
       </div>
     </div>

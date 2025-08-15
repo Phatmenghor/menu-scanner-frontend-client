@@ -542,7 +542,7 @@ export default function UserPage() {
                       const profileImageUrl =
                         user?.profileImageUrl &&
                         process.env.NEXT_PUBLIC_API_BASE_URL
-                          ? `${process.env.NEXT_PUBLIC_API_BASE_URL}${user.profileImageUrl}`
+                          ? `${user.profileImageUrl}`
                           : undefined;
 
                       return (
@@ -736,7 +736,6 @@ export default function UserPage() {
             onPageChange={handlePageChange}
             onItemsPerPageChange={handleItemsPerPageChange}
             showItemsPerPage={true}
-            itemsPerPageOptions={[5, 10, 20, 50]}
             showResultsText={true}
           />
         </div>

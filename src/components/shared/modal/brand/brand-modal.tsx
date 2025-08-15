@@ -120,9 +120,7 @@ function BrandModal({
   // Get full image URL
   const getImageSource = (imageUrl: string) => {
     if (!imageUrl) return "";
-    return imageUrl.startsWith("http")
-      ? imageUrl
-      : (process.env.NEXT_PUBLIC_API_BASE_URL ?? "") + imageUrl;
+    return imageUrl.startsWith("http") ? imageUrl : imageUrl;
   };
 
   // Handle file upload with actual API service
@@ -151,10 +149,18 @@ function BrandModal({
           console.log("Upload response:", response);
 
           if (response?.imageUrl) {
-            setValue("imageUrl", response.imageUrl, {
-              shouldValidate: true,
-            });
-            setPreviewUrl(getImageSource(response.imageUrl));
+            setValue(
+              "imageUrl",
+              process.env.NEXT_PUBLIC_API_BASE_URL + response.imageUrl,
+              {
+                shouldValidate: true,
+              }
+            );
+            setPreviewUrl(
+              getImageSource(
+                process.env.NEXT_PUBLIC_API_BASE_URL + response.imageUrl
+              )
+            );
             console.log("Image uploaded successfully:", response.imageUrl);
             console.log(
               "Preview URL set to:",

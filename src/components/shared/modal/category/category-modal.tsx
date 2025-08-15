@@ -184,13 +184,21 @@ function CategoryModal({
             URL.revokeObjectURL(objectUrl);
 
             // Update form with the uploaded image URL
-            setValue("imageUrl", response.imageUrl, {
-              shouldValidate: true,
-              shouldDirty: true,
-            });
+            setValue(
+              "imageUrl",
+              process.env.NEXT_PUBLIC_API_BASE_URL + response.imageUrl,
+              {
+                shouldValidate: true,
+                shouldDirty: true,
+              }
+            );
 
             // Update preview with the actual uploaded image
-            setPreviewUrl(getImageSource(response.imageUrl));
+            setPreviewUrl(
+              getImageSource(
+                process.env.NEXT_PUBLIC_API_BASE_URL + response.imageUrl
+              )
+            );
 
             console.log("Image uploaded successfully:", response.imageUrl);
           } else {

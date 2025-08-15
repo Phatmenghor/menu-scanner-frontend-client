@@ -174,13 +174,15 @@ const useEnhancedImageManagement = (
             );
             if (mainImageIndex !== -1) {
               updateImage(mainImageIndex, {
-                imageUrl: response.imageUrl,
+                imageUrl:
+                  process.env.NEXT_PUBLIC_API_BASE_URL + response.imageUrl,
                 imageType: "MAIN",
               });
             }
           } else {
             appendImage({
-              imageUrl: response.imageUrl,
+              imageUrl:
+                process.env.NEXT_PUBLIC_API_BASE_URL + response.imageUrl,
               imageType: imageType,
             });
           }
@@ -630,9 +632,9 @@ export function ProductModal({
   const getFullImageUrl = (imageUrl: string) => {
     if (imageUrl.startsWith("http")) return imageUrl;
     if (imageUrl.startsWith("/")) {
-      return `${process.env.NEXT_PUBLIC_API_BASE_URL}${imageUrl}`;
+      return `${imageUrl}`;
     }
-    return `${process.env.NEXT_PUBLIC_API_BASE_URL}/${imageUrl}`;
+    return `${imageUrl}`;
   };
 
   return (
