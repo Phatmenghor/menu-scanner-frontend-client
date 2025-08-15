@@ -5,7 +5,7 @@ export const ROUTES = {
 
   // Authentication routes
   AUTH: {
-    LOGIN: "/login",
+    LOGIN: "/auth/admin/login",
     REGISTER: "/register",
     FORGOT_PASSWORD: "/forgot-password",
     RESET_PASSWORD: "/reset-password",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -27,6 +27,7 @@ import {
 import { loginService, signUpService } from "@/services/auth/login.service";
 import { useTranslations } from "next-intl";
 import { AppToast } from "@/components/app/components/app-toast";
+import { ROUTES } from "@/constants/app-routed/routes";
 
 const loginSchema = z.object({
   userIdentifier: z.string(),
@@ -62,8 +63,6 @@ export default function CustomerLoginPage() {
   const [isSignupMode, setIsSignupMode] = useState(false);
 
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/admin";
   const t = useTranslations("auth");
 
   const loginForm = useForm<LoginFormData>({
@@ -108,7 +107,7 @@ export default function CustomerLoginPage() {
             position: "top-right",
           });
 
-          router.push(redirectTo);
+          router.push(ROUTES.CUSTOMER.DASHBOARD);
         });
       }
     } catch (error: any) {
