@@ -63,7 +63,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: '3000',
-        EXTERNAL_PORT: '3010'
+        EXTERNAL_PORT: '3000'
       },
       env_file: '.env.production',
       log_file: './logs/app.log',
