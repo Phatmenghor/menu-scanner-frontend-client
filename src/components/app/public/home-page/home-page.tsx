@@ -3,8 +3,6 @@ import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCallback, useEffect, useState } from "react";
 import { AllCategories } from "@/models/content-manangement/category/category.response";
-import { getAllCategoryService } from "@/services/dashboard/content-management/category/category.service";
-import { getAllProductService } from "@/services/dashboard/content-management/product/product.service";
 import { usePagination } from "@/hooks/use-pagination";
 import { ROUTES } from "@/constants/app-routed/routes";
 import { useDebounce } from "@/utils/debounce/debounce";
@@ -14,8 +12,10 @@ import { AllProduct } from "@/models/content-manangement/product/product.respons
 import { ProductCard } from "@/components/app/public/product/product-card";
 import { CategoryCard } from "@/components/app/public/category-card";
 import { AllBanner } from "@/models/content-manangement/banner/banner.response";
-import { getAllBannerService } from "@/services/dashboard/content-management/banner/banner.service";
 import { BannerCarousel } from "@/components/app/public/banner/banner-carousel";
+import { getAllPublicProductService } from "@/services/public/product/product.service";
+import { getPublicAllCategoriesService } from "@/services/dashboard/content-management/category/category.public.service";
+import { getAllPublicBannerService } from "@/services/dashboard/content-management/banner/banner.public.service";
 
 export default function HomePageContent() {
   const [categories, setCategories] = useState<AllCategories | null>(null);
@@ -37,19 +37,19 @@ export default function HomePageContent() {
 
     try {
       const [bannersRes, categoriesRes, productsRes] = await Promise.all([
-        getAllBannerService({
+        getAllPublicBannerService({
           search: debouncedSearchQuery,
           pageNo: currentPage,
           businessId: user?.businessId,
           pageSize: 10,
         }),
-        getAllCategoryService({
+        getPublicAllCategoriesService({
           search: debouncedSearchQuery,
           pageNo: currentPage,
           businessId: user?.businessId,
           pageSize: 10,
         }),
-        getAllProductService({
+        getAllPublicProductService({
           search: debouncedSearchQuery,
           pageNo: currentPage,
           businessId: user?.businessId,

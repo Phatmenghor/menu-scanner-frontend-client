@@ -265,7 +265,7 @@ const formatRequestData = (data: unknown): unknown => {
 const createAxiosInstance = (requiresAuth = false): AxiosInstance => {
   const axiosInstance = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-    timeout: 30000,
+    timeout: 200000,
     headers: {
       "Content-Type": "application/json",
     },

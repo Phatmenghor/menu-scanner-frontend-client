@@ -13,7 +13,7 @@ MAX_UPLOAD_SIZE="50M"
 PROXY_TIMEOUT="90s"
 
 # ========================================================================
-# 🔧 NGINX SETUP FOR KSIT MOBILE APP
+# 🔧 NGINX SETUP FOR MENU SCANNER APP
 # ========================================================================
 
 # Colors for output

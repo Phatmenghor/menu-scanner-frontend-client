@@ -329,6 +329,8 @@ export default function AddressPage() {
     setIsUserDetailOpen(true);
   };
 
+  const addressList = Array.isArray(addresses) ? addresses : [];
+
   return (
     <div className="flex flex-col">
       <Card className="flex flex-col">
@@ -423,7 +425,7 @@ export default function AddressPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    addresses.map((address, index) => (
+                    addressList?.map((address, index) => (
                       <TableRow key={address.id} className="text-sm">
                         {/* Index column */}
                         <TableCell>{index + 1}</TableCell>
