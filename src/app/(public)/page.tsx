@@ -1,7 +1,7 @@
 "use client";
 
-import HomePageContent from "@/components/app/public/home-page/home-page";
 import { Suspense } from "react";
+import HomePageContent from "../../components/app/public/home-page/home-page";
 
 export default function HomePage() {
   return (

@@ -5,7 +5,7 @@ export async function getPublicProductByIdService(id: string) {
   try {
     // POST request to fetch all staff matching the filters
     const response = await axiosClientWithAuth.get(
-      `/api/v1/products/${id}/public`
+      `/api/v1/public/products/${id}`
     );
     return response.data.data; // Return the actual staff list data
   } catch (error: any) {
@@ -22,7 +22,7 @@ export async function getAllPublicProductService(data: AllProductRequest) {
   try {
     // POST request to fetch all staff matching the filters
     const response = await axiosClientWithAuth.post(
-      `/api/v1/public/product/all`,
+      `/api/v1/public/products/all`,
       data
     );
     return response.data.data; // Return the actual staff list data

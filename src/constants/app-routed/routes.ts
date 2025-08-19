@@ -69,6 +69,13 @@ export const ROUTES = {
     DASHBOARD: "/dashboard",
     ADDRESS: "/dashboard/address",
   },
+
+  E_COMMERCE: {
+    PRODUCT: {
+      DETAIL: (id: string) => `/product/${id}`,
+      VIEW_ALL: `/product`,
+    },
+  },
 } as const;
 
 // Route utilities

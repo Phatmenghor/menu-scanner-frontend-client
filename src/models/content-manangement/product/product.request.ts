@@ -36,7 +36,7 @@ export interface Image {
   imageType: string;
 }
 
-export interface Size {
+interface Size {
   name: string;
   price: number;
   promotionType?: string;

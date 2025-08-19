@@ -16,6 +16,7 @@ import { BannerCarousel } from "@/components/app/public/banner/banner-carousel";
 import { getAllPublicProductService } from "@/services/public/product/product.service";
 import { getPublicAllCategoriesService } from "@/services/dashboard/content-management/category/category.public.service";
 import { getAllPublicBannerService } from "@/services/dashboard/content-management/banner/banner.public.service";
+import { useRouter } from "next/navigation";
 
 export default function HomePageContent() {
   const [categories, setCategories] = useState<AllCategories | null>(null);
@@ -31,6 +32,7 @@ export default function HomePageContent() {
   });
 
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
+  const router = useRouter();
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -85,6 +87,14 @@ export default function HomePageContent() {
     setSearchQuery(e.target.value);
   };
 
+  const handleToProductDetail = (id: string) => {
+    router.push(ROUTES.E_COMMERCE.PRODUCT.DETAIL(id));
+  };
+
+  const handleViewAllProducts = () => {
+    router.push(ROUTES.E_COMMERCE.PRODUCT.VIEW_ALL);
+  };
+
   return (
     <div className="min-h-screen text-primary bg-gray-50">
       <main className="container mx-auto px-4 py-4">
@@ -136,12 +146,20 @@ export default function HomePageContent() {
               <ProductCard
                 product={product}
                 key={product.id}
-                onProductClick={() => {}}
+                onProductClick={() => handleToProductDetail(product?.id)}
                 onWishlistToggle={() => {}}
               />
             ))}
           </div>
         </section>
+        <div className="flex justify-center mt-8">
+          <Button
+            className="bg-primary px-8 py-3 rounded-full flex items-center gap-2"
+            onClick={handleViewAllProducts}
+          >
+            View All <span className="text-xl">&rarr;</span>
+          </Button>
+        </div>
       </main>
 
       {/* Floating Chat Button */}
