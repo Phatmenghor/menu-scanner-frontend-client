@@ -1,18 +1,7 @@
-export interface AllProduct {
-  content: ProductModel[];
-  pageNo: number;
-  pageSize: number;
-  totalElements: number;
-  totalPages: number;
-  last: boolean;
-  first: boolean;
-  hasNext: boolean;
-  hasPrevious: boolean;
-}
-
-export interface ProductModel {
+export interface ProductDetailModel {
   id: string;
   name: string;
+  description: string;
   status: string;
   price: number;
   promotionType: string;
@@ -27,7 +16,6 @@ export interface ProductModel {
   displayPrice: number;
   hasPromotion: boolean;
   hasSizes: boolean;
-  mainImageUrl: string;
   viewCount: number;
   favoriteCount: number;
   isFavorited: boolean;
@@ -38,4 +26,24 @@ export interface ProductModel {
   categoryName: string;
   brandId: string;
   brandName: string;
+  images: Image[];
+  sizes: Size[];
+}
+
+export interface Image {
+  id: string;
+  imageUrl: string;
+  imageType: string;
+}
+
+export interface Size {
+  id: string;
+  name: string;
+  price: number;
+  finalPrice: number;
+  hasPromotion: boolean;
+  promotionType: string;
+  promotionValue: number;
+  promotionFromDate: string;
+  promotionToDate: string;
 }

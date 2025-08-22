@@ -60,7 +60,7 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
       {category.imageUrl ? (
         <>
           <img
-            src={process.env.NEXT_PUBLIC_API_BASE_URL + category.imageUrl}
+            src={category.imageUrl}
             alt={category.name}
             className="absolute inset-0 w-full h-full object-cover"
             onError={(e) => {

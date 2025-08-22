@@ -12,20 +12,19 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import {
-  ProductModel,
-  Size,
-} from "@/models/content-manangement/product/product.response";
 import { getPublicProductByIdService } from "@/services/public/product/product.service";
 import { Button } from "@/components/ui/button";
-import { ROUTES } from "@/constants/app-routed/routes";
 import Loading from "@/components/shared/common/loading";
+import {
+  ProductDetailModel,
+  Size,
+} from "@/models/content-manangement/product/product.detail.response";
 
 const ProductDetailPage: React.FC = () => {
   const params = useParams();
   const productId = params?.id as string;
 
-  const [product, setProduct] = useState<ProductModel | null>(null);
+  const [product, setProduct] = useState<ProductDetailModel | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<Size | null>(null);
@@ -105,10 +104,6 @@ const ProductDetailPage: React.FC = () => {
     // Implement favorite toggle API call
   };
 
-  const handleBackToHome = () => {
-    router.push(ROUTES.HOME);
-  };
-
   if (loading) {
     return <Loading />;
   }
@@ -135,7 +130,7 @@ const ProductDetailPage: React.FC = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleBackToHome}
+            onClick={() => router.back()}
             className="flex items-center gap-2"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -159,7 +154,7 @@ const ProductDetailPage: React.FC = () => {
                     <span className="sr-only">Image {index + 1}</span>
                     <span className="absolute inset-0 rounded-md overflow-hidden">
                       <Image
-                        src={image.imageUrl}
+                        src={image?.imageUrl}
                         alt={`${product.name} view ${index + 1}`}
                         fill
                         className="object-cover object-center"
@@ -175,10 +170,7 @@ const ProductDetailPage: React.FC = () => {
               {product.images.length > 0 && (
                 <>
                   <Image
-                    src={
-                      product.images[currentImageIndex]?.imageUrl ||
-                      product.mainImageUrl
-                    }
+                    src={product.images[currentImageIndex]?.imageUrl}
                     alt={product.name}
                     fill
                     className="object-cover object-center"
@@ -190,15 +182,15 @@ const ProductDetailPage: React.FC = () => {
                     <>
                       <Button
                         onClick={() => handleImageNavigation("prev")}
-                        className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg transition-all"
+                        className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-600 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg transition-all"
                       >
-                        <ChevronLeft className="h-5 w-5 text-gray-800" />
+                        <ChevronLeft className="h-5 w-5" />
                       </Button>
                       <Button
                         onClick={() => handleImageNavigation("next")}
-                        className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg transition-all"
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-600 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg transition-all"
                       >
-                        <ChevronRight className="h-5 w-5 text-gray-800" />
+                        <ChevronRight className="h-5 w-5" />
                       </Button>
                     </>
                   )}
@@ -245,13 +237,13 @@ const ProductDetailPage: React.FC = () => {
                 <p className="text-3xl font-bold text-pink-600">
                   ${getCurrentPrice().toFixed(2)}
                 </p>
-                {product.hasPromotionActive && (
+                {product.hasPromotion && (
                   <p className="text-lg text-gray-500 line-through">
                     ${(selectedSize?.price || product.price).toFixed(2)}
                   </p>
                 )}
               </div>
-              {product.hasPromotionActive && (
+              {product.hasPromotion && (
                 <div className="mt-2">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                     {product.promotionType === "PERCENTAGE"
@@ -285,14 +277,14 @@ const ProductDetailPage: React.FC = () => {
                           {size.name}
                         </span>
                         {selectedSize?.id === size.id && (
-                          <div className="h-2 w-2 bg-pink-500 rounded-full"></div>
+                          <div className="h-2 w-2 bg-pink-500 rounded-full text-white"></div>
                         )}
                       </div>
                       <div className="mt-1 flex items-center space-x-2">
-                        <span className="text-sm font-bold text-pink-600">
+                        <span className="text-sm font-bold">
                           ${size.finalPrice.toFixed(2)}
                         </span>
-                        {size.isPromotionActive && (
+                        {size.hasPromotion && (
                           <span className="text-xs text-gray-500 line-through">
                             ${size.price.toFixed(2)}
                           </span>

@@ -106,9 +106,7 @@ export const BannerCarousel: React.FC<BannerCarouselProps> = ({
         {currentBanner?.imageUrl ? (
           <>
             <img
-              src={
-                process.env.NEXT_PUBLIC_API_BASE_URL + currentBanner.imageUrl
-              }
+              src={currentBanner.imageUrl}
               alt={`Banner ${currentIndex + 1}`}
               className={`w-full h-full object-cover transition-all duration-700 ${
                 imageLoaded ? "opacity-100 scale-100" : "opacity-0 scale-105"

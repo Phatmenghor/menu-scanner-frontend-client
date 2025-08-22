@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { Heart, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductModel } from "@/models/content-manangement/product/product.response";
+import { ProductDetailModel } from "@/models/content-manangement/product/product.detail.response";
 
 interface ProductCardProps {
-  product: ProductModel;
+  product: ProductDetailModel;
   showBestSeller?: boolean;
   onWishlistToggle?: (productId: string, isFavorited: boolean) => void;
   onProductClick?: (productId: string) => void;
@@ -67,9 +68,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Product Image - Smaller for list view */}
         <div className="w-48 h-48 bg-gradient-to-br from-purple-400 via-pink-300 to-blue-300 relative overflow-hidden flex-shrink-0">
-          {product.mainImageUrl ? (
+          {product.images ? (
             <img
-              src={product.mainImageUrl}
+              src={product.images[0].imageUrl}
               alt={product.name}
               className="w-full h-full object-cover"
               onError={(e) => {
@@ -77,7 +78,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               }}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-white text- font-semibold text-center p-4">
+            <div className="w-full h-full flex items-center justify-center text-white text-lg font-semibold text-center p-4">
               {product.name}
             </div>
           )}
@@ -98,20 +99,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                   {product.brandName} • {product.categoryName}
                 </p>
               </div>
-            </div>
 
-            {/* Price Display */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <p className="text-pink-600 font-bold text-xl">
-                  ${product.displayPrice.toFixed(2)}
-                </p>
-                {hasDiscount && (
-                  <p className="text-gray-400 line-through text-base">
-                    ${product.price.toFixed(2)}
-                  </p>
-                )}
-              </div>
               {/* Wishlist Button */}
               <Button
                 onClick={handleWishlistClick}
@@ -129,10 +117,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               </Button>
             </div>
 
+            {/* Price Display */}
+            <div className="flex items-center gap-3 mb-4">
+              <p className="text-pink-600 font-bold text-xl">
+                ${product.displayPrice.toFixed(2)}
+              </p>
+              {hasDiscount && (
+                <p className="text-gray-400 line-through text-lg">
+                  ${product.price.toFixed(2)}
+                </p>
+              )}
+            </div>
+
             {/* Description or additional info for list view */}
-            {product.brandName && (
+            {product.description && (
               <p className="text-gray-600 text-sm line-clamp-2 mb-4">
-                {product.brandName}
+                {product.description}
               </p>
             )}
           </div>
@@ -180,9 +180,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
       {/* Product Image */}
       <div className="aspect-square bg-gradient-to-br from-purple-400 via-pink-300 to-blue-300 relative overflow-hidden">
-        {product.mainImageUrl ? (
+        {product.images ? (
           <img
-            src={product.mainImageUrl}
+            src={product.images[0].imageUrl}
             alt={product.name}
             className="w-full h-full object-cover"
             onError={(e) => {
@@ -213,22 +213,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
       {/* Product Info */}
       <div className="p-4">
-        <h3 className="text-gray-800 font-semibold text-sm mb-2 line-clamp-2">
-          {product.name}
-        </h3>
+        <div className="flex justify-between items-start">
+          <div className="flex-1 pr-2">
+            <h3 className="text-gray-800 font-semibold text-sm mb-1 line-clamp-2">
+              {product.name}
+            </h3>
 
-        {/* Price and Heart Button Row */}
-        <div className="flex items-center justify-between">
-          {/* Price Display */}
-          <div className="flex items-center gap-2">
-            <p className="text-pink-600 font-bold text-lg">
-              ${product.displayPrice.toFixed(2)}
-            </p>
-            {hasDiscount && (
-              <p className="text-gray-400 line-through text-sm">
-                ${product.price.toFixed(2)}
+            {/* Price Display */}
+            <div className="flex items-center gap-2">
+              <p className="text-pink-600 font-bold text-lg">
+                ${product.displayPrice.toFixed(2)}
               </p>
-            )}
+              {hasDiscount && (
+                <p className="text-gray-400 line-through text-sm">
+                  ${product.price.toFixed(2)}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Wishlist Button */}

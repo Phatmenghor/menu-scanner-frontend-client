@@ -88,8 +88,9 @@ export default function ProductPage() {
   const [statusFilter, setStatusFilter] = useState<Status>(Status.ACTIVE);
   const [mode, setMode] = useState<ModalMode>(ModalMode.CREATE_MODE);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [initializeProduct, setInitializeProduct] =
-    useState<ProductFormData | null>(null);
+  const [initializeProduct, setInitializeProduct] = useState<string | null>(
+    null
+  );
   const [selectedProduct, setSelectedProduct] = useState<ProductModel | null>(
     null
   );
@@ -144,27 +145,6 @@ export default function ProductPage() {
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-  };
-
-  // Convert ProductModel to ProductFormData for editing
-  const convertProductModelToFormData = (
-    product: ProductModel
-  ): ProductFormData => {
-    return {
-      id: product.id,
-      name: product.name,
-      categoryId: product.categoryId,
-      images: product.images || [],
-      description: product.description,
-      brandId: product.brandId,
-      price: product.price,
-      promotionType: product.promotionType,
-      promotionValue: product.promotionValue,
-      promotionFromDate: product.promotionFromDate,
-      promotionToDate: product.promotionToDate,
-      sizes: product.sizes || [],
-      status: product.status,
-    };
   };
 
   async function handleSubmit(formData: ProductFormData) {
@@ -326,29 +306,8 @@ export default function ProductPage() {
     [updateUrlWithPage]
   );
 
-  const getAdminDisplayPrice = (product: ProductModel): string => {
-    // If product has sizes, show price range
-    if (product.hasSizes && product.sizes && product.sizes.length > 0) {
-      const prices = product.sizes.map((size) => size.finalPrice || size.price);
-      const minPrice = Math.min(...prices);
-      const maxPrice = Math.max(...prices);
-
-      // Same price for all sizes
-      if (minPrice === maxPrice) {
-        return `$${minPrice.toFixed(2)}`;
-      }
-
-      // Different prices - show range
-      return `$${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}`;
-    }
-
-    // No sizes - use main product price
-    return `$${(product.displayPrice || product.price || 0).toFixed(2)}`;
-  };
-
   const handleEdit = (product: ProductModel) => {
-    const formData = convertProductModelToFormData(product);
-    setInitializeProduct(formData);
+    setInitializeProduct(product?.id);
     setMode(ModalMode.UPDATE_MODE);
     setIsModalOpen(true);
   };
@@ -483,14 +442,6 @@ export default function ProductPage() {
                       </TableRow>
                     ) : (
                       products.content.map((product, index) => {
-                        const findThumbnail = product?.images?.find(
-                          (image) => image.imageType === "MAIN"
-                        );
-
-                        const imageUrl = findThumbnail
-                          ? `${findThumbnail.imageUrl}`
-                          : "";
-
                         return (
                           <TableRow
                             key={product.id}
@@ -509,7 +460,7 @@ export default function ProductPage() {
                             <TableCell>
                               <Avatar className="h-12 w-12 border">
                                 <AvatarImage
-                                  src={imageUrl}
+                                  src={product.mainImageUrl}
                                   alt="Product Image"
                                   className="object-cover"
                                 />
@@ -553,16 +504,8 @@ export default function ProductPage() {
                             {/* Price */}
                             <TableCell className="text-right">
                               <div className="font-bold text-lg text-green-600">
-                                {getAdminDisplayPrice(product)}
+                                {product.price}
                               </div>
-                              {product.hasSizes &&
-                                product.sizes &&
-                                product.sizes.length > 0 && (
-                                  <div className="text-xs text-gray-500 font-medium">
-                                    {product.sizes.length} size
-                                    {product.sizes.length > 1 ? "s" : ""}
-                                  </div>
-                                )}
                             </TableCell>
 
                             {/* Status */}
@@ -587,17 +530,15 @@ export default function ProductPage() {
                             <TableCell className="min-w-[100px]">
                               <Badge
                                 variant={
-                                  product.hasPromotionActive
-                                    ? "default"
-                                    : "outline"
+                                  product.hasPromotion ? "default" : "outline"
                                 }
                                 className={`text-xs ${
-                                  product.hasPromotionActive
+                                  product.hasPromotion
                                     ? "bg-orange-100 text-orange-800 border-orange-200"
                                     : "bg-gray-50 text-gray-600 border-gray-200"
                                 }`}
                               >
-                                {product.hasPromotionActive ? "Active" : "None"}
+                                {product.hasPromotion ? "Active" : "None"}
                               </Badge>
                             </TableCell>
 
@@ -675,13 +616,13 @@ export default function ProductPage() {
 
           {/* Modals */}
           <ProductDetailModal
-            product={selectedProduct}
+            productId={selectedProduct?.id || ""}
             open={isUserDetailOpen}
             onClose={handleCloseDetailModal}
           />
 
           <ProductModal
-            data={initializeProduct}
+            productId={initializeProduct}
             isOpen={isModalOpen}
             mode={mode}
             onClose={handleCloseModal}

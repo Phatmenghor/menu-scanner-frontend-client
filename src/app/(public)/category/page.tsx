@@ -1,29 +1,24 @@
-// Fixed All Products Page
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Grid3X3, List, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ProductCard } from "@/components/app/public/product/product-card";
-import { getAllPublicProductService } from "@/services/public/product/product.service";
 import { useDebounce } from "@/utils/debounce/debounce";
 import { getUserInfo } from "@/utils/local-storage/userInfo";
 import { AppToast } from "@/components/app/components/app-toast";
 import { ROUTES } from "@/constants/app-routed/routes";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useLoadMorePagination } from "@/hooks/use-loadMore-pagination";
 import { LoadMorePagination } from "@/components/ui/load-more-pagination";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { appendProducts, setAllProducts } from "@/store/features/product-slice";
+import { CategoryCard } from "@/components/app/public/category-card";
+import { getPublicAllCategoriesService } from "@/services/dashboard/content-management/category/category.public.service";
+import {
+  appendCategory,
+  setAllCategories,
+} from "@/store/features/category-slice";
 
-export default function AllProductsPage() {
+export default function AllCategoriesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -41,8 +36,8 @@ export default function AllProductsPage() {
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
 
   // Get products from Redux store
-  const { allProducts, isLoadedProducts } = useSelector(
-    (store: RootState) => store.products
+  const { allCategories, isLoadedCategories } = useSelector(
+    (store: RootState) => store.category
   );
   const dispatch = useDispatch();
 
@@ -57,7 +52,7 @@ export default function AllProductsPage() {
     setSortBy(sort);
   }, [searchParams]);
 
-  const loadProducts = useCallback(
+  const loadCategories = useCallback(
     async (append: boolean = false) => {
       if (!append) {
         setIsLoading(true);
@@ -66,36 +61,36 @@ export default function AllProductsPage() {
       try {
         const pageToLoad = append ? currentPage + 1 : 1;
 
-        const productsRes = await getAllPublicProductService({
+        const categoryRes = await getPublicAllCategoriesService({
           search: debouncedSearchQuery,
           pageNo: pageToLoad,
           businessId: user?.businessId,
           pageSize: 12,
         });
 
-        console.log("API Response:", productsRes);
-        console.log("Products content:", productsRes?.content);
+        console.log("API Response:", categoryRes);
+        console.log("Categories content:", categoryRes?.content);
 
         if (append) {
           // When loading more, APPEND new products to existing ones
-          if (productsRes?.content) {
-            dispatch(appendProducts(productsRes.content));
+          if (categoryRes?.content) {
+            dispatch(appendCategory(categoryRes.content));
             setCurrentPage(pageToLoad);
           }
         } else {
           // Initial load or search - REPLACE products
-          if (productsRes) {
-            dispatch(setAllProducts(productsRes)); // Pass the entire response object
-            setTotalElements(productsRes.totalElements || 0);
-            setTotalPages(productsRes.totalPages || 0);
+          if (categoryRes) {
+            dispatch(setAllCategories(categoryRes)); // Pass the entire response object
+            setTotalElements(categoryRes.totalElements || 0);
+            setTotalPages(categoryRes.totalPages || 0);
             setCurrentPage(1);
           }
         }
       } catch (error: any) {
-        console.log("Failed to load products:", error);
+        console.log("Failed to load categories:", error);
         AppToast?.({
           type: "error",
-          message: "Failed to load products",
+          message: "Failed to load categories",
           duration: 3000,
           position: "top-right",
         });
@@ -106,27 +101,27 @@ export default function AllProductsPage() {
     [debouncedSearchQuery, user?.businessId, currentPage, dispatch]
   );
 
-  // Load initial products when search/sort changes
+  // Load initial categories when search/sort changes
   useEffect(() => {
-    if (!isLoadedProducts || debouncedSearchQuery !== searchQuery) {
+    if (!isLoadedCategories || debouncedSearchQuery !== searchQuery) {
       resetPagination();
       setCurrentPage(1);
-      loadProducts(false);
+      loadCategories(false);
     }
   }, [debouncedSearchQuery, sortBy]);
 
   // Initial load
   useEffect(() => {
-    if (!isLoadedProducts) {
-      loadProducts(false);
+    if (!isLoadedCategories) {
+      loadCategories(false);
     }
   }, []);
 
   const onLoadMore = useCallback(async () => {
     await handleLoadMore(async () => {
-      await loadProducts(true); // Load next page and append
+      await loadCategories(true); // Load next page and append
     });
-  }, [handleLoadMore, loadProducts]);
+  }, [handleLoadMore, loadCategories]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -160,14 +155,15 @@ export default function AllProductsPage() {
   };
 
   // Get the actual products array from the Redux store
-  const productsToDisplay = allProducts?.content || [];
-  const displayTotalElements = totalElements || allProducts?.totalElements || 0;
+  const categoryToDisplay = allCategories?.content || [];
+  const displayTotalElements =
+    totalElements || allCategories?.totalElements || 0;
 
   // Check if there are more products to load
-  const hasMore = productsToDisplay.length < displayTotalElements;
+  const hasMore = categoryToDisplay.length < displayTotalElements;
 
-  console.log("Redux allProducts:", allProducts);
-  console.log("Products to display:", productsToDisplay);
+  console.log("Redux allCategories:", allCategories);
+  console.log("Categories to display:", categoryToDisplay);
   console.log("Display total:", displayTotalElements);
 
   return (
@@ -189,22 +185,6 @@ export default function AllProductsPage() {
             </div>
 
             <div className="flex items-center gap-4">
-              {/* Sort */}
-              <Select
-                value={sortBy}
-                onValueChange={(value) => handleSortChange(value)}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">Newest</SelectItem>
-                  <SelectItem value="price-low">Price: Low to High</SelectItem>
-                  <SelectItem value="price-high">Price: High to Low</SelectItem>
-                  <SelectItem value="popular">Most Popular</SelectItem>
-                </SelectContent>
-              </Select>
-
               {/* View Mode Toggle */}
               <div className="flex items-center bg-gray-100 rounded-md p-1">
                 <Button
@@ -236,13 +216,13 @@ export default function AllProductsPage() {
           <p className="text-gray-600">
             {displayTotalElements > 0 ? (
               <>
-                Showing {productsToDisplay.length} of {displayTotalElements}{" "}
-                products
+                Showing {categoryToDisplay.length} of {displayTotalElements}{" "}
+                categories
               </>
             ) : isLoading ? (
               ""
             ) : (
-              "No products found"
+              "No category found"
             )}
             {searchQuery && <span className="ml-2">for "{searchQuery}"</span>}
           </p>
@@ -260,14 +240,14 @@ export default function AllProductsPage() {
         )} */}
 
         {/* Loading State */}
-        {isLoading && !productsToDisplay.length && (
+        {isLoading && !categoryToDisplay.length && (
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-pink"></div>
           </div>
         )}
 
         {/* Products Grid/List */}
-        {productsToDisplay.length > 0 && (
+        {categoryToDisplay.length > 0 && (
           <>
             <div
               className={
@@ -276,15 +256,13 @@ export default function AllProductsPage() {
                   : "space-y-4"
               }
             >
-              {productsToDisplay.map((product, index) => {
-                console.log(`Rendering product ${index}:`, product);
+              {categoryToDisplay.map((category, index) => {
+                console.log(`Rendering product ${index}:`, category);
                 return (
-                  <ProductCard
-                    key={product.id || index}
-                    product={product}
-                    onProductClick={() => handleToProductDetail(product.id)}
-                    onWishlistToggle={() => {}}
-                    viewMode={viewMode}
+                  <CategoryCard
+                    key={category.id || index}
+                    category={category}
+                    onCategoryClick={() => handleToProductDetail(category.id)}
                   />
                 );
               })}
@@ -293,15 +271,15 @@ export default function AllProductsPage() {
             {/* Load More Pagination */}
             {hasMore && (
               <LoadMorePagination
-                items={productsToDisplay}
+                items={categoryToDisplay}
                 totalElements={displayTotalElements}
                 hasMore={hasMore}
                 isLoading={isLoading}
                 isLoadingMore={isLoadingMore}
                 onLoadMore={onLoadMore}
-                loadMoreText="View More Products"
+                loadMoreText="View More Categories"
                 loadingText="Loading more..."
-                noMoreText="You've seen all products"
+                noMoreText="You've seen all categories"
                 showCount={false}
                 buttonVariant="outline"
                 buttonSize="lg"
@@ -312,13 +290,13 @@ export default function AllProductsPage() {
         )}
 
         {/* Empty State */}
-        {!isLoading && productsToDisplay.length === 0 && (
+        {!isLoading && categoryToDisplay.length === 0 && (
           <div className="text-center py-20">
             <div className="text-gray-400 mb-4">
               <Grid3X3 className="w-16 h-16 mx-auto" />
             </div>
             <h3 className="text-xl font-semibold text-gray-600 mb-2">
-              No Products Found
+              No Category Found
             </h3>
             <p className="text-gray-500 mb-4">
               {searchQuery

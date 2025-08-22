@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import {
   X,
@@ -37,25 +37,50 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { ProductModel } from "@/models/content-manangement/product/product.response";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { ProductDetailModel } from "@/models/content-manangement/product/product.detail.response";
+import { getProductByIdService } from "@/services/dashboard/content-management/product/product.service";
 
 interface ProductDetailModalProps {
-  product: ProductModel | null;
+  productId: string | null;
   open: boolean;
   onClose: () => void;
 }
 
 export default function ProductDetailModal({
-  product,
+  productId,
   open,
   onClose,
 }: ProductDetailModalProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageLoading, setImageLoading] = useState(false);
+  const [product, setProduct] = useState<ProductDetailModel | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  if (!open || !product) return null;
+  const fetchProduct = useCallback(async () => {
+    if (!productId) return;
+
+    try {
+      setIsLoading(true);
+      const productData: ProductDetailModel = await getProductByIdService(
+        productId
+      );
+      if (productData) {
+        setProduct(productData);
+      }
+    } catch (err) {
+      console.error(
+        err instanceof Error ? err.message : "Failed to load product"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [productId]);
+
+  useEffect(() => {
+    fetchProduct();
+  }, [fetchProduct]);
 
   const getStatusConfig = (status: string) => {
     switch (status.toLowerCase()) {
@@ -126,18 +151,10 @@ export default function ProductDetailModal({
   };
 
   const shareProduct = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: product.name,
-        text: `Check out this product: ${product.name}`,
-        url: product.publicUrl || window.location.href,
-      });
-    } else {
-      copyToClipboard(
-        product.publicUrl || window.location.href,
-        "Product link copied to clipboard!"
-      );
-    }
+    navigator.share({
+      title: product?.name,
+      text: `Check out this product: ${product?.name}`,
+    });
   };
 
   const InfoItem = ({
@@ -213,8 +230,8 @@ export default function ProductDetailModal({
     </Card>
   );
 
-  const statusConfig = getStatusConfig(product.status);
-  const allImages = product.images || [];
+  const statusConfig = getStatusConfig(product?.status ?? "");
+  const allImages = product?.images || [];
   const currentImage = allImages[currentImageIndex];
 
   const nextImage = () => {
@@ -249,7 +266,7 @@ export default function ProductDetailModal({
                     <>
                       <Image
                         src={getFullImageUrl(currentImage.imageUrl)}
-                        alt={product.name}
+                        alt={product?.name || ""}
                         width={96}
                         height={96}
                         className="rounded-xl object-cover w-full h-full"
@@ -299,7 +316,7 @@ export default function ProductDetailModal({
               <div className="flex-1 pt-1">
                 <div className="flex items-start justify-between mb-2">
                   <h2 className="text-2xl font-bold text-gray-900 mb-1">
-                    {product.name}
+                    {product?.name}
                   </h2>
                   <div className="flex items-center gap-2 ml-4">
                     <Button
@@ -311,23 +328,12 @@ export default function ProductDetailModal({
                       <Share className="h-4 w-4" />
                       Share
                     </Button>
-                    {product.publicUrl && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(product.publicUrl, "_blank")}
-                        className="flex items-center gap-1"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        View Public
-                      </Button>
-                    )}
                   </div>
                 </div>
 
                 <p className="text-base text-gray-600 mb-3 flex items-center gap-2">
                   <Building2 className="h-4 w-4" />
-                  {product.businessName}
+                  {product?.businessName}
                 </p>
 
                 <div className="flex items-center gap-3 mb-3">
@@ -335,9 +341,9 @@ export default function ProductDetailModal({
                     className={`${statusConfig.color} font-medium px-3 py-1`}
                   >
                     {statusConfig.icon}
-                    <span className="ml-1.5">{product.status}</span>
+                    <span className="ml-1.5">{product?.status}</span>
                   </Badge>
-                  {product.hasPromotionActive && (
+                  {product?.hasPromotion && (
                     <Badge className="bg-red-50 text-red-700 border-red-200 font-medium px-3 py-1 flex items-center gap-1">
                       <Zap className="h-3 w-3" />
                       {getPromotionText(
@@ -346,7 +352,7 @@ export default function ProductDetailModal({
                       )}
                     </Badge>
                   )}
-                  {product.categoryName && (
+                  {product?.categoryName && (
                     <Badge
                       variant="outline"
                       className="flex items-center gap-1"
@@ -355,7 +361,7 @@ export default function ProductDetailModal({
                       {product.categoryName}
                     </Badge>
                   )}
-                  {product.brandName && (
+                  {product?.brandName && (
                     <Badge
                       variant="outline"
                       className="flex items-center gap-1"
@@ -370,22 +376,22 @@ export default function ProductDetailModal({
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <span className="text-3xl font-bold text-green-600">
-                      {formatPrice(product.displayPrice)}
+                      {formatPrice(product?.price ?? 0)}
                     </span>
-                    {product.hasPromotionActive &&
+                    {product?.hasPromotion &&
                       product.price !== product.displayPrice && (
                         <span className="text-lg text-gray-500 line-through">
-                          {formatPrice(product.price)}
+                          {formatPrice(product?.price)}
                         </span>
                       )}
                   </div>
-                  {product.hasSizes && (
+                  {product?.hasSizes && (
                     <Badge
                       variant="secondary"
                       className="flex items-center gap-1"
                     >
                       <Ruler className="h-3 w-3" />
-                      {product.sizes?.length} sizes available
+                      {product?.sizes?.length} sizes available
                     </Badge>
                   )}
                 </div>
@@ -413,25 +419,25 @@ export default function ProductDetailModal({
                 <StatCard
                   icon={<Eye className="h-5 w-5" />}
                   label="Views"
-                  value={product.viewCount.toLocaleString()}
+                  value={product?.viewCount.toLocaleString() || ""}
                   color="blue"
                 />
                 <StatCard
                   icon={<Heart className="h-5 w-5" />}
                   label="Favorites"
-                  value={product.favoriteCount.toLocaleString()}
+                  value={product?.favoriteCount.toLocaleString() || ""}
                   color="pink"
                 />
                 <StatCard
                   icon={<Package className="h-5 w-5" />}
                   label="Images"
-                  value={product.images?.length || 0}
+                  value={product?.images?.length || 0}
                   color="purple"
                 />
                 <StatCard
                   icon={<Ruler className="h-5 w-5" />}
                   label="Size Options"
-                  value={product.sizes?.length || (product.hasSizes ? 0 : 1)}
+                  value={product?.sizes?.length || (product?.hasSizes ? 0 : 1)}
                   color="green"
                 />
               </div>
@@ -489,23 +495,23 @@ export default function ProductDetailModal({
                         <InfoItem
                           icon={<Building2 className="h-4 w-4" />}
                           label="Business"
-                          value={product.businessName}
+                          value={product?.businessName}
                         />
                         <InfoItem
                           icon={<Tag className="h-4 w-4" />}
                           label="Category"
-                          value={product.categoryName}
+                          value={product?.categoryName}
                         />
                         <InfoItem
                           icon={<Building2 className="h-4 w-4" />}
                           label="Brand"
-                          value={product.brandName || "No brand"}
+                          value={product?.brandName || "No brand"}
                         />
                         <InfoItem
                           icon={<Package className="h-4 w-4" />}
                           label="Product Type"
                           value={
-                            product.hasSizes
+                            product?.hasSizes
                               ? "Variable Product"
                               : "Simple Product"
                           }
@@ -527,7 +533,7 @@ export default function ProductDetailModal({
                           className="w-full justify-start"
                           onClick={() =>
                             copyToClipboard(
-                              product.name,
+                              product?.name || "",
                               "Product name copied!"
                             )
                           }
@@ -535,21 +541,7 @@ export default function ProductDetailModal({
                           <Copy className="h-4 w-4 mr-2" />
                           Copy Product Name
                         </Button>
-                        {product.publicUrl && (
-                          <Button
-                            variant="outline"
-                            className="w-full justify-start"
-                            onClick={() =>
-                              copyToClipboard(
-                                product.publicUrl!,
-                                "Product URL copied!"
-                              )
-                            }
-                          >
-                            <Copy className="h-4 w-4 mr-2" />
-                            Copy Public URL
-                          </Button>
-                        )}
+
                         <Button
                           variant="outline"
                           className="w-full justify-start"
@@ -572,9 +564,9 @@ export default function ProductDetailModal({
                     </CardHeader>
                     <CardContent>
                       <div className="bg-gray-50 rounded-lg p-4 min-h-[120px]">
-                        {product.description ? (
+                        {product?.description ? (
                           <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                            {product.description}
+                            {product?.description}
                           </p>
                         ) : (
                           <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -604,7 +596,7 @@ export default function ProductDetailModal({
                             Current Price
                           </p>
                           <p className="text-3xl font-bold text-green-700">
-                            {formatPrice(product.displayPrice)}
+                            {formatPrice(product?.displayPrice || 0)}
                           </p>
                         </div>
                         <div className="text-center p-6 bg-gray-50 rounded-lg">
@@ -613,12 +605,12 @@ export default function ProductDetailModal({
                             Base Price
                           </p>
                           <p className="text-3xl font-bold text-gray-700">
-                            {formatPrice(product.price)}
+                            {formatPrice(product?.price || 0)}
                           </p>
                         </div>
                       </div>
 
-                      {product.hasPromotionActive && (
+                      {product?.hasPromotion && (
                         <>
                           <Separator />
                           <div className="space-y-4">
@@ -685,13 +677,13 @@ export default function ProductDetailModal({
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <ImageIcon className="h-5 w-5" />
-                        Product Gallery ({product.images?.length || 0} images)
+                        Product Gallery ({product?.images?.length || 0} images)
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {product.images && product.images.length > 0 ? (
+                      {product?.images && product?.images.length > 0 ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                          {product.images.map((image, index) => (
+                          {product?.images.map((image, index) => (
                             <div key={image.id} className="space-y-2">
                               <div className="aspect-square relative bg-muted rounded-lg overflow-hidden group cursor-pointer">
                                 <Image
@@ -751,7 +743,7 @@ export default function ProductDetailModal({
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {product.hasSizes &&
+                      {product?.hasSizes &&
                       product.sizes &&
                       product.sizes.length > 0 ? (
                         <div className="space-y-4">
@@ -770,7 +762,7 @@ export default function ProductDetailModal({
                                       <span className="text-2xl font-bold text-green-600">
                                         {formatPrice(size.finalPrice)}
                                       </span>
-                                      {size.isPromotionActive &&
+                                      {size.hasPromotion &&
                                         size.price !== size.finalPrice && (
                                           <span className="text-sm text-gray-500 line-through">
                                             {formatPrice(size.price)}
@@ -778,7 +770,7 @@ export default function ProductDetailModal({
                                         )}
                                     </div>
                                   </div>
-                                  {size.isPromotionActive && (
+                                  {size.hasPromotion && (
                                     <Badge className="bg-red-50 text-red-700 border-red-200">
                                       <Zap className="h-3 w-3 mr-1" />
                                       {getPromotionText(
@@ -789,7 +781,7 @@ export default function ProductDetailModal({
                                   )}
                                 </div>
 
-                                {size.isPromotionActive && (
+                                {size.hasPromotion && (
                                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-3 bg-red-50 rounded-lg">
                                     <InfoItem
                                       icon={<Tag className="h-4 w-4" />}
@@ -857,7 +849,7 @@ export default function ProductDetailModal({
                             <span className="font-medium">Total Views</span>
                           </div>
                           <span className="text-xl font-bold text-blue-700">
-                            {product.viewCount.toLocaleString()}
+                            {product?.viewCount.toLocaleString()}
                           </span>
                         </div>
                         <div className="flex items-center justify-between p-3 bg-pink-50 rounded-lg">
@@ -866,7 +858,7 @@ export default function ProductDetailModal({
                             <span className="font-medium">Favorites</span>
                           </div>
                           <span className="text-xl font-bold text-pink-700">
-                            {product.favoriteCount.toLocaleString()}
+                            {product?.favoriteCount.toLocaleString()}
                           </span>
                         </div>
                         <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
@@ -875,7 +867,7 @@ export default function ProductDetailModal({
                             <span className="font-medium">Engagement Rate</span>
                           </div>
                           <span className="text-xl font-bold text-green-700">
-                            {product.viewCount > 0
+                            {product && product?.viewCount > 0
                               ? (
                                   (product.favoriteCount / product.viewCount) *
                                   100
@@ -901,7 +893,7 @@ export default function ProductDetailModal({
                           label="Current Status"
                           value={
                             <Badge className={statusConfig.color}>
-                              {product.status.replace("_", " ")}
+                              {product?.status.replace("_", " ")}
                             </Badge>
                           }
                         />
@@ -911,10 +903,10 @@ export default function ProductDetailModal({
                           value={
                             <Badge
                               variant={
-                                product.isFavorited ? "default" : "secondary"
+                                product?.isFavorited ? "default" : "secondary"
                               }
                             >
-                              {product.isFavorited ? "Yes" : "No"}
+                              {product?.isFavorited ? "Yes" : "No"}
                             </Badge>
                           }
                         />
@@ -924,59 +916,16 @@ export default function ProductDetailModal({
                           value={
                             <Badge
                               variant={
-                                product.hasPromotionActive
-                                  ? "default"
-                                  : "secondary"
+                                product?.hasPromotion ? "default" : "secondary"
                               }
                             >
-                              {product.hasPromotionActive ? "Yes" : "No"}
+                              {product?.hasPromotion ? "Yes" : "No"}
                             </Badge>
                           }
                         />
                       </CardContent>
                     </Card>
                   </div>
-
-                  {/* Public URL */}
-                  {product.publicUrl && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <ExternalLink className="h-5 w-5" />
-                          Public Access
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                          <ExternalLink className="h-5 w-5 text-gray-600" />
-                          <span className="flex-1 font-mono text-sm">
-                            {product.publicUrl}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              copyToClipboard(
-                                product.publicUrl!,
-                                "Public URL copied!"
-                              )
-                            }
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              window.open(product.publicUrl, "_blank")
-                            }
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
 
                   {/* System Information */}
                   <Card>
@@ -991,58 +940,7 @@ export default function ProductDetailModal({
                         <InfoItem
                           icon={<Calendar className="h-4 w-4" />}
                           label="Created Date"
-                          value={formatDate(product.createdAt)}
-                        />
-                        <InfoItem
-                          icon={<Calendar className="h-4 w-4" />}
-                          label="Last Updated"
-                          value={formatDate(product.updatedAt)}
-                        />
-                        <InfoItem
-                          icon={<Tag className="h-4 w-4" />}
-                          label="Product ID"
-                          value={
-                            <span className="font-mono text-sm">
-                              {product.id}
-                            </span>
-                          }
-                          action={
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                copyToClipboard(
-                                  product.id!,
-                                  "Product ID copied!"
-                                )
-                              }
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          }
-                        />
-                        <InfoItem
-                          icon={<Building2 className="h-4 w-4" />}
-                          label="Business ID"
-                          value={
-                            <span className="font-mono text-sm">
-                              {product.businessId}
-                            </span>
-                          }
-                          action={
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                copyToClipboard(
-                                  product.businessId!,
-                                  "Business ID copied!"
-                                )
-                              }
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          }
+                          value={formatDate(product?.createdAt || "")}
                         />
                       </div>
                     </CardContent>
@@ -1055,9 +953,6 @@ export default function ProductDetailModal({
 
         {/* Footer */}
         <div className="border-t bg-gray-50 px-6 py-4 flex justify-between items-center flex-shrink-0">
-          <div className="text-sm text-muted-foreground">
-            Last updated: {formatDate(product.updatedAt)}
-          </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={shareProduct}>
               <Share className="h-4 w-4 mr-2" />

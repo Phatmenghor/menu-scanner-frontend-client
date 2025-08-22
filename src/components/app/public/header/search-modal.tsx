@@ -129,10 +129,7 @@ export function SearchDialog({
                   >
                     {product.mainImageUrl && product.mainImageUrl.length > 0 ? (
                       <Image
-                        src={
-                          process.env.NEXT_PUBLIC_API_BASE_URL +
-                          product.mainImageUrl
-                        }
+                        src={product.mainImageUrl}
                         alt={product.name}
                         width={60}
                         height={60}

@@ -52,6 +52,9 @@ import { AppToast } from "@/components/app/components/app-toast";
 import { PriceInput } from "../../common/price-input";
 import { getCategoryByIdService } from "@/services/dashboard/content-management/category/category.service";
 import { getBrandByIdService } from "@/services/dashboard/content-management/brand/brand.service";
+import { ProductModel } from "@/models/content-manangement/product/product.response";
+import { ProductDetailModel } from "@/models/content-manangement/product/product.detail.response";
+import { getProductByIdService } from "@/services/dashboard/content-management/product/product.service";
 
 // Types
 type ImageType = "MAIN" | "GALLERY";
@@ -87,12 +90,51 @@ type SizeData = {
 
 type Props = {
   mode: ModalMode;
-  data: ProductFormData | null;
+  productId: string | null;
   onClose: () => void;
   isOpen: boolean;
   isSubmitting?: boolean;
   onSave: (data: ProductFormData) => void;
 };
+
+export function convertApiResponseToFormData(
+  apiResponse: ProductDetailModel
+): ProductFormData {
+  // Convert images from API format to form format
+  const convertedImages: ImageData[] = apiResponse?.images?.map((image) => ({
+    imageUrl: image.imageUrl,
+    imageType: (image.imageType as ImageType) || "GALLERY", // Default to GALLERY if not specified
+  }));
+
+  // Convert sizes from API format to form format
+  const convertedSizes: SizeData[] = apiResponse?.sizes?.map((size) => ({
+    name: size.name,
+    price: size.price,
+    promotionType: size.promotionType || undefined,
+    promotionValue: size.promotionValue || undefined,
+    promotionFromDate: size.promotionFromDate || undefined,
+    promotionToDate: size.promotionToDate || undefined,
+  }));
+
+  // Convert main product data
+  const formData: ProductFormData = {
+    id: apiResponse.id,
+    name: apiResponse.name,
+    categoryId: apiResponse.categoryId,
+    images: convertedImages,
+    description: apiResponse.description || undefined,
+    brandId: apiResponse.brandId || undefined,
+    price: apiResponse.price || undefined,
+    promotionType: apiResponse.promotionType || undefined,
+    promotionValue: apiResponse.promotionValue || undefined,
+    promotionFromDate: apiResponse.promotionFromDate || undefined,
+    promotionToDate: apiResponse.promotionToDate || undefined,
+    sizes: convertedSizes?.length > 0 ? convertedSizes : undefined,
+    status: apiResponse.status || undefined,
+  };
+
+  return formData;
+}
 
 // Enhanced Image Management Hook
 const useEnhancedImageManagement = (
@@ -301,7 +343,7 @@ const useEnhancedSizeManagement = (control: any, setValue: any, watch: any) => {
 export function ProductModal({
   isOpen,
   onClose,
-  data,
+  productId,
   mode,
   onSave,
   isSubmitting = false,
@@ -314,6 +356,9 @@ export function ProductModal({
   const [selectedBrand, setSelectedBrand] = useState<BrandModel | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
+  const [productDetail, setProductDetail] = useState<ProductDetailModel | null>(
+    null
+  );
 
   const {
     control,
@@ -367,24 +412,34 @@ export function ProductModal({
   const promotionType = watch("promotionType");
   const productHasSizes = hasSizes();
 
+  useEffect(() => {
+    const fetchProduct = async () => {
+      if (!productId) return;
+
+      try {
+        setIsLoading(true);
+        const productData: ProductDetailModel = await getProductByIdService(
+          productId
+        );
+        if (productData) {
+          setProductDetail(productData);
+        }
+      } catch (err) {
+        console.error(
+          err instanceof Error ? err.message : "Failed to load product"
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [productId]);
+
   // Form Initialization
   const initializeForm = useCallback(() => {
-    if (data) {
-      const formData: ProductFormData = {
-        id: data.id,
-        name: data.name || "",
-        categoryId: data.categoryId || "",
-        images: data.images || [],
-        description: data.description || "",
-        brandId: data.brandId || "",
-        price: data.price || 0,
-        promotionType: data.promotionType || "",
-        promotionValue: data.promotionValue || 0,
-        promotionFromDate: data.promotionFromDate || "",
-        promotionToDate: data.promotionToDate || "",
-        sizes: data.sizes || [],
-        status: data.status || "ACTIVE",
-      };
+    if (productDetail) {
+      const formData = convertApiResponseToFormData(productDetail);
 
       reset(formData);
     } else {
@@ -403,40 +458,40 @@ export function ProductModal({
         status: "ACTIVE",
       });
     }
-  }, [data, reset]);
+  }, [productDetail, reset]);
 
   // Fetch category and brand details
   const fetchCategoryDetail = useCallback(async () => {
-    if (!data?.categoryId) return;
+    if (!productDetail?.categoryId) return;
     setIsLoading(true);
     try {
-      const response = await getCategoryByIdService(data.categoryId);
+      const response = await getCategoryByIdService(productDetail?.categoryId);
       setSelectedCategory(response);
     } catch (error: any) {
       console.log("Failed to fetch categories: ", error);
     } finally {
       setIsLoading(false);
     }
-  }, [data?.categoryId]);
+  }, [productDetail?.categoryId]);
 
   const fetchBrandDetail = useCallback(async () => {
-    if (!data?.brandId) return;
+    if (!productDetail?.brandId) return;
     setIsLoading(true);
     try {
-      const response = await getBrandByIdService(data.brandId);
+      const response = await getBrandByIdService(productDetail?.brandId);
       setSelectedBrand(response);
     } catch (error: any) {
       console.log("Failed to fetch brands: ", error);
     } finally {
       setIsLoading(false);
     }
-  }, [data?.brandId]);
+  }, [productDetail?.brandId]);
 
   // Effects
   useEffect(() => {
     if (isOpen) {
       initializeForm();
-      if (data) {
+      if (productDetail) {
         fetchCategoryDetail();
         fetchBrandDetail();
       }
@@ -445,7 +500,13 @@ export function ProductModal({
       setSelectedCategory(null);
       setSelectedBrand(null);
     }
-  }, [isOpen, data, initializeForm, fetchCategoryDetail, fetchBrandDetail]);
+  }, [
+    isOpen,
+    productDetail,
+    initializeForm,
+    fetchCategoryDetail,
+    fetchBrandDetail,
+  ]);
 
   // Event Handlers
   const handleFileSelect = (file: File) => {
@@ -572,7 +633,7 @@ export function ProductModal({
     // Prepare payload based on whether product has sizes
     const basePayload: Partial<ProductFormData> = {
       ...formData,
-      id: data?.id,
+      id: productDetail?.id,
       name: formData.name.trim(),
       description: formData.description?.trim(),
       categoryId: formData.categoryId.trim(),
