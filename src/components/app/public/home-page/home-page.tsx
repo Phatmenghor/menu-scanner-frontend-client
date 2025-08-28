@@ -6,7 +6,7 @@ import { AllCategories } from "@/models/content-manangement/category/category.re
 import { ROUTES } from "@/constants/app-routed/routes";
 import { useDebounce } from "@/utils/debounce/debounce";
 import { getUserInfo } from "@/utils/local-storage/userInfo";
-import { AppToast } from "@/components/app/components/app-toast";
+import { AppToast } from "@/components/shared/toast/app-toast";
 import { ProductCard } from "@/components/app/public/product/product-card";
 import { CategoryCard } from "@/components/app/public/category-card";
 import { BannerModel } from "@/models/content-manangement/banner/banner.response";

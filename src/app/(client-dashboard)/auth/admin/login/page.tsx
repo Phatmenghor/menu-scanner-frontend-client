@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/form";
 import { loginService } from "@/services/auth/login.service";
 import { useTranslations } from "next-intl";
-import { AppToast } from "@/components/app/components/app-toast";
+import { AppToast } from "@/components/shared/toast/app-toast";
 import { ROUTES } from "@/constants/app-routed/routes";
 
 const loginSchema = z.object({

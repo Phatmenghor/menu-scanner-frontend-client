@@ -30,7 +30,7 @@ import {
   getUserProfileService,
   updateUserProfileService,
 } from "@/services/dashboard/user/user.service";
-import { AppToast } from "@/components/app/components/app-toast";
+import { AppToast } from "@/components/shared/toast/app-toast";
 import { UpdateUserRequest } from "@/models/user/user.request.model";
 import { ProfileSection } from "@/components/app/admin/profile/profile-props";
 import { ProfileField } from "@/components/app/admin/profile/profile-field";

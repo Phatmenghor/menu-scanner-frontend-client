@@ -5,7 +5,7 @@ import { Grid3X3, List, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDebounce } from "@/utils/debounce/debounce";
 import { getUserInfo } from "@/utils/local-storage/userInfo";
-import { AppToast } from "@/components/app/components/app-toast";
+import { AppToast } from "@/components/shared/toast/app-toast";
 import { ROUTES } from "@/constants/app-routed/routes";
 import { useLoadMorePagination } from "@/hooks/use-loadMore-pagination";
 import { LoadMorePagination } from "@/components/ui/load-more-pagination";

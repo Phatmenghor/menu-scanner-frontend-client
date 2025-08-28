@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const AddressRequestSchema = z.object({
+  id: z.string().optional(),
   village: z.string().optional(),
   commune: z.string().optional(),
   district: z.string().min(1, "District is required"),

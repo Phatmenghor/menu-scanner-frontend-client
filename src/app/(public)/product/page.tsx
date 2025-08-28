@@ -8,7 +8,7 @@ import { ProductCard } from "@/components/app/public/product/product-card";
 import { getAllPublicProductService } from "@/services/public/product/product.service";
 import { useDebounce } from "@/utils/debounce/debounce";
 import { getUserInfo } from "@/utils/local-storage/userInfo";
-import { AppToast } from "@/components/app/components/app-toast";
+import { AppToast } from "@/components/shared/toast/app-toast";
 import { ROUTES } from "@/constants/app-routed/routes";
 import {
   Select,

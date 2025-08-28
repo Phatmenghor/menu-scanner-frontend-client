@@ -6,9 +6,8 @@ import localFont from "next/font/local";
 import "@/styles/globals.css";
 import { LocaleProvider } from "@/context/locale-provider";
 import { type Locale } from "@/i18n/request";
-import { ToastProvider } from "@/components/app/components/app-toast";
-import { Provider } from "react-redux";
-import { store } from "@/store/store";
+import { ToastProvider } from "@/components/shared/toast/app-toast";
+import "../styles/globals.css";
 
 const geistSans = localFont({
   src: "../../public/fonts/GeistVF.woff",

@@ -1,60 +1,45 @@
 "use client";
 
-import { AppToast } from "@/components/app/components/app-toast";
+import { AppToast } from "@/components/shared/toast/app-toast";
 import ModalAddress from "@/components/shared/modal/address/address-modal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   ModalMode,
   Status,
   STATUS_FILTER,
 } from "@/constants/app-resource/status/status";
-import { addressTableHeaders } from "@/constants/app-resource/table/address";
-import { getUserTableHeaders } from "@/constants/app-resource/table/table";
 import { ROUTES } from "@/constants/app-routed/routes";
 import { usePagination } from "@/hooks/use-pagination";
-import { cn } from "@/lib/utils";
 import { AddressRequest } from "@/models/public/dashboard/address/address.request";
 import { AddressModel } from "@/models/public/dashboard/address/address.response";
 import { AddressFormData } from "@/models/public/dashboard/address/address.schema";
-import { UserModel } from "@/models/user/user.response.model";
 import {
   createAddressService,
   deleteAddressService,
   getAddressService,
+  setDefaultAddressService,
   updateAddressService,
 } from "@/services/public/address/address.service";
 import { useDebounce } from "@/utils/debounce/debounce";
-import { getUserInfo } from "@/utils/local-storage/userInfo";
-import { Edit, Eye, Search, Trash2 } from "lucide-react";
+import { Search } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { DataTable } from "@/components/shared/table/data-table";
+import { createAddressTableColumns } from "@/components/app/customer-dashboard/table/address-content";
+import { CustomSelect } from "@/components/shared/select/custom-select";
+import { DeleteConfirmationDialog } from "@/components/shared/dialog/dialog-delete";
+import { AddressDetailModal } from "@/components/shared/modal/address/address-modal-detail";
 
 export default function AddressPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [addresses, setAddresses] = useState<AddressModel[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isExportingToExcel, setIsExportingToExcel] = useState(false);
   const [statusFilter, setStatusFilter] = useState<Status>(Status.ACTIVE);
   const [mode, setMode] = useState<ModalMode>(ModalMode.CREATE_MODE);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -63,28 +48,24 @@ export default function AddressPage() {
   const [selectedAddress, setSelectedAddress] = useState<AddressModel | null>(
     null
   );
-  const [isUserDetailOpen, setIsUserDetailOpen] = useState(false);
+  const [isAddressDetailOpen, setIsAddressDetailOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] =
-    useState(false);
   const [selectedAddressToggle, setSelectedAddressToggle] =
-    useState<UserModel | null>(null);
+    useState<AddressModel | null>(null);
   const [isToggleStatusDialogOpen, setIsToggleStatusDialogOpen] =
     useState(false);
 
   // Add state for items per page
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  const t = useTranslations("user");
-  const headers = getUserTableHeaders(t);
+  const t = useTranslations("address");
   const locale = useLocale();
   const pathname = usePathname();
 
-  const user = getUserInfo();
   const { currentPage, updateUrlWithPage, handlePageChange, getDisplayIndex } =
     usePagination({
       baseRoute: ROUTES.CUSTOMER.ADDRESS,
-      defaultPageSize: itemsPerPage, // Use dynamic page size
+      defaultPageSize: itemsPerPage,
     });
 
   console.log("Page Debug:", { locale, pathname });
@@ -103,11 +84,11 @@ export default function AddressPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedSearchQuery, statusFilter, currentPage, itemsPerPage]); // Add itemsPerPage dependency
+  }, [debouncedSearchQuery, statusFilter, currentPage, itemsPerPage]);
 
   useEffect(() => {
     loadAddresses();
-  }, [loadAddresses, debouncedSearchQuery, statusFilter, itemsPerPage]); // Add itemsPerPage dependency
+  }, [loadAddresses, debouncedSearchQuery, statusFilter, itemsPerPage]);
 
   // Handle items per page change
   const handleItemsPerPageChange = useCallback(
@@ -147,7 +128,7 @@ export default function AddressPage() {
 
         const response = await createAddressService(createPayload);
         if (response) {
-          // Update addresses list
+          // Update addresses list - Fixed: addresses is an array, not paginated object
           setAddresses((prev) => [...(prev || []), response]);
 
           AppToast({
@@ -180,23 +161,18 @@ export default function AddressPage() {
 
         const response = await updateAddressService(formData.id, updatePayload);
         if (response) {
-          // Update addresses list
+          // Update addresses list - Fixed: addresses is an array, not paginated object
           setAddresses((prev) =>
             prev
-              ? {
-                  ...prev,
-                  content: prev.map((user) =>
-                    user.id === formData.id ? response : user
-                  ),
-                }
+              ? prev.map((address) =>
+                  address.id === formData.id ? response : address
+                )
               : prev
           );
 
           AppToast({
             type: "success",
-            message: `Address ${
-              response.username || response.email
-            } updated successfully`,
+            message: `Address updated successfully`,
             duration: 4000,
             position: "top-right",
           });
@@ -212,7 +188,7 @@ export default function AddressPage() {
     }
   }
 
-  async function handleDeleteUser() {
+  async function handleDeleteAddress() {
     if (!selectedAddress || !selectedAddress.id) return;
 
     setIsSubmitting(true);
@@ -220,17 +196,23 @@ export default function AddressPage() {
       const response = await deleteAddressService(selectedAddress.id);
 
       if (response) {
+        // Update state by removing the deleted address
+        setAddresses((prev) =>
+          prev
+            ? prev.filter((address) => address.id !== selectedAddress.id)
+            : prev
+        );
+
         AppToast({
           type: "success",
           message: `Address deleted successfully`,
           duration: 4000,
           position: "top-right",
         });
+
         // After deletion, check if we need to go back a page
         if (addresses && addresses.length === 1 && currentPage > 1) {
           updateUrlWithPage(currentPage - 1);
-        } else {
-          await loadAddresses();
         }
       } else {
         AppToast({
@@ -249,69 +231,69 @@ export default function AddressPage() {
     }
   }
 
-  const handleSetDefaultAddress = async (address: AddressModel | null) => {
+  const handleSetDefaultAddress = async (address: AddressModel) => {
     if (!address?.id) return;
 
     setIsSubmitting(true);
     try {
-      const newDefault = address?.isDefault === true ? false : false;
+      // If the clicked address is already default, do nothing or toggle off if you want
+      if (address.isDefault) return;
 
-      const response = await updateAddressService(address?.id, {
-        isDefault: newDefault,
-      });
+      // Call API to set the selected address as default
+      const response = await setDefaultAddressService(address.id);
 
       if (response) {
-        // Optimistic update
+        // Optimistically update the UI: set this one true, others false
         setAddresses((prev) =>
           prev
-            ? {
-                ...prev,
-                content: prev.map((address) =>
-                  address.id === selectedAddressToggle?.id ? response : address
-                ),
-              }
+            ? prev.map((addr) =>
+                addr.id === address.id
+                  ? { ...addr, isDefault: true }
+                  : { ...addr, isDefault: false }
+              )
             : prev
         );
 
         AppToast({
           type: "success",
-          message: `Address set to default successfully`,
+          message: `Address set as default successfully`,
           duration: 4000,
           position: "top-right",
         });
+
         setSelectedAddressToggle(null);
         setIsToggleStatusDialogOpen(false);
       } else {
         AppToast({
           type: "error",
-          message: `Failed to update user status`,
+          message: `Failed to update default address`,
           duration: 4000,
           position: "top-right",
         });
-        loadAddresses(); // reload in case of failure
+        loadAddresses(); // reload from server in case of failure
       }
     } catch (error: any) {
       toast.error(
-        error?.message || "An error occurred while updating user status"
+        error?.message || "An error occurred while updating default address"
       );
-      loadAddresses(); // reload in case of failure
+      loadAddresses(); // reload from server
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleToggleStatus = (user: UserModel) => {
-    setSelectedAddressToggle(user);
+  const handleDefaultAddressToggle = (address: AddressModel) => {
+    setSelectedAddressToggle(address);
     setIsToggleStatusDialogOpen(true);
   };
 
-  const handleEditAddress = (user: AddressModel) => {
-    setInitializeAddress(user);
+  const handleOpenEditAddressDialog = (address: AddressModel) => {
+    setInitializeAddress(address);
     setMode(ModalMode.UPDATE_MODE);
     setIsModalOpen(!isModalOpen);
   };
 
-  const handleDelete = (address: AddressModel) => {
+  const handleOpenDeleteAddressDialog = (address: AddressModel) => {
     setSelectedAddress(address);
     setIsDeleteDialogOpen(true);
   };
@@ -324,9 +306,9 @@ export default function AddressPage() {
   };
 
   // Handle status filter change - directly updates the filter value
-  const handleViewAddressDetail = (address: AddressModel) => {
+  const handleOpenViewAddressDetailDialog = (address: AddressModel) => {
     setSelectedAddress(address);
-    setIsUserDetailOpen(true);
+    setIsAddressDetailOpen(true);
   };
 
   const addressList = Array.isArray(addresses) ? addresses : [];
@@ -339,8 +321,8 @@ export default function AddressPage() {
             <div className="relative w-full md:w-[350px]">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                aria-label="search-user"
-                autoComplete="search-user"
+                aria-label="search-address"
+                autoComplete="search-address"
                 type="search"
                 placeholder={t("search")}
                 value={searchQuery}
@@ -349,35 +331,14 @@ export default function AddressPage() {
                 disabled={isSubmitting}
               />
             </div>
-            {/* <div>
-              <Button
-                onClick={() => handleExportToPdf(addresses)}
-                disabled={isExportingToExcel}
-              >
-                {isExportingToExcel ? "Exporting..." : "Excel"}
-              </Button>
-            </div> */}
+
             <div className="flex items-center gap-2">
-              <Select
+              <CustomSelect
+                options={STATUS_FILTER}
                 value={statusFilter}
-                onValueChange={handleStatusChange}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger className="w-[150px] text-xs h-9">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_FILTER.map((option) => (
-                    <SelectItem
-                      className="text-xs"
-                      key={option.value}
-                      value={option.value}
-                    >
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder={t("all")}
+                onValueChange={(value) => setStatusFilter(value as Status)}
+              />
             </div>
             <div>
               <Button
@@ -397,148 +358,43 @@ export default function AddressPage() {
 
           <div>
             <div className="rounded-md border overflow-x-auto whitespace-nowrap">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {addressTableHeaders.map((header, index) => (
-                      <TableHead
-                        key={index}
-                        className={`text-xs font-semibold text-muted-foreground ${header.className}`}
-                      >
-                        <div className="flex items-center gap-1">
-                          <span>{header.label}</span>
-                        </div>
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {!addresses || addresses.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={addressTableHeaders.length}
-                        className="text-center py-8 text-muted-foreground"
-                      >
-                        {isLoading
-                          ? "Loading addresses..."
-                          : "No addresses found"}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    addressList?.map((address, index) => (
-                      <TableRow key={address.id} className="text-sm">
-                        {/* Index column */}
-                        <TableCell>{index + 1}</TableCell>
-
-                        {/* Address data cells */}
-                        <TableCell>{address?.village ?? "---"}</TableCell>
-                        <TableCell>{address?.commune ?? "---"}</TableCell>
-                        <TableCell>{address?.district ?? "---"}</TableCell>
-                        <TableCell>{address?.province ?? "---"}</TableCell>
-                        <TableCell>{address?.streetNumber ?? "---"}</TableCell>
-                        <TableCell>{address?.houseNumber ?? "---"}</TableCell>
-                        <TableCell>{address?.note ?? "---"}</TableCell>
-                        <TableCell>{address?.latitude ?? "---"}</TableCell>
-                        <TableCell>{address?.longitude ?? "---"}</TableCell>
-                        <TableCell>
-                          {address?.isDefault ? "Yes" : "No"}
-                        </TableCell>
-                        <TableCell>{address?.fullAddress ?? "---"}</TableCell>
-
-                        {/* Actions */}
-                        <TableCell>
-                          <div className="flex items-center justify-end">
-                            <Button
-                              variant="ghost"
-                              onClick={() => handleViewAddressDetail(address)}
-                              className="hover:text-primary"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-
-                            <Button
-                              variant="ghost"
-                              className={cn(
-                                "transition-all duration-200 hover:text-primary"
-                              )}
-                              onClick={() => handleEditAddress(address)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              onClick={() => handleDelete(address)}
-                              className={cn(
-                                "text-destructive hover:text-red-600"
-                              )}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+              <DataTable
+                data={addressList || []}
+                columns={createAddressTableColumns({
+                  data: addressList,
+                  handlers: {
+                    handleSetDefaultAddress,
+                    handleOpenEditAddressDialog,
+                    handleOpenViewAddressDetailDialog,
+                    handleOpenDeleteAddressDialog,
+                  },
+                })}
+                loading={isLoading}
+                emptyMessage="No address found"
+                getRowKey={(address) => address.id}
+              />
             </div>
           </div>
 
           {/* All the modals and dialogs remain the same */}
-          {/* <UserDetailModal
-            open={isUserDetailOpen}
-            onClose={() => setIsUserDetailOpen(false)}
-            user={selectedAddress}
-          /> */}
+          <AddressDetailModal
+            isOpen={isAddressDetailOpen}
+            onClose={() => setIsAddressDetailOpen(false)}
+            addressId={selectedAddress?.id}
+          />
 
-          {/* <ConfirmDialog
-            open={isToggleStatusDialogOpen}
-            onOpenChange={() => {
-              setIsToggleStatusDialogOpen(false);
-              setSelectedAddressToggle(null);
-            }}
-            centered={true}
-            title="Change User Status"
-            description={`Are you sure you want to ${
-              selectedAddressToggle?.accountStatus === "ACTIVE"
-                ? "disable"
-                : "enable"
-            } this user: ${selectedAddressToggle?.email}?`}
-            confirmButton={{
-              text: `${
-                selectedAddressToggle?.accountStatus === "ACTIVE"
-                  ? "Disable"
-                  : "Enable"
-              }`,
-              onClick: () => handle(selectedAddressToggle),
-              variant: "primary",
-            }}
-            cancelButton={{ text: "Cancel", variant: "secondary" }}
-            onConfirm={() => handleStatusToggle(selectedAddressToggle)}
-          /> */}
-
-          {/* <DeleteConfirmationDialog
+          <DeleteConfirmationDialog
             isOpen={isDeleteDialogOpen}
             onClose={() => {
               setIsDeleteDialogOpen(false);
               setSelectedAddress(null);
             }}
-            onDelete={handleDeleteUser}
-            title="Delete Admin"
-            description={`Are you sure you want to delete the admin`}
-            itemName={selectedAddress?.fullName || selectedAddress?.email}
+            onDelete={handleDeleteAddress}
+            title="Delete Address"
+            description={`Are you sure you want to delete this address`}
+            itemName={selectedAddress?.commune}
             isSubmitting={isSubmitting}
           />
-
-          <ResetPasswordModal
-            isOpen={isResetPasswordDialogOpen}
-            userName={selectedAddress?.fullName || selectedAddress?.email}
-            onClose={() => {
-              setIsResetPasswordDialogOpen(false);
-              setSelectedAddress(null);
-            }}
-            userId={selectedAddress?.id}
-          /> */}
 
           <ModalAddress
             isOpen={isModalOpen}

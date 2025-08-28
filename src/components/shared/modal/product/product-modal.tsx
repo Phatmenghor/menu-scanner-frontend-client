@@ -48,7 +48,7 @@ import { BrandModel } from "@/models/content-manangement/brand/brand.response";
 import { ComboboxSelectBrand } from "../../combo-box/combobox-brand";
 import { uploadImageService } from "@/services/dashboard/image/image.service";
 import { UploadImageRequest } from "@/models/image/image.request";
-import { AppToast } from "@/components/app/components/app-toast";
+import { AppToast } from "@/components/shared/toast/app-toast";
 import { PriceInput } from "../../common/price-input";
 import { getCategoryByIdService } from "@/services/dashboard/content-management/category/category.service";
 import { getBrandByIdService } from "@/services/dashboard/content-management/brand/brand.service";

@@ -1,6 +1,6 @@
 "use client";
 
-import { AppToast } from "@/components/app/components/app-toast";
+import { AppToast } from "@/components/shared/toast/app-toast";
 import { RoleBadge } from "@/components/shared/badge/role-badge";
 import PaginationPage from "@/components/shared/common/pagination-page";
 import { ConfirmDialog } from "@/components/shared/dialog/dialog-confirm";

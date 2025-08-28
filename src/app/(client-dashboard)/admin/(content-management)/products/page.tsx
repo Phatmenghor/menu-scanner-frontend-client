@@ -1,6 +1,6 @@
 "use client";
 
-import { AppToast } from "@/components/app/components/app-toast";
+import { AppToast } from "@/components/shared/toast/app-toast";
 import PaginationPage from "@/components/shared/common/pagination-page";
 import { DeleteConfirmationDialog } from "@/components/shared/dialog/dialog-delete";
 import ProductDetailModal from "@/components/shared/modal/product/product-detail-modal";

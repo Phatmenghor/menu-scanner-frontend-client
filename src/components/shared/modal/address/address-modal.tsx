@@ -8,23 +8,26 @@ import {
 } from "@/components/ui/dialog";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { MapPin, Navigation, Maximize, Minimize, Loader2 } from "lucide-react";
+import { MapPin, Navigation, X, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { z } from "zod";
 import { ModalMode } from "@/constants/app-resource/status/status";
 import { GoogleMap, MarkerF, useJsApiLoader } from "@react-google-maps/api";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { AppToast } from "@/components/shared/toast/app-toast";
+import { getAddressByIdService } from "@/services/public/address/address.service";
+import { AddressModel } from "@/models/public/dashboard/address/address.response";
 
 const AddressRequestSchema = z.object({
   id: z.string().optional(),
   village: z.string().optional(),
   commune: z.string().optional(),
-  district: z.string().optional(),
-  province: z.string().optional(),
+  district: z.string("District is required"),
+  province: z.string("District is required"),
   streetNumber: z.string().optional(),
   houseNumber: z.string().optional(),
   note: z.string().optional(),
@@ -37,7 +40,8 @@ type AddressFormData = z.infer<typeof AddressRequestSchema>;
 
 type Props = {
   mode: ModalMode;
-  data?: AddressFormData | null;
+  addressId?: string; // Changed from data to addressId for edit mode
+  data?: AddressFormData | null; // Keep for create mode
   onClose: () => void;
   isOpen: boolean;
   isSubmitting?: boolean;
@@ -85,20 +89,25 @@ export default function ModalAddress({
   isOpen,
   onClose,
   data,
+  addressId,
   mode,
   onSave,
   isSubmitting = false,
 }: Props) {
   const isCreate = mode === ModalMode.CREATE_MODE;
+  const isEdit = mode === ModalMode.UPDATE_MODE;
+
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isGeocodingLocation, setIsGeocodingLocation] = useState(false);
-  const [mapExpanded, setMapExpanded] = useState(false);
+  const [isLoadingAddress, setIsLoadingAddress] = useState(false);
+  const [showMapModal, setShowMapModal] = useState(false);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [geocoder, setGeocoder] = useState<google.maps.Geocoder | null>(null);
+  const [addressData, setAddressData] = useState<AddressModel | null>(null);
   const [markerPosition, setMarkerPosition] =
     useState<google.maps.LatLngLiteral>({
-      lat: data?.latitude || defaultCenter.lat,
-      lng: data?.longitude || defaultCenter.lng,
+      lat: defaultCenter.lat,
+      lng: defaultCenter.lng,
     });
   const [addressInfo, setAddressInfo] = useState<{
     formatted_address: string;
@@ -133,7 +142,7 @@ export default function ModalAddress({
   } = useForm({
     resolver: zodResolver(AddressRequestSchema),
     defaultValues: {
-      id: data?.id ?? "",
+      id: "",
       village: "",
       commune: "",
       district: "",
@@ -141,8 +150,8 @@ export default function ModalAddress({
       streetNumber: "",
       houseNumber: "",
       note: "",
-      latitude: data?.latitude || defaultCenter.lat,
-      longitude: data?.longitude || defaultCenter.lng,
+      latitude: defaultCenter.lat,
+      longitude: defaultCenter.lng,
       isDefault: false,
     },
     mode: "onChange",
@@ -150,6 +159,27 @@ export default function ModalAddress({
 
   const latitude = watch("latitude");
   const longitude = watch("longitude");
+
+  // Fetch address data for edit mode
+  const fetchAddressData = useCallback(async (id: string) => {
+    setIsLoadingAddress(true);
+    try {
+      const response = await getAddressByIdService(id);
+      setAddressData(response);
+      return response;
+    } catch (error) {
+      console.error("Error fetching address:", error);
+      AppToast({
+        type: "error",
+        message: "Failed to load address data. Please try again.",
+        duration: 5000,
+        position: "top-right",
+      });
+      return null;
+    } finally {
+      setIsLoadingAddress(false);
+    }
+  }, []);
 
   // Initialize geocoder when Maps API is loaded
   useEffect(() => {
@@ -215,17 +245,19 @@ export default function ModalAddress({
           const result = response.results[0];
           const components = parseAddressComponents(result.address_components);
 
-          // Update form with geocoded data
-          setValue("province", components.province, { shouldValidate: true });
-          setValue("district", components.district, { shouldValidate: true });
-          setValue("commune", components.commune, { shouldValidate: true });
-          setValue("village", components.village, { shouldValidate: true });
-          setValue("streetNumber", components.streetNumber, {
-            shouldValidate: true,
-          });
-          setValue("houseNumber", components.houseNumber, {
-            shouldValidate: true,
-          });
+          // Only update if we don't have existing data or if this is from user interaction
+          if (!addressData || isEdit) {
+            setValue("province", components.province, { shouldValidate: true });
+            setValue("district", components.district, { shouldValidate: true });
+            setValue("commune", components.commune, { shouldValidate: true });
+            setValue("village", components.village, { shouldValidate: true });
+            setValue("streetNumber", components.streetNumber, {
+              shouldValidate: true,
+            });
+            setValue("houseNumber", components.houseNumber, {
+              shouldValidate: true,
+            });
+          }
 
           setAddressInfo({
             formatted_address: result.formatted_address,
@@ -242,38 +274,84 @@ export default function ModalAddress({
         setIsGeocodingLocation(false);
       }
     },
-    [geocoder, setValue]
+    [geocoder, setValue, addressData, isEdit]
   );
 
   // Reset form when modal opens/closes
   useEffect(() => {
     if (isOpen) {
-      const formData = {
-        id: data?.id || "",
-        village: data?.village || "",
-        commune: data?.commune || "",
-        district: data?.district || "",
-        province: data?.province || "",
-        streetNumber: data?.streetNumber || "",
-        houseNumber: data?.houseNumber || "",
-        note: data?.note || "",
-        latitude: data?.latitude || defaultCenter.lat,
-        longitude: data?.longitude || defaultCenter.lng,
-        isDefault: data?.isDefault || false,
-      };
+      // For edit mode with addressId, fetch the data
+      if (isEdit && addressId) {
+        fetchAddressData(addressId).then((fetchedData) => {
+          if (fetchedData) {
+            const formData = {
+              id: fetchedData.id,
+              village: fetchedData.village || "",
+              commune: fetchedData.commune || "",
+              district: fetchedData.district || "",
+              province: fetchedData.province || "",
+              streetNumber: fetchedData.streetNumber || "",
+              houseNumber: fetchedData.houseNumber || "",
+              note: fetchedData.note || "",
+              latitude: fetchedData.latitude || defaultCenter.lat,
+              longitude: fetchedData.longitude || defaultCenter.lng,
+              isDefault: fetchedData.isDefault || false,
+            };
 
-      reset(formData);
-      setMarkerPosition({
-        lat: formData.latitude,
-        lng: formData.longitude,
-      });
+            reset(formData);
+            setMarkerPosition({
+              lat: formData.latitude,
+              lng: formData.longitude,
+            });
 
-      // If we have existing data, reverse geocode to show address info
-      if (data?.latitude && data?.longitude && geocoder) {
-        reverseGeocode(data.latitude, data.longitude);
+            // Reverse geocode to show address info
+            if (fetchedData.latitude && fetchedData.longitude && geocoder) {
+              reverseGeocode(fetchedData.latitude, fetchedData.longitude);
+            }
+          }
+        });
+      } else {
+        // For create mode, use provided data or defaults
+        const formData = {
+          id: data?.id || "",
+          village: data?.village || "",
+          commune: data?.commune || "",
+          district: data?.district || "",
+          province: data?.province || "",
+          streetNumber: data?.streetNumber || "",
+          houseNumber: data?.houseNumber || "",
+          note: data?.note || "",
+          latitude: data?.latitude || defaultCenter.lat,
+          longitude: data?.longitude || defaultCenter.lng,
+          isDefault: data?.isDefault || false,
+        };
+
+        reset(formData);
+        setMarkerPosition({
+          lat: formData.latitude,
+          lng: formData.longitude,
+        });
+
+        // If we have existing data, reverse geocode to show address info
+        if (data?.latitude && data?.longitude && geocoder) {
+          reverseGeocode(data.latitude, data.longitude);
+        }
       }
+    } else {
+      // Reset when modal closes
+      setAddressData(null);
+      setAddressInfo({ formatted_address: "", components: {} });
     }
-  }, [isOpen, data, reset, geocoder, reverseGeocode]);
+  }, [
+    isOpen,
+    data,
+    addressId,
+    isEdit,
+    reset,
+    geocoder,
+    reverseGeocode,
+    fetchAddressData,
+  ]);
 
   // Update marker position when coordinates change programmatically
   useEffect(() => {
@@ -286,12 +364,12 @@ export default function ModalAddress({
         map.panTo(newPosition);
       }
 
-      // Reverse geocode new position
-      if (geocoder) {
+      // Reverse geocode new position only if it's from user interaction
+      if (geocoder && !isLoadingAddress) {
         reverseGeocode(latitude, longitude);
       }
     }
-  }, [latitude, longitude, map, geocoder, reverseGeocode]);
+  }, [latitude, longitude, map, geocoder, reverseGeocode, isLoadingAddress]);
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     setMap(map);
@@ -345,7 +423,13 @@ export default function ModalAddress({
 
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported by this browser.");
+      AppToast({
+        type: "warning",
+        message: "Geolocation is not supported by this browser.",
+        duration: 3000,
+        position: "top-right",
+      });
+
       return;
     }
 
@@ -390,8 +474,12 @@ export default function ModalAddress({
             errorMessage = "Location request timed out.";
             break;
         }
-
-        alert(errorMessage + " Please select a location on the map.");
+        AppToast({
+          type: "warning",
+          message: " Please select a location on the map.",
+          duration: 3000,
+          position: "top-right",
+        });
         setIsGettingLocation(false);
       },
       {
@@ -402,6 +490,19 @@ export default function ModalAddress({
     );
   };
 
+  const openMapModal = () => {
+    setShowMapModal(true);
+  };
+
+  const closeMapModal = () => {
+    setShowMapModal(false);
+  };
+
+  const confirmLocation = () => {
+    // Location is already updated in the form via onMapClick and onMarkerDragEnd
+    setShowMapModal(false);
+  };
+
   const onSubmit = (formData: AddressFormData) => {
     console.log("Form submitted with mode:", mode, "Data:", formData);
 
@@ -409,8 +510,8 @@ export default function ModalAddress({
       ...(formData.id && { id: formData.id }),
       village: formData.village?.trim() || undefined,
       commune: formData.commune?.trim() || undefined,
-      district: formData.district?.trim() || undefined,
-      province: formData.province?.trim() || undefined,
+      district: formData.district?.trim(),
+      province: formData.province?.trim(),
       streetNumber: formData.streetNumber?.trim() || undefined,
       houseNumber: formData.houseNumber?.trim() || undefined,
       note: formData.note?.trim() || undefined,
@@ -426,8 +527,9 @@ export default function ModalAddress({
 
   const handleClose = () => {
     reset();
-    setMapExpanded(false);
+    setShowMapModal(false);
     setMap(null);
+    setAddressData(null);
     setAddressInfo({ formatted_address: "", components: {} });
     onClose();
   };
@@ -438,6 +540,22 @@ export default function ModalAddress({
       type === "lat" ? (value > 0 ? "N" : "S") : value > 0 ? "E" : "W";
     return `${Math.abs(value).toFixed(6)}° ${direction}`;
   };
+
+  // Loading state for edit mode
+  if (isEdit && isLoadingAddress) {
+    return (
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent className="max-w-md">
+          <div className="flex flex-col items-center justify-center py-8 space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">
+              Loading address data...
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   if (loadError) {
     return (
@@ -455,351 +573,287 @@ export default function ModalAddress({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="w-full max-w-lg md:max-w-xl lg:max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5" />
-            {isCreate ? "Add Address" : "Edit Address"}
-          </DialogTitle>
-          <DialogDescription>
-            {isCreate
-              ? "Select a location on the map to add a new address."
-              : "Update the location by clicking on the map or dragging the marker."}
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      {/* Main Address Form Modal */}
+      <Dialog open={isOpen} onOpenChange={handleClose}>
+        <DialogContent className="max-w-2xl h-[90vh] p-0 gap-0 flex flex-col">
+          {/* Header */}
+          <DialogHeader className="px-6 py-4 border-b bg-muted/30 flex-shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              {isCreate ? "Add Address" : "Edit Address"}
+            </DialogTitle>
+            <DialogDescription>
+              {isCreate
+                ? "Click 'Select Location' to choose a location on the map."
+                : "Update the address details or click 'Select Location' to change the location."}
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Interactive Map Section */}
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
+          {/* Content */}
+          <ScrollArea className="flex-1 min-h-0">
+            {/* Location Selection Section */}
+            <Card>
+              <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
-                  Select Location <span className="text-red-500">*</span>
+                  Address <span className="text-red-500">*</span>
                 </CardTitle>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setMapExpanded(!mapExpanded)}
-                  className="flex items-center gap-2"
-                >
-                  {mapExpanded ? (
-                    <Minimize className="h-4 w-4" />
-                  ) : (
-                    <Maximize className="h-4 w-4" />
-                  )}
-                  {mapExpanded ? "Minimize" : "Expand"}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between items-center">
-                <p className="text-sm text-muted-foreground">
-                  Click on the map or drag the marker to set location
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={getCurrentLocation}
-                  disabled={isSubmitting || isGettingLocation}
-                  className="flex items-center gap-2"
-                >
-                  <Navigation className="h-4 w-4" />
-                  {isGettingLocation ? "Getting..." : "My Location"}
-                </Button>
-              </div>
-
-              {/* Google Map Container */}
-              <div
-                className={`w-full border border-gray-300 rounded-lg transition-all duration-300 ${
-                  mapExpanded ? "h-96" : "h-64"
-                }`}
-              >
-                {isLoaded ? (
-                  <GoogleMap
-                    mapContainerStyle={mapContainerStyle}
-                    center={markerPosition}
-                    zoom={13}
-                    options={mapOptions}
-                    onClick={onMapClick}
-                    onLoad={onMapLoad}
-                    onUnmount={onMapUnmount}
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Location Selection Buttons */}
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={openMapModal}
+                    disabled={isSubmitting || isLoadingAddress}
+                    className="flex items-center gap-2 flex-1"
                   >
-                    <MarkerF
-                      position={markerPosition}
-                      draggable={true}
-                      onDragEnd={onMarkerDragEnd}
-                      icon={{
-                        url:
-                          "data:image/svg+xml;charset=UTF-8," +
-                          encodeURIComponent(`
-                          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="16" cy="16" r="12" fill="#dc2626" stroke="white" stroke-width="4"/>
-                          </svg>
-                        `),
-                        scaledSize: new window.google.maps.Size(32, 32),
-                        anchor: new window.google.maps.Point(16, 16),
-                      }}
-                    />
-                  </GoogleMap>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-sm text-gray-500 bg-gray-50 rounded-lg">
-                    Loading Google Maps...
+                    <MapPin className="h-4 w-4" />
+                    Select Location
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={getCurrentLocation}
+                    disabled={
+                      isSubmitting || isGettingLocation || isLoadingAddress
+                    }
+                    className="flex items-center gap-2"
+                  >
+                    <Navigation className="h-4 w-4" />
+                    {isGettingLocation ? "Getting..." : "My Location"}
+                  </Button>
+                </div>
+
+                {/* Show message if no location selected */}
+                {(latitude === 0 || longitude === 0) && !isLoadingAddress && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <MapPin className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-amber-800">
+                          No Location Selected
+                        </p>
+                        <p className="text-sm text-amber-700">
+                          Please select a location using the map or your current
+                          location
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
-              </div>
 
-              {/* Address Information Display */}
-              {(addressInfo.formatted_address || isGeocodingLocation) && (
-                <Card className="bg-muted/30">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      {isGeocodingLocation && (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      )}
-                      Address Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {isGeocodingLocation ? (
-                      <p className="text-sm text-muted-foreground">
-                        Getting address information...
-                      </p>
-                    ) : (
-                      <>
+                {/* Address Information Display */}
+                {(addressInfo.formatted_address || isGeocodingLocation) && (
+                  <Card className="bg-primary-50 border-primary-200">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        {isGeocodingLocation && (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        )}
+                        Selected Address
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {isGeocodingLocation ? (
+                        <p className="text-sm text-muted-foreground">
+                          Getting address information...
+                        </p>
+                      ) : (
                         <div className="text-sm">
-                          <p className="font-medium">
+                          <p className="font-medium text-blue-800">
                             {addressInfo.formatted_address}
                           </p>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                          {addressInfo.components.province && (
-                            <div>
-                              <span className="font-medium">Province:</span>{" "}
-                              {addressInfo.components.province}
-                            </div>
-                          )}
-                          {addressInfo.components.district && (
-                            <div>
-                              <span className="font-medium">District:</span>{" "}
-                              {addressInfo.components.district}
-                            </div>
-                          )}
-                          {addressInfo.components.commune && (
-                            <div>
-                              <span className="font-medium">Commune:</span>{" "}
-                              {addressInfo.components.commune}
-                            </div>
-                          )}
-                          {addressInfo.components.village && (
-                            <div>
-                              <span className="font-medium">Village:</span>{" "}
-                              {addressInfo.components.village}
-                            </div>
-                          )}
-                          {addressInfo.components.streetNumber && (
-                            <div>
-                              <span className="font-medium">Street:</span>{" "}
-                              {addressInfo.components.streetNumber}
-                            </div>
-                          )}
-                          {addressInfo.components.houseNumber && (
-                            <div>
-                              <span className="font-medium">House No:</span>{" "}
-                              {addressInfo.components.houseNumber}
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Coordinates Display */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label htmlFor="latitude">
-                    Latitude <span className="text-red-500">*</span>
-                  </Label>
-                  <Controller
-                    control={control}
-                    name="latitude"
-                    render={({ field }) => (
-                      <div className="space-y-1">
-                        <Input
-                          {...field}
-                          id="latitude"
-                          type="number"
-                          step="any"
-                          placeholder="e.g., 11.5564"
-                          disabled={isSubmitting}
-                          className={errors.latitude ? "border-red-500" : ""}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            const numValue =
-                              value === ""
-                                ? 0
-                                : Number(parseFloat(value).toFixed(6));
-                            field.onChange(numValue);
-                          }}
-                        />
-                        {latitude !== 0 && (
-                          <p className="text-xs text-muted-foreground">
-                            {formatCoordinate(latitude, "lat")}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  />
-                  {errors.latitude && (
-                    <p className="text-sm text-destructive">
-                      {errors.latitude.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="longitude">
-                    Longitude <span className="text-red-500">*</span>
-                  </Label>
-                  <Controller
-                    control={control}
-                    name="longitude"
-                    render={({ field }) => (
-                      <div className="space-y-1">
-                        <Input
-                          {...field}
-                          id="longitude"
-                          type="number"
-                          step="any"
-                          placeholder="e.g., 104.9282"
-                          disabled={isSubmitting}
-                          className={errors.longitude ? "border-red-500" : ""}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            const numValue =
-                              value === ""
-                                ? 0
-                                : Number(parseFloat(value).toFixed(6));
-                            field.onChange(numValue);
-                          }}
-                        />
-                        {longitude !== 0 && (
-                          <p className="text-xs text-muted-foreground">
-                            {formatCoordinate(longitude, "lng")}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  />
-                  {errors.longitude && (
-                    <p className="text-sm text-destructive">
-                      {errors.longitude.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {(latitude !== 0 || longitude !== 0) && (
-                <div className="p-3 bg-muted/50 rounded-lg">
-                  <p className="text-sm font-medium">Selected Coordinates:</p>
-                  <p className="text-sm text-muted-foreground">
-                    {formatCoordinate(latitude, "lat")},{" "}
-                    {formatCoordinate(longitude, "lng")}
-                  </p>
-                  <a
-                    href={`https://maps.google.com/?q=${latitude},${longitude}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:text-blue-800 underline"
-                  >
-                    View on Google Maps
-                  </a>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Additional Information */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Additional Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Notes Field */}
-              <div className="space-y-1">
-                <Label htmlFor="note">Notes</Label>
-                <Controller
-                  control={control}
-                  name="note"
-                  render={({ field }) => (
-                    <Textarea
-                      {...field}
-                      id="note"
-                      placeholder="Additional notes about this address..."
-                      disabled={isSubmitting}
-                      className={errors.note ? "border-red-500" : ""}
-                      rows={3}
-                    />
-                  )}
-                />
-                {errors.note && (
-                  <p className="text-sm text-destructive">
-                    {errors.note.message}
-                  </p>
+                      )}
+                    </CardContent>
+                  </Card>
                 )}
-              </div>
 
-              {/* Default Address Checkbox */}
-              <div className="flex items-center space-x-2">
-                <Controller
-                  control={control}
-                  name="isDefault"
-                  render={({ field }) => (
-                    <Checkbox
-                      id="isDefault"
-                      checked={field.value || false}
-                      onCheckedChange={field.onChange}
-                      disabled={isSubmitting}
-                    />
+                {/* Show existing full address in edit mode */}
+                {isEdit && addressData?.fullAddress && (
+                  <Card className="bg-green-50 border-green-200">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Current Address</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm font-medium text-green-800">
+                        {addressData.fullAddress}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Additional Information */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">
+                  Additional Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Notes Field */}
+                <div className="space-y-1">
+                  <Label htmlFor="note">Notes</Label>
+                  <Controller
+                    control={control}
+                    name="note"
+                    render={({ field }) => (
+                      <Textarea
+                        {...field}
+                        id="note"
+                        placeholder="Additional notes about this address..."
+                        disabled={isSubmitting || isLoadingAddress}
+                        className={errors.note ? "border-red-500" : ""}
+                        rows={3}
+                      />
+                    )}
+                  />
+                  {errors.note && (
+                    <p className="text-sm text-destructive">
+                      {errors.note.message}
+                    </p>
                   )}
-                />
-                <Label htmlFor="isDefault" className="text-sm font-medium">
-                  Set as default address
-                </Label>
-              </div>
-            </CardContent>
-          </Card>
+                </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-2 pt-4">
+                {/* Default Address Checkbox */}
+                <div className="flex items-center space-x-2">
+                  <Controller
+                    control={control}
+                    name="isDefault"
+                    render={({ field }) => (
+                      <Checkbox
+                        id="isDefault"
+                        checked={field.value || false}
+                        onCheckedChange={field.onChange}
+                        disabled={isSubmitting || isLoadingAddress}
+                      />
+                    )}
+                  />
+                  <Label htmlFor="isDefault" className="text-sm font-medium">
+                    Set as default address
+                  </Label>
+                </div>
+              </CardContent>
+            </Card>
+          </ScrollArea>
+
+          {/* Footer */}
+          <div className="flex justify-end items-center gap-2 p-6 border-t bg-muted/30 flex-shrink-0">
             <Button
               type="button"
               variant="outline"
               onClick={handleClose}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isLoadingAddress}
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting || isGeocodingLocation}
+              disabled={isSubmitting || isGeocodingLocation || isLoadingAddress}
               onClick={handleSubmit(onSubmit)}
             >
-              {isSubmitting || isGeocodingLocation
+              {isSubmitting || isGeocodingLocation || isLoadingAddress
                 ? "Processing..."
                 : isCreate
                 ? "Add Address"
                 : "Update Address"}
             </Button>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      {/* Map Selection Modal */}
+      <Dialog open={showMapModal} onOpenChange={setShowMapModal}>
+        <DialogContent className="max-w-2xl h-[90vh] p-0 gap-0 flex flex-col">
+          <DialogHeader className="px-6 py-4 border-b bg-muted/30 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Select Location
+                </DialogTitle>
+                <DialogDescription>
+                  Click on the map or drag the marker to select your address
+                  location
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <ScrollArea className="flex-1 min-h-0">
+            {/* Map Container */}
+            <div className="w-full h-96 border border-gray-300 rounded-lg">
+              {isLoaded ? (
+                <GoogleMap
+                  mapContainerStyle={mapContainerStyle}
+                  center={markerPosition}
+                  zoom={13}
+                  options={mapOptions}
+                  onClick={onMapClick}
+                  onLoad={onMapLoad}
+                  onUnmount={onMapUnmount}
+                >
+                  <MarkerF
+                    position={markerPosition}
+                    draggable={true}
+                    onDragEnd={onMarkerDragEnd}
+                    icon={{
+                      url:
+                        "data:image/svg+xml;charset=UTF-8," +
+                        encodeURIComponent(`
+                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <circle cx="16" cy="16" r="12" fill="#dc2626" stroke="white" stroke-width="4"/>
+                        </svg>
+                      `),
+                      scaledSize: new window.google.maps.Size(32, 32),
+                      anchor: new window.google.maps.Point(16, 16),
+                    }}
+                  />
+                </GoogleMap>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-sm text-gray-500 bg-gray-50 rounded-lg">
+                  Loading Google Maps...
+                </div>
+              )}
+            </div>
+
+            {/* Current Coordinates */}
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <p className="text-sm font-medium">Selected Coordinates:</p>
+              <p className="text-sm text-muted-foreground">
+                {formatCoordinate(latitude, "lat")},{" "}
+                {formatCoordinate(longitude, "lng")}
+              </p>
+            </div>
+          </ScrollArea>
+
+          <div className="flex justify-between items-center p-6 border-t bg-muted/30 flex-shrink-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={getCurrentLocation}
+              disabled={isGettingLocation}
+              className="flex items-center gap-2"
+            >
+              <Navigation className="h-4 w-4" />
+              {isGettingLocation ? "Getting..." : "Use My Location"}
+            </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={closeMapModal}>
+                Cancel
+              </Button>
+              <Button type="button" onClick={confirmLocation}>
+                Confirm Location
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

@@ -49,7 +49,7 @@ import {
 } from "@/services/dashboard/business/business-setting/business-setting.service";
 import { cleanValue } from "@/lib/utils";
 import { UpdateMyBusinessSetting } from "@/models/business-group/business-setting/business-setting.request";
-import { AppToast } from "@/components/app/components/app-toast";
+import { AppToast } from "@/components/shared/toast/app-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
