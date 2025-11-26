@@ -1,7 +1,7 @@
 import { AllCategoryRequest } from "@/models/content-manangement/category/category.request";
 import { axiosClientWithAuth } from "@/utils/axios";
 
-export async function getPublicAllCategoriesService(data: AllCategoryRequest) {
+export async function getAllPublicCategoriesService(data: AllCategoryRequest) {
   try {
     // POST request to fetch all staff matching the filters
     const response = await axiosClientWithAuth.post(

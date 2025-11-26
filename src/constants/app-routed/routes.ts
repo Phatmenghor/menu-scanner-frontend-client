@@ -77,6 +77,7 @@ export const ROUTES = {
     },
     CATEGORY: {
       VIEW_ALL: "/category",
+      CATEGORY_PRODUCTS: (id: string) => `/category/${id}`,
     },
   },
 } as const;

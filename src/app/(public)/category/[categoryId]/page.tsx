@@ -1,24 +1,29 @@
+// Fixed All Products Page
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, useParams } from "next/navigation";
 import { Grid3X3, List, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ProductCard } from "@/components/app/public/product/product-card";
+import { getAllPublicProductService } from "@/services/public/product/product.service";
 import { useDebounce } from "@/utils/debounce/debounce";
 import { getUserInfo } from "@/utils/local-storage/userInfo";
 import { AppToast } from "@/components/shared/toast/app-toast";
 import { ROUTES } from "@/constants/app-routed/routes";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useLoadMorePagination } from "@/hooks/use-loadMore-pagination";
 import { LoadMorePagination } from "@/components/ui/load-more-pagination";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { CategoryCard } from "@/components/app/public/category/category-card";
-import { getAllPublicCategoriesService } from "@/services/dashboard/content-management/category/category.public.service";
-import {
-  appendCategory,
-  setAllCategories,
-} from "@/store/features/category-slice";
+import { appendProducts, setAllProducts } from "@/store/features/product-slice";
 
-export default function AllCategoriesPage() {
+export default function AllProductsInCategoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -33,11 +38,14 @@ export default function AllCategoriesPage() {
   const searchParams = useSearchParams();
   const user = getUserInfo();
 
+  const params = useParams();
+  const categoryId = params.categoryId as string;
+
   const debouncedSearchQuery = useDebounce(searchQuery, 400);
 
   // Get products from Redux store
-  const { allCategories, isLoadedCategories } = useSelector(
-    (store: RootState) => store.category
+  const { allProducts, isLoadedProducts } = useSelector(
+    (store: RootState) => store.products
   );
   const dispatch = useDispatch();
 
@@ -52,7 +60,7 @@ export default function AllCategoriesPage() {
     setSortBy(sort);
   }, [searchParams]);
 
-  const loadCategories = useCallback(
+  const loadProducts = useCallback(
     async (append: boolean = false) => {
       if (!append) {
         setIsLoading(true);
@@ -61,36 +69,37 @@ export default function AllCategoriesPage() {
       try {
         const pageToLoad = append ? currentPage + 1 : 1;
 
-        const categoryRes = await getAllPublicCategoriesService({
+        const productsRes = await getAllPublicProductService({
           search: debouncedSearchQuery,
           pageNo: pageToLoad,
+          categoryId: categoryId,
           businessId: user?.businessId,
           pageSize: 12,
         });
 
-        console.log("API Response:", categoryRes);
-        console.log("Categories content:", categoryRes?.content);
+        console.log("API Response:", productsRes);
+        console.log("Products content:", productsRes?.content);
 
         if (append) {
           // When loading more, APPEND new products to existing ones
-          if (categoryRes?.content) {
-            dispatch(appendCategory(categoryRes.content));
+          if (productsRes?.content) {
+            dispatch(appendProducts(productsRes.content));
             setCurrentPage(pageToLoad);
           }
         } else {
           // Initial load or search - REPLACE products
-          if (categoryRes) {
-            dispatch(setAllCategories(categoryRes)); // Pass the entire response object
-            setTotalElements(categoryRes.totalElements || 0);
-            setTotalPages(categoryRes.totalPages || 0);
+          if (productsRes) {
+            dispatch(setAllProducts(productsRes)); // Pass the entire response object
+            setTotalElements(productsRes.totalElements || 0);
+            setTotalPages(productsRes.totalPages || 0);
             setCurrentPage(1);
           }
         }
       } catch (error: any) {
-        console.log("Failed to load categories:", error);
+        console.log("Failed to load products:", error);
         AppToast?.({
           type: "error",
-          message: "Failed to load categories",
+          message: "Failed to load products",
           duration: 3000,
           position: "top-right",
         });
@@ -101,27 +110,27 @@ export default function AllCategoriesPage() {
     [debouncedSearchQuery, user?.businessId, currentPage, dispatch]
   );
 
-  // Load initial categories when search/sort changes
+  // Load initial products when search/sort changes
   useEffect(() => {
-    if (!isLoadedCategories || debouncedSearchQuery !== searchQuery) {
+    if (!isLoadedProducts || debouncedSearchQuery !== searchQuery) {
       resetPagination();
       setCurrentPage(1);
-      loadCategories(false);
+      loadProducts(false);
     }
   }, [debouncedSearchQuery, sortBy]);
 
   // Initial load
   useEffect(() => {
-    if (!isLoadedCategories) {
-      loadCategories(false);
+    if (!isLoadedProducts) {
+      loadProducts(false);
     }
   }, []);
 
   const onLoadMore = useCallback(async () => {
     await handleLoadMore(async () => {
-      await loadCategories(true); // Load next page and append
+      await loadProducts(true); // Load next page and append
     });
-  }, [handleLoadMore, loadCategories]);
+  }, [handleLoadMore, loadProducts]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -146,8 +155,8 @@ export default function AllCategoriesPage() {
     router.push(`${ROUTES.E_COMMERCE.PRODUCT.VIEW_ALL}?${params.toString()}`);
   };
 
-  const handleToListOfProductInCategory = (id: string) => {
-    router.push(ROUTES.E_COMMERCE.CATEGORY.CATEGORY_PRODUCTS(id));
+  const handleToProductDetail = (id: string) => {
+    router.push(ROUTES.E_COMMERCE.PRODUCT.DETAIL(id));
   };
 
   const handleBackToHome = () => {
@@ -155,12 +164,15 @@ export default function AllCategoriesPage() {
   };
 
   // Get the actual products array from the Redux store
-  const categoryToDisplay = allCategories?.content || [];
-  const displayTotalElements =
-    totalElements || allCategories?.totalElements || 0;
+  const productsToDisplay = allProducts?.content || [];
+  const displayTotalElements = totalElements || allProducts?.totalElements || 0;
 
   // Check if there are more products to load
-  const hasMore = categoryToDisplay.length < displayTotalElements;
+  const hasMore = productsToDisplay.length < displayTotalElements;
+
+  console.log("Redux allProducts:", allProducts);
+  console.log("Products to display:", productsToDisplay);
+  console.log("Display total:", displayTotalElements);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -181,6 +193,22 @@ export default function AllCategoriesPage() {
             </div>
 
             <div className="flex items-center gap-4">
+              {/* Sort */}
+              <Select
+                value={sortBy}
+                onValueChange={(value) => handleSortChange(value)}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Newest</SelectItem>
+                  <SelectItem value="price-low">Price: Low to High</SelectItem>
+                  <SelectItem value="price-high">Price: High to Low</SelectItem>
+                  <SelectItem value="popular">Most Popular</SelectItem>
+                </SelectContent>
+              </Select>
+
               {/* View Mode Toggle */}
               <div className="flex items-center bg-gray-100 rounded-md p-1">
                 <Button
@@ -212,13 +240,13 @@ export default function AllCategoriesPage() {
           <p className="text-gray-600">
             {displayTotalElements > 0 ? (
               <>
-                Showing {categoryToDisplay.length} of {displayTotalElements}{" "}
-                categories
+                Showing {productsToDisplay.length} of {displayTotalElements}{" "}
+                products
               </>
             ) : isLoading ? (
               ""
             ) : (
-              "No category found"
+              "No products found"
             )}
             {searchQuery && <span className="ml-2">for "{searchQuery}"</span>}
           </p>
@@ -236,14 +264,14 @@ export default function AllCategoriesPage() {
         )} */}
 
         {/* Loading State */}
-        {isLoading && !categoryToDisplay.length && (
+        {isLoading && !productsToDisplay.length && (
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-pink"></div>
           </div>
         )}
 
         {/* Products Grid/List */}
-        {categoryToDisplay.length > 0 && (
+        {productsToDisplay.length > 0 && (
           <>
             <div
               className={
@@ -252,15 +280,15 @@ export default function AllCategoriesPage() {
                   : "space-y-4"
               }
             >
-              {categoryToDisplay.map((category, index) => {
-                console.log(`Rendering product ${index}:`, category);
+              {productsToDisplay.map((product, index) => {
+                console.log(`Rendering product ${index}:`, product);
                 return (
-                  <CategoryCard
-                    key={category.id || index}
-                    category={category}
-                    onCategoryClick={() =>
-                      handleToListOfProductInCategory(category.id)
-                    }
+                  <ProductCard
+                    key={product.id || index}
+                    product={product}
+                    onProductClick={() => handleToProductDetail(product.id)}
+                    onWishlistToggle={() => {}}
+                    viewMode={viewMode}
                   />
                 );
               })}
@@ -269,15 +297,15 @@ export default function AllCategoriesPage() {
             {/* Load More Pagination */}
             {hasMore && (
               <LoadMorePagination
-                items={categoryToDisplay}
+                items={productsToDisplay}
                 totalElements={displayTotalElements}
                 hasMore={hasMore}
                 isLoading={isLoading}
                 isLoadingMore={isLoadingMore}
                 onLoadMore={onLoadMore}
-                loadMoreText="View More Categories"
+                loadMoreText="View More Products"
                 loadingText="Loading more..."
-                noMoreText="You've seen all categories"
+                noMoreText="You've seen all products"
                 showCount={false}
                 buttonVariant="outline"
                 buttonSize="lg"
@@ -288,13 +316,13 @@ export default function AllCategoriesPage() {
         )}
 
         {/* Empty State */}
-        {!isLoading && categoryToDisplay.length === 0 && (
+        {!isLoading && productsToDisplay.length === 0 && (
           <div className="text-center py-20">
             <div className="text-gray-400 mb-4">
               <Grid3X3 className="w-16 h-16 mx-auto" />
             </div>
             <h3 className="text-xl font-semibold text-gray-600 mb-2">
-              No Category Found
+              No Products Found
             </h3>
             <p className="text-gray-500 mb-4">
               {searchQuery

@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Menu } from "lucide-react";
+import { ArrowLeft, ArrowRight, LogOut, Menu } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,6 +36,10 @@ export function CustomerTopBar({ onMenuClick }: TopBarProps) {
     router.replace(ROUTES.AUTH.LOGIN);
   };
 
+  const handleBackToPublic = () => {
+    router.replace(ROUTES.HOME);
+  };
+
   return (
     <>
       <header className="sticky top-0 z-20 flex h-14 items-center gap-4 border-b bg-background px-4 sm:px-6">
@@ -45,7 +49,14 @@ export function CustomerTopBar({ onMenuClick }: TopBarProps) {
             <span className="sr-only">Toggle menu</span>
           </Button>
         )}
-
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handleBackToPublic}
+          className="w-10 h-10 rounded-md shadow-sm hover:shadow-md hover:bg-muted transition-all"
+        >
+          <ArrowLeft className="h-10 w-10" />
+        </Button>
         <div className="flex items-center gap-3 justify-end flex-1">
           {/* <ThemeToggle /> */}
           <LanguageSwitcher variant="flag-only" />

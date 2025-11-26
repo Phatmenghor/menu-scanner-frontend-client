@@ -2,16 +2,15 @@
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCallback, useEffect, useState } from "react";
-import { AllCategories } from "@/models/content-manangement/category/category.response";
 import { ROUTES } from "@/constants/app-routed/routes";
 import { useDebounce } from "@/utils/debounce/debounce";
 import { getUserInfo } from "@/utils/local-storage/userInfo";
 import { AppToast } from "@/components/shared/toast/app-toast";
 import { ProductCard } from "@/components/app/public/product/product-card";
-import { CategoryCard } from "@/components/app/public/category-card";
+import { CategoryCard } from "@/components/app/public/category/category-card";
 import { BannerModel } from "@/models/content-manangement/banner/banner.response";
 import { getAllPublicProductService } from "@/services/public/product/product.service";
-import { getPublicAllCategoriesService } from "@/services/dashboard/content-management/category/category.public.service";
+import { getAllPublicCategoriesService } from "@/services/dashboard/content-management/category/category.public.service";
 import { getAllPublicBannerService } from "@/services/dashboard/content-management/banner/banner.public.service";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
@@ -19,15 +18,20 @@ import { RootState } from "@/store/store";
 import { setAllProducts } from "@/store/features/product-slice";
 import { BannerCarousel } from "../banner/banner-carousel";
 import { setAllCategories } from "@/store/features/category-slice";
+import { AllBrand } from "@/models/content-manangement/brand/brand.response";
+import { getAllPublicBrandService } from "@/services/dashboard/content-management/brand/brand.service";
+import { BrandCard } from "../brand/brand-card";
 
 export default function HomePageContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [banners, setBanners] = useState<BannerModel[] | null>(null);
+  const [AllBrands, setAllBrands] = useState<AllBrand | null>(null);
 
   // Individual loading states for better UX
   const [bannersLoading, setBannersLoading] = useState(false);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [brandLoading, setBrandLoading] = useState(false);
   const [productsLoading, setProductsLoading] = useState(false);
 
   const user = getUserInfo();
@@ -35,6 +39,7 @@ export default function HomePageContent() {
   const { allProducts, isLoadedProducts } = useSelector(
     (state: RootState) => state.products
   );
+
   const { allCategories, isLoadedCategories } = useSelector(
     (state: RootState) => state.category
   );
@@ -74,11 +79,11 @@ export default function HomePageContent() {
   const loadCategories = useCallback(async () => {
     setCategoriesLoading(true);
     try {
-      const categoriesRes = await getPublicAllCategoriesService({
+      const categoriesRes = await getAllPublicCategoriesService({
         search: debouncedSearchQuery,
         pageNo: 1,
         businessId: user?.businessId,
-        pageSize: 10,
+        pageSize: 4,
       });
 
       console.log("Fetched categories:", categoriesRes);
@@ -98,6 +103,34 @@ export default function HomePageContent() {
       setCategoriesLoading(false);
     }
   }, [debouncedSearchQuery, user?.businessId, dispatch]);
+
+  const loadBrands = useCallback(async () => {
+    setBrandLoading(true);
+    try {
+      const brandsRes = await getAllPublicBrandService({
+        search: debouncedSearchQuery,
+        pageNo: 1,
+        businessId: user?.businessId,
+        pageSize: 4,
+      });
+
+      console.log("Fetched brand:", brandsRes);
+      setAllBrands(brandsRes);
+
+      return brandsRes;
+    } catch (error: any) {
+      console.log("Failed to load brand:", error);
+      AppToast?.({
+        type: "error",
+        message: "Failed to load brand",
+        duration: 3000,
+        position: "top-right",
+      });
+      throw error;
+    } finally {
+      setBrandLoading(false);
+    }
+  }, [debouncedSearchQuery, user?.businessId]);
 
   const loadProducts = useCallback(async () => {
     setProductsLoading(true);
@@ -138,6 +171,9 @@ export default function HomePageContent() {
       // Then load categories
       await loadCategories();
 
+      // Then load brands
+      await loadBrands();
+
       // Finally load products
       await loadProducts();
     } catch (error: any) {
@@ -146,76 +182,10 @@ export default function HomePageContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [loadBanners, loadCategories, loadProducts]);
-
-  // Alternative: Load data in parallel (all at once) - uncomment if you prefer this approach
-  const loadDataInParallel = useCallback(async () => {
-    setIsLoading(true);
-
-    try {
-      // Load all data simultaneously
-      const [bannersResult, categoriesResult, productsResult] =
-        await Promise.allSettled([
-          loadBanners(),
-          loadCategories(),
-          loadProducts(),
-        ]);
-
-      // Handle any rejected promises
-      const failures = [];
-      if (bannersResult.status === "rejected") failures.push("banners");
-      if (categoriesResult.status === "rejected") failures.push("categories");
-      if (productsResult.status === "rejected") failures.push("products");
-
-      if (failures.length > 0) {
-        AppToast?.({
-          type: "warning",
-          message: `Failed to load: ${failures.join(", ")}`,
-          duration: 3000,
-          position: "top-right",
-        });
-      }
-    } catch (error: any) {
-      console.log("Failed to load data:", error);
-      AppToast?.({
-        type: "error",
-        message: "Failed to load data",
-        duration: 3000,
-        position: "top-right",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [loadBanners, loadCategories, loadProducts]);
-
-  // Individual reload functions for specific sections
-  const reloadBanners = useCallback(async () => {
-    try {
-      await loadBanners();
-    } catch (error) {
-      // Error already handled in loadBanners
-    }
-  }, [loadBanners]);
-
-  const reloadCategories = useCallback(async () => {
-    try {
-      await loadCategories();
-    } catch (error) {
-      // Error already handled in loadCategories
-    }
-  }, [loadCategories]);
-
-  const reloadProducts = useCallback(async () => {
-    try {
-      await loadProducts();
-    } catch (error) {
-      // Error already handled in loadProducts
-    }
-  }, [loadProducts]);
+  }, [loadBanners, loadCategories, loadProducts, loadBrands]);
 
   useEffect(() => {
     if (!isLoadedProducts || !isLoadedCategories) {
-      // Choose between sequential or parallel loading
       loadDataSequentially(); // or loadDataInParallel()
     }
   }, [loadDataSequentially, isLoadedProducts, isLoadedCategories]);
@@ -234,6 +204,10 @@ export default function HomePageContent() {
 
   const handleViewAllCategory = () => {
     router.push(ROUTES.E_COMMERCE.CATEGORY.VIEW_ALL);
+  };
+
+  const handleToListOfProductInCategory = (id: string) => {
+    router.push(ROUTES.E_COMMERCE.CATEGORY.CATEGORY_PRODUCTS(id));
   };
 
   return (
@@ -259,13 +233,11 @@ export default function HomePageContent() {
           </div>
         </section>
 
-        <section></section>
-
         {/* LICK FAMILY Section */}
         <section className="mb-12">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-800 text-primary-pink">
-              LICK FAMILY
+              CATEGORY
             </h2>
             {categoriesLoading && (
               <span className="text-sm text-gray-500">Loading...</span>
@@ -287,8 +259,50 @@ export default function HomePageContent() {
                 <CategoryCard
                   category={category}
                   key={category.id}
-                  onCategoryClick={() => {}}
-                  showProductCount={true}
+                  onCategoryClick={handleToListOfProductInCategory}
+                  size="small"
+                />
+              ))}
+            </div>
+          )}
+
+          <div className="flex justify-center mt-8">
+            <Button
+              onClick={handleViewAllCategory}
+              className="bg-primary px-8 py-3 rounded-full flex items-center gap-2"
+            >
+              View All <span className="text-xl">&rarr;</span>
+            </Button>
+          </div>
+        </section>
+
+        {/* LICK FAMILY Section */}
+        <section className="mb-12">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-800 text-primary-pink">
+              BRAND
+            </h2>
+            {brandLoading && (
+              <span className="text-sm text-gray-500">Loading...</span>
+            )}
+          </div>
+
+          {brandLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="h-32 bg-gray-200 animate-pulse rounded-lg"
+                ></div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {AllBrands?.content.map((brand) => (
+                <BrandCard
+                  brand={brand}
+                  onBrandClick={handleToListOfProductInCategory}
+                  showBrandCount={true}
                   size="small"
                 />
               ))}

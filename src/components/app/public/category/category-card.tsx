@@ -50,7 +50,7 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
   return (
     <div
       className={`
-        relative overflow-hidden rounded-2xl cursor-pointer 
+        relative overflow-hidden rounded-2xl cursor-pointer
         transition-all duration-300 hover:scale-105 hover:shadow-lg
         ${currentSize.container} ${isInactive ? "opacity-60" : ""}
       `}
@@ -86,32 +86,16 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
 
       {/* Content */}
       <div
-        className={`relative z-10 h-full flex flex-col justify-between ${currentSize.padding}`}
+        className={`relative z-10 h-full flex flex-col justify-end items-center ${currentSize.padding}`}
       >
-        {/* Business Badge */}
-        <div className="flex justify-start">
-          <span className="bg-white/20 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full">
-            {category.businessName}
-          </span>
-        </div>
-
         {/* Category Info */}
-        <div className="text-white">
-          <h3 className={`font-bold mb-1 ${currentSize.text}`}>
+        <div className="text-primary bg-white/80 p-2 rounded-md w-40 max-w-full">
+          <h3
+            className={`font-bold mb-1 truncate ${currentSize.text}`}
+            title={category.name} // tooltip on hover for full text
+          >
             {category.name}
           </h3>
-
-          {showProductCount && (
-            <div
-              className={`flex items-center gap-1 ${currentSize.subtext} opacity-90`}
-            >
-              <Package size={14} />
-              <span>
-                {category.totalProducts}{" "}
-                {category.totalProducts === 1 ? "Product" : "Products"}
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Arrow Icon */}
