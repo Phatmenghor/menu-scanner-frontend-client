@@ -1,3 +1,8 @@
+import createNextIntlPlugin from "next-intl/plugin";
+
+// Configure next-intl without locale routing
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
@@ -52,9 +57,6 @@ const nextConfig = {
       },
     ];
   },
-
-  // Server Actions are available by default in Next.js 14+
-  // experimental.serverActions is no longer needed
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

@@ -1,25 +1,18 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-} from "react";
-import { NextIntlClientProvider, useLocale } from "next-intl";
+import { ReactNode, useEffect, useState } from "react";
+import { NextIntlClientProvider } from "next-intl";
 import { locales, defaultLocale, type Locale } from "@/i18n/request";
 
-interface LocaleContextType {
-  locale: Locale;
-  setLocale: (locale: Locale) => void;
-  messages: any;
-  isLoading: boolean;
+interface LocaleProviderProps {
+  children: ReactNode;
+  initialMessages: any;
+  initialLocale: Locale;
 }
 
-const LocaleContext = createContext<LocaleContextType | undefined>(undefined);
-
-// Helper function to get stored locale
+/**
+ * Get stored locale from cookies or localStorage
+ */
 function getStoredLocale(): Locale {
   if (typeof window === "undefined") return defaultLocale;
 
@@ -30,19 +23,21 @@ function getStoredLocale(): Locale {
       return stored as Locale;
     }
 
-    // Check cookies
+    // Check cookies as fallback
     const cookieMatch = document.cookie.match(/locale=([^;]+)/);
     if (cookieMatch && locales.includes(cookieMatch[1] as Locale)) {
       return cookieMatch[1] as Locale;
     }
   } catch (error) {
-    console.log("Could not read stored locale:", error);
+    console.error("Could not read stored locale:", error);
   }
 
   return defaultLocale;
 }
 
-// Helper function to store locale
+/**
+ * Store locale in both cookie and localStorage
+ */
 function storeLocale(locale: Locale) {
   if (typeof window === "undefined") return;
 
@@ -52,22 +47,16 @@ function storeLocale(locale: Locale) {
   }; SameSite=Lax`;
 }
 
-interface LocaleProviderProps {
-  children: ReactNode;
-  initialMessages: any;
-  initialLocale: Locale;
-}
-
 export function LocaleProvider({
   children,
   initialMessages,
   initialLocale,
 }: LocaleProviderProps) {
-  const [locale, setLocaleState] = useState<Locale>(initialLocale);
+  const [locale, setLocale] = useState<Locale>(initialLocale);
   const [messages, setMessages] = useState(initialMessages);
   const [isLoading, setIsLoading] = useState(false);
 
-  // On mount, check for stored locale preference
+  // Check for stored locale on mount
   useEffect(() => {
     const storedLocale = getStoredLocale();
     if (storedLocale !== locale) {
@@ -75,23 +64,21 @@ export function LocaleProvider({
     }
   }, []);
 
-  // Function to load messages for a specific locale
+  /**
+   * Load messages for a specific locale
+   */
   const loadLocale = async (newLocale: Locale) => {
     if (newLocale === locale && messages) return;
 
     setIsLoading(true);
     try {
-      // Fixed import path - changed from ../../messages to ../messages
       const newMessages = await import(`../messages/${newLocale}.json`);
-
       setMessages(newMessages.default);
-      setLocaleState(newLocale);
+      setLocale(newLocale);
       storeLocale(newLocale);
-
-      console.log("Client-side locale loaded:", newLocale);
     } catch (error) {
       console.error("Failed to load locale:", newLocale, error);
-      // Fallback to default locale if loading fails
+      // Fallback to default locale
       if (newLocale !== defaultLocale) {
         loadLocale(defaultLocale);
       }
@@ -100,36 +87,13 @@ export function LocaleProvider({
     }
   };
 
-  const setLocale = (newLocale: Locale) => {
-    if (newLocale !== locale) {
-      loadLocale(newLocale);
-    }
-  };
-
-  const contextValue: LocaleContextType = {
-    locale,
-    setLocale,
-    messages,
-    isLoading,
-  };
-
   return (
-    <LocaleContext.Provider value={contextValue}>
-      <NextIntlClientProvider
-        messages={messages}
-        locale={locale}
-        timeZone="Asia/Phnom_Penh"
-      >
-        {children}
-      </NextIntlClientProvider>
-    </LocaleContext.Provider>
+    <NextIntlClientProvider
+      messages={messages}
+      locale={locale}
+      timeZone="Asia/Phnom_Penh"
+    >
+      {children}
+    </NextIntlClientProvider>
   );
-}
-
-export function useClientLocale() {
-  const context = useContext(LocaleContext);
-  if (context === undefined) {
-    throw new Error("useClientLocale must be used within a LocaleProvider");
-  }
-  return context;
 }

@@ -1,170 +1,192 @@
-import {
-  Bell,
-  Home,
-  Inbox,
-  Settings,
-  Users,
-  LucideIcon,
-  Database,
-  Pin,
-} from "lucide-react";
+import { Home, Users, Database, Pin, Bell, LucideIcon } from "lucide-react";
+
+/**
+ * Clean Routes Configuration
+ * No language prefixes - all routes are language-independent
+ */
 
 export const ROUTES = {
-  AUTH: {
-    LOGIN: "/login",
-  },
-  DASHBOARD: {
-    INDEX: "/admin",
-    USERS: "/admin/platform-users",
-    CALENDAR: "/admin/calendar",
-    SECURITY: "/admin/security",
-    USER_MANAGEMENT: "/admin/users/manage",
-    USER_ROLES: "/admin/users/roles",
-    PROFILE: "/admin/profile",
-    BUSINESS: "/admin/business",
-    NEW_OWNER: "/admin/new-owner",
-    MANAGE_BUSINESS: "/admin/manage-business",
-    SUBSCRIPTION_PLAN: "/admin/subscription-plan",
-    BUSINESS_USER: "/admin/business-users",
+  // Public routes
+  HOME: "/",
+  LOGIN: "/login",
+
+  // Admin routes
+  ADMIN: {
+    ROOT: "/admin",
+    DASHBOARD: "/admin",
+
+    // User Management
+    PLATFORM_USERS: "/admin/platform-users",
+    BUSINESS_USERS: "/admin/business-users",
     BUSINESS_OWNER: "/admin/business-owner",
-    MY_BUSINESS: "/admin/my-business",
+    CUSTOMER_USER: "/admin/customer-user",
+
+    // Master Data
+    BUSINESS: "/admin/business",
+    SUBSCRIPTION_PLAN: "/admin/subscription-plan",
     SUBSCRIPTION: "/admin/subscription",
-    MY_SUBSCRIPTION: "/admin/my-subscription",
     EXCHANGE_RATE: "/admin/exchange-rate",
     PAYMENT: "/admin/payment",
-    USERS_BUSINESS: "/admin/users",
-    CUSTOMER_USER: "/admin/customer-user",
+
+    // Location Management
     PROVINCE: "/admin/province",
     DISTRICT: "/admin/district",
-    VILLAGE: "/admin/village",
     COMMUNE: "/admin/commune",
+    VILLAGE: "/admin/village",
 
-    ALL_NOTIFICATION: "/admin/all-notification",
+    // Notifications
     MY_NOTIFICATION: "/admin/my-notification",
+    ALL_NOTIFICATION: "/admin/all-notification",
+
+    // Settings
+    PROFILE: "/admin/profile",
+    SECURITY: "/admin/security",
   },
 } as const;
 
-type Subroute = {
-  title: string;
-  href: string;
-};
+/**
+ * Route Groups for Sidebar Navigation
+ */
 
-type SidebarItem = {
+interface MenuItem {
   title: string;
   href?: string;
   icon?: LucideIcon;
-  image?: string;
-  section?: string;
-  subroutes?: Subroute[];
-};
+  items?: Array<{
+    title: string;
+    href: string;
+  }>;
+}
 
-export const sidebarItems: SidebarItem[] = [
+export const SIDEBAR_MENU: MenuItem[] = [
   {
     title: "Dashboard",
-    href: ROUTES.DASHBOARD.INDEX,
+    href: ROUTES.ADMIN.DASHBOARD,
     icon: Home,
   },
+
   {
     title: "Master Data",
-    section: "Master Data",
     icon: Database,
-    subroutes: [
-      {
-        title: "Business",
-        href: ROUTES.DASHBOARD.BUSINESS,
-      },
-      {
-        title: "Subscription Plan",
-        href: ROUTES.DASHBOARD.SUBSCRIPTION_PLAN,
-      },
-      {
-        title: "Subscriptions",
-        href: ROUTES.DASHBOARD.SUBSCRIPTION,
-      },
-      {
-        title: "Exchange Rates ",
-        href: ROUTES.DASHBOARD.EXCHANGE_RATE,
-      },
-      {
-        title: "Payment",
-        href: ROUTES.DASHBOARD.PAYMENT,
-      },
-    ],
-  },
-  {
-    title: "Platform User",
-    section: "Platform Users",
-    icon: Users,
-    subroutes: [
-      {
-        title: "Users",
-        href: ROUTES.DASHBOARD.USERS,
-      },
+    items: [
+      { title: "Business", href: ROUTES.ADMIN.BUSINESS },
+      { title: "Subscription Plans", href: ROUTES.ADMIN.SUBSCRIPTION_PLAN },
+      { title: "Subscriptions", href: ROUTES.ADMIN.SUBSCRIPTION },
+      { title: "Exchange Rates", href: ROUTES.ADMIN.EXCHANGE_RATE },
+      { title: "Payments", href: ROUTES.ADMIN.PAYMENT },
     ],
   },
 
   {
-    title: "Business User",
-    section: "Business User",
+    title: "Platform Users",
     icon: Users,
-    subroutes: [
-      {
-        title: "Users",
-        href: ROUTES.DASHBOARD.BUSINESS_USER,
-      },
-      {
-        title: "Business Owner",
-        href: ROUTES.DASHBOARD.BUSINESS_OWNER,
-      },
-    ],
+    items: [{ title: "Users", href: ROUTES.ADMIN.PLATFORM_USERS }],
   },
+
   {
-    title: "Customer User",
-    section: "Customer Users",
+    title: "Business Users",
     icon: Users,
-    subroutes: [
-      {
-        title: "customers",
-        href: ROUTES.DASHBOARD.CUSTOMER_USER,
-      },
+    items: [
+      { title: "Users", href: ROUTES.ADMIN.BUSINESS_USERS },
+      { title: "Business Owners", href: ROUTES.ADMIN.BUSINESS_OWNER },
     ],
   },
+
+  {
+    title: "Customer Users",
+    icon: Users,
+    items: [{ title: "Customers", href: ROUTES.ADMIN.CUSTOMER_USER }],
+  },
+
   {
     title: "Locations",
-    section: "Locations",
     icon: Pin,
-    subroutes: [
-      {
-        title: "province",
-        href: ROUTES.DASHBOARD.PROVINCE,
-      },
-      {
-        title: "district",
-        href: ROUTES.DASHBOARD.DISTRICT,
-      },
-      {
-        title: "commune",
-        href: ROUTES.DASHBOARD.COMMUNE,
-      },
-      {
-        title: "village",
-        href: ROUTES.DASHBOARD.VILLAGE,
-      },
+    items: [
+      { title: "Provinces", href: ROUTES.ADMIN.PROVINCE },
+      { title: "Districts", href: ROUTES.ADMIN.DISTRICT },
+      { title: "Communes", href: ROUTES.ADMIN.COMMUNE },
+      { title: "Villages", href: ROUTES.ADMIN.VILLAGE },
     ],
   },
+
   {
-    title: "Notification",
-    section: "Notification",
+    title: "Notifications",
     icon: Bell,
-    subroutes: [
-      {
-        title: "My Notification",
-        href: ROUTES.DASHBOARD.MY_NOTIFICATION,
-      },
-      {
-        title: "All Notification",
-        href: ROUTES.DASHBOARD.ALL_NOTIFICATION,
-      },
+    items: [
+      { title: "My Notifications", href: ROUTES.ADMIN.MY_NOTIFICATION },
+      { title: "All Notifications", href: ROUTES.ADMIN.ALL_NOTIFICATION },
     ],
   },
 ];
+
+/**
+ * Route Helpers
+ */
+
+export const isPublicRoute = (pathname: string): boolean => {
+  return pathname === ROUTES.HOME || pathname === ROUTES.LOGIN;
+};
+
+export const isAdminRoute = (pathname: string): boolean => {
+  return pathname.startsWith(ROUTES.ADMIN.ROOT);
+};
+
+export const getActiveMenuItem = (pathname: string): MenuItem | null => {
+  for (const item of SIDEBAR_MENU) {
+    if (item.href === pathname) return item;
+
+    if (item.items) {
+      const found = item.items.find((subItem) => subItem.href === pathname);
+      if (found) return item;
+    }
+  }
+  return null;
+};
+
+/**
+ * Breadcrumb Helpers
+ */
+
+export interface Breadcrumb {
+  label: string;
+  href?: string;
+}
+
+export const getBreadcrumbs = (pathname: string): Breadcrumb[] => {
+  const segments = pathname.split("/").filter(Boolean);
+  const breadcrumbs: Breadcrumb[] = [{ label: "Home", href: ROUTES.HOME }];
+
+  let currentPath = "";
+  segments.forEach((segment, index) => {
+    currentPath += `/${segment}`;
+
+    // Format segment name
+    const label = segment
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+
+    breadcrumbs.push({
+      label,
+      href: index === segments.length - 1 ? undefined : currentPath,
+    });
+  });
+
+  return breadcrumbs;
+};
+
+/**
+ * Navigation Helpers
+ */
+
+export const getDefaultAdminRoute = (): string => {
+  return ROUTES.ADMIN.PLATFORM_USERS;
+};
+
+export const getLoginRedirectUrl = (): string => {
+  return ROUTES.LOGIN;
+};
+
+export const getDashboardRedirectUrl = (): string => {
+  return getDefaultAdminRoute();
+};

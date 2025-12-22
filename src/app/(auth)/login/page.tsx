@@ -58,7 +58,7 @@ export default function LoginPage() {
 
       if (result) {
         showToast.success("Welcome to the emenu dashboard!");
-        router.replace(ROUTES.DASHBOARD.USERS);
+        // router.replace(ROUTES.DASHBOARD.USERS);
       }
     } catch (err: any) {
       showToast.error(error || "Login failed. Please try again.");
