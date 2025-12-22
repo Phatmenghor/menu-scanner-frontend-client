@@ -118,7 +118,7 @@ export function LocaleProvider({
       <NextIntlClientProvider
         messages={messages}
         locale={locale}
-        timeZone="Asia/Phnom_Penh" // Add timezone for client-side
+        timeZone="Asia/Phnom_Penh"
       >
         {children}
       </NextIntlClientProvider>
@@ -126,7 +126,6 @@ export function LocaleProvider({
   );
 }
 
-// Hook to use locale context
 export function useClientLocale() {
   const context = useContext(LocaleContext);
   if (context === undefined) {

@@ -1,25 +1,33 @@
 #!/bin/bash
 
-echo "🚀 Pulling latest changes from origin/development..."
-git pull origin development
+# Exit immediately if any command fails
+set -e
 
-echo "📄 Git status before commit:"
-git status
+# Get current date and time
+CURRENT_TIME=$(date "+%Y-%m-%d %H:%M:%S")
 
-echo "📝 Staging all changes..."
-git add .
+# Get current branch
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
-echo "🔍 Git diff summary:"
-git diff --cached --stat
+# Fetch & pull latest changes first
+git fetch origin
+git pull origin "$BRANCH"
 
-# Check if there is anything to commit
-if git diff --cached --quiet; then
-  echo "🟡 No changes to commit. Exiting..."
-  exit 0
+# Get changed files list
+CHANGES=$(git status --short | awk '{print $2}' | tr '\n' ' ')
+
+# Check if there are changes
+if [ -z "$CHANGES" ]; then
+  echo "ℹ️ Nothing to commit, working tree clean"
+else
+  # Add all changes
+  git add .
+
+  # Commit with detailed message
+  git commit -m "[$BRANCH] Auto commit on $CURRENT_TIME | Files: $CHANGES"
 fi
 
-echo "✅ Committing with current date and time..."
-git commit -m "Auto commit on $(date '+%Y-%m-%d %H:%M:%S')"
+# Push to current branch
+git push origin "$BRANCH"
 
-echo "🚀 Pushing to origin/development..."
-git push origin development
+echo "✅ Code pushed to '$BRANCH' at $CURRENT_TIME"
