@@ -13,8 +13,8 @@ export const ROUTES = {
   ADMIN: {
     ROOT: "/admin",
     DASHBOARD: "/admin",
-    PROFILE: "admin/profile",
-    USERS: "admin/users",
+    PROFILE: "/admin/profile",
+    USERS: "/admin/users",
   },
 } as const;
 
@@ -37,6 +37,11 @@ export const SIDEBAR_MENU: MenuItem[] = [
     title: "Dashboard",
     href: ROUTES.ADMIN.DASHBOARD,
     icon: Home,
+  },
+  {
+    title: "User",
+    href: ROUTES.ADMIN.USERS,
+    icon: Users,
   },
 ];
 
