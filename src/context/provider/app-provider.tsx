@@ -4,9 +4,9 @@
 import { ReactNode } from "react";
 import { Toaster } from "sonner";
 import { Provider } from "react-redux";
-import store from "@/store/store";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
+import store from "../../redux/store";
 interface AppProvidersProps {
   children: ReactNode;
 }

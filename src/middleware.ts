@@ -6,7 +6,7 @@ import { defaultLocale, locales } from "@/i18n";
 const intlMiddleware = createMiddleware({
   locales,
   defaultLocale, // Force zh-CN as default
-  localePrefix: "always", // This ensures locale is always in URL
+  localePrefix: "always",
 });
 
 export default function middleware(req: NextRequest) {
@@ -23,12 +23,6 @@ export default function middleware(req: NextRequest) {
   // Define public paths that don't require authentication
   const publicPaths = [`/${currentLocale}/login`];
   const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
-
-  // Handle root path - force redirect to zh-CN
-  // if (pathname === "/") {
-  //   console.log("Root path accessed, redirecting to zh-CN");
-  //   return NextResponse.redirect(new URL(`/${currentLocale}/user/`, req.url));
-  // }
 
   // If no token and trying to access protected route, redirect to login
   if (!token && !isPublicPath && pathname !== "/") {

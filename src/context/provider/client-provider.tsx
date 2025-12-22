@@ -2,9 +2,8 @@
 
 import { ReactNode } from "react";
 import { Provider } from "react-redux";
-import store from "@/store/store";
-import { ThemeProvider } from "./theme-provider";
 import { Toaster } from "sonner";
+import store from "../../redux/store";
 
 interface ClientProvidersProps {
   children: ReactNode;

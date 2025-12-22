@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import { ClientProviders } from "@/context/client-provider";
 import { getMessages, getLocale } from "next-intl/server";
-import PageProgressBar from "@/components/shared/progressbar/Nprogressbar/global-n-progress";
 import localFont from "next/font/local";
 import "@/styles/globals.css";
 import { LocaleProvider } from "@/context/locale-provider";
 import { type Locale } from "@/i18n/request";
-import { ToastProvider } from "@/components/shared/toast/app-toast";
 import "../styles/globals.css";
+import PageProgressBar from "@/components/shared/global-n-progress";
 
 const geistSans = localFont({
   src: "../../public/fonts/GeistVF.woff",
@@ -50,7 +49,7 @@ export default async function RootLayout({
         >
           <ClientProviders>
             <PageProgressBar />
-            <ToastProvider>{children}</ToastProvider>
+            {children}
           </ClientProviders>
         </LocaleProvider>
       </body>
