@@ -12,13 +12,12 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
 
-  images: {
+   images: {
+    unoptimized: false,
     remotePatterns: [
       {
         protocol: "http",
-        hostname: "152.42.219.13",
-        port: "8080",
-        pathname: "/**",
+        hostname: "**",
       },
       {
         protocol: "https",
@@ -42,7 +41,7 @@ const nextConfig = {
 
   experimental: {
     serverActions: {
-      bodySizeLimit: "2mb",
+      bodySizeLimit: "10mb",
     },
   },
 };

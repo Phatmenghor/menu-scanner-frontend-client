@@ -51,7 +51,7 @@ export default function middleware(req: NextRequest) {
   // LOGIN PAGE
   // =============================
   if (isPublicRoute && token && pathname === "/login") {
-    return NextResponse.redirect(new URL("/admin/platform-users", req.url));
+    return NextResponse.redirect(new URL("/admin", req.url));
   }
 
   // -----------------------------
