@@ -5,10 +5,6 @@
 
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
-  AccountStatus,
-  UserRole,
-} from "@/constants/app-resource/status/status";
-import {
   createUserService,
   deleteUserService,
   fetchUserByIdService,
@@ -18,6 +14,7 @@ import {
   adminChangePasswordService,
 } from "../thunks/users-thunks";
 import { UserManagementState } from "../models/type/users-types";
+import { AccountStatus, UserRole } from "@/constants/status/status";
 
 /**
  * Initial state

@@ -1,12 +1,13 @@
+// src/app/layout.tsx
 import type { Metadata } from "next";
 import { ClientProviders } from "@/context/client-provider";
-import { getMessages } from "next-intl/server";
-import { cookies } from "next/headers";
+import { getMessages, getTranslations } from "next-intl/server";
 import localFont from "next/font/local";
 import { locales, defaultLocale, type Locale } from "@/i18n/request";
 import "../styles/globals.css";
 import PageProgressBar from "@/components/shared/progress/global-n-progress";
 import { LocaleProvider } from "@/context/locale-provider";
+import { headers } from "next/headers";
 
 const geistSans = localFont({
   src: "../../public/fonts/GeistVF.woff",
@@ -25,26 +26,21 @@ export const metadata: Metadata = {
   description: "Admin panel for Menu Scanner application",
 };
 
-/**
- * Get locale from cookies
- */
-async function getLocale(): Promise<Locale> {
-  const cookieStore = cookies();
-  const localeCookie = cookieStore.get("locale");
-
-  if (localeCookie?.value && locales.includes(localeCookie.value as Locale)) {
-    return localeCookie.value as Locale;
-  }
-
-  return defaultLocale;
-}
-
 export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const locale = await getLocale();
+  // Get locale from header set by middleware
+  const headersList = headers();
+  const localeHeader = headersList.get("x-locale");
+  const locale = (
+    localeHeader && locales.includes(localeHeader as Locale)
+      ? localeHeader
+      : defaultLocale
+  ) as Locale;
+
+  // Get messages for the locale
   const messages = await getMessages({ locale });
 
   return (

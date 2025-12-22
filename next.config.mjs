@@ -1,26 +1,24 @@
+// next.config.mjs
 import createNextIntlPlugin from "next-intl/plugin";
 
-// Configure next-intl without locale routing
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
-
   eslint: {
     ignoreDuringBuilds: true,
   },
-
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
 
   images: {
-    unoptimized: false,
     remotePatterns: [
       {
         protocol: "http",
-        hostname: "**",
+        hostname: "152.42.219.13",
+        port: "8080",
+        pathname: "/**",
       },
       {
         protocol: "https",
@@ -29,33 +27,23 @@ const nextConfig = {
     ],
   },
 
-  // Remove trailing slashes
-  trailingSlash: false,
+  webpack: (config) => {
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+    };
+    return config;
+  },
 
-  // Improve performance
-  swcMinify: true,
+  env: {
+    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
+    NEXT_PUBLIC_NODE_ENV: process.env.NEXT_PUBLIC_NODE_ENV,
+  },
 
-  // Configure headers for better performance
-  async headers() {
-    return [
-      {
-        source: "/(.*)",
-        headers: [
-          {
-            key: "X-Frame-Options",
-            value: "DENY",
-          },
-          {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
-          },
-          {
-            key: "Referrer-Policy",
-            value: "origin-when-cross-origin",
-          },
-        ],
-      },
-    ];
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "2mb",
+    },
   },
 };
 

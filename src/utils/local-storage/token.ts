@@ -5,11 +5,11 @@ export function storeTokenRemember(token: string | undefined): void {
     return;
   }
 
-  setCookie("auth-token", token, { maxAge: 365 * 24 * 60 * 60 });
+  setCookie("auth-token-client", token, { maxAge: 365 * 24 * 60 * 60 });
 }
 
 export function getToken() {
-  const token = getCookie("auth-token");
+  const token = getCookie("auth-token-client");
   return token;
 }
 
@@ -18,7 +18,7 @@ export function storeToken(token: string | undefined): void {
     return;
   }
 
-  setCookie("auth-token", token);
+  setCookie("auth-token-client", token);
 }
 
 /**
@@ -26,13 +26,13 @@ export function storeToken(token: string | undefined): void {
  */
 export function clearToken(): void {
   // Delete auth cookie
-  deleteCookie("auth-token");
+  deleteCookie("auth-token-client");
 }
 
 /**
  * Check if user is authenticated
  */
 export function isAuthenticated(): boolean {
-  const token = getCookie("auth-token");
+  const token = getCookie("auth-token-client");
   return !!token;
 }

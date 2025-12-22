@@ -22,6 +22,7 @@ import { useAuthState } from "@/redux/features/auth/store/state/auth-state";
 import { loginService } from "@/redux/features/auth/store/thunks/auth-thunks";
 import { ROUTES } from "@/constants/app-routes/routes";
 import { showToast } from "@/components/shared/common/show-toast";
+import { appImages } from "@/constants/app-resource/icons/app-images";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -42,7 +43,7 @@ export default function LoginPage() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      userIdentifier: "phatmenghor19@gmail.com",
+      userIdentifier: "phatmenghor20@gmail.com",
       password: "88889999",
     },
   });
@@ -76,7 +77,7 @@ export default function LoginPage() {
       {/* Left side with CPBank background image */}
       <div className="hidden flex-1 relative lg:block">
         <Image
-          src="/assets/image/cpbank.png"
+          src={appImages.CpBank}
           alt="CPBank Background"
           fill
           className="object-cover"

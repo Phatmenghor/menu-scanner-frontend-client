@@ -1,26 +1,18 @@
+// src/i18n/request.ts
 import { getRequestConfig } from "next-intl/server";
-import { cookies } from "next/headers";
 
 export const locales = ["en", "kh", "zh-CN"] as const;
 export const defaultLocale = "en" as const;
 export type Locale = (typeof locales)[number];
 
-/**
- * Get locale from cookies or use default
- */
-async function getLocale(): Promise<Locale> {
-  const cookieStore = cookies();
-  const localeCookie = cookieStore.get("locale");
+export default getRequestConfig(async ({ requestLocale }) => {
+  // Try to get locale from request
+  let locale = await requestLocale;
 
-  if (localeCookie?.value && locales.includes(localeCookie.value as Locale)) {
-    return localeCookie.value as Locale;
+  // Validate and fallback to default if invalid
+  if (!locale || !locales.includes(locale as Locale)) {
+    locale = defaultLocale;
   }
-
-  return defaultLocale;
-}
-
-export default getRequestConfig(async () => {
-  const locale = await getLocale();
 
   try {
     const messages = (await import(`../messages/${locale}.json`)).default;
