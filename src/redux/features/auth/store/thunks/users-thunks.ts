@@ -3,7 +3,7 @@
  * Redux thunks for user CRUD operations
  */
 
-import { Status } from "@/constants/app-resource/status/status";
+import { Status } from "@/constants/status/status";
 import {
   AdminChangePasswordRequest,
   AllUserRequest,
@@ -13,7 +13,6 @@ import {
 import { UserResponseModel } from "../models/response/users-response";
 import { axiosClientWithAuth } from "@/utils/axios";
 import { createApiThunk } from "@/utils/axios/api-wrapper";
-import { createAsyncThunk } from "@reduxjs/toolkit";
 
 /**
  * Fetch all users

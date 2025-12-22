@@ -14,6 +14,7 @@ export const ROUTES = {
     ROOT: "/admin",
     DASHBOARD: "/admin",
     PROFILE: "admin/profile",
+    USERS: "admin/users",
   },
 } as const;
 

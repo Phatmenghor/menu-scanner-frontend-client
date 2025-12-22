@@ -2,13 +2,6 @@
 
 import { useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
-import {
-  getUserRoleColor,
-  getStatusColor,
-  getUserTypeColor,
-  getUserTypeIcon,
-  formatEnumToDisplay,
-} from "@/utils/styles/enum-style";
 import { dateTimeFormat } from "@/utils/date/date-time-format";
 import { DetailModal } from "@/components/shared/modal/detail-modal";
 import {
@@ -22,6 +15,7 @@ import {
   selectSelectedUser,
   selectIsFetchingDetail,
 } from "../store/selectors/users-selectors";
+import { formatEnumToDisplay } from "@/utils/styles/enum-style";
 
 interface UserDetailModalProps {
   userId?: string;
@@ -29,17 +23,15 @@ interface UserDetailModalProps {
   onClose: () => void;
 }
 
-export function UserPlatformDetailModal({
+export function UserBusinessDetailModal({
   userId,
   isOpen,
   onClose,
 }: UserDetailModalProps) {
   const dispatch = useAppDispatch();
 
-  // Use SEPARATE loading state - won't affect main page
   const isFetchingDetail = useAppSelector(selectIsFetchingDetail);
 
-  // Get selected user from Redux
   const userData = useAppSelector(selectSelectedUser);
 
   useEffect(() => {
@@ -47,7 +39,6 @@ export function UserPlatformDetailModal({
       if (!userId || !isOpen) return;
 
       try {
-        // Fetch fresh data from API
         await dispatch(fetchUserByIdService(userId)).unwrap();
       } catch (error: any) {
         console.error("Error fetching user data:", error);
@@ -66,32 +57,11 @@ export function UserPlatformDetailModal({
     <DetailModal
       isOpen={isOpen}
       onClose={handleClose}
-      isLoading={isFetchingDetail} // Use separate loading state
-      title={userData?.fullName || "User Details"}
-      description={userData?.email || "Loading user information..."}
+      isLoading={isFetchingDetail}
+      title={"User Business Details"}
+      description={userData?.userIdentifier || "Loading user information..."}
       avatarUrl={userData?.profileImageUrl}
-      avatarName={userData?.firstName}
-      badges={
-        userData && (
-          <>
-            <Badge
-              variant="outline"
-              className={getUserTypeColor(userData?.userType ?? null)}
-            >
-              {getUserTypeIcon(userData?.userType ?? null)}
-              <span className="ml-1.5">
-                {formatEnumToDisplay(userData?.userType ?? "")}
-              </span>
-            </Badge>
-            <Badge
-              variant="outline"
-              className={getStatusColor(userData?.accountStatus ?? "")}
-            >
-              {formatEnumToDisplay(userData?.accountStatus ?? "")}
-            </Badge>
-          </>
-        )
-      }
+      avatarName={userData?.fullName}
     >
       {userData ? (
         <div className="space-y-6">
@@ -121,50 +91,25 @@ export function UserPlatformDetailModal({
 
             <DetailRow
               label="User Type"
-              value={
-                <Badge
-                  variant="outline"
-                  className={getUserTypeColor(userData?.userType ?? null)}
-                >
-                  {getUserTypeIcon(userData?.userType ?? null)}
-                  <span className="ml-1.5">
-                    {formatEnumToDisplay(userData?.userType ?? "")}
-                  </span>
-                </Badge>
-              }
+              value={formatEnumToDisplay(userData?.userType)}
             />
 
             <DetailRow
               label="Account Status"
-              value={
-                <Badge
-                  variant="outline"
-                  className={getStatusColor(userData?.accountStatus ?? "")}
-                >
-                  {formatEnumToDisplay(userData?.accountStatus ?? "")}
-                </Badge>
-              }
-              isLast={!userData?.businessName}
+              value={formatEnumToDisplay(userData?.accountStatus)}
             />
 
-            {userData?.businessName && (
-              <DetailRow
-                label="Business"
-                value={userData?.businessName}
-                isLast
-              />
-            )}
+            <DetailRow
+              label="Business"
+              value={userData?.businessName || "---"}
+            />
 
             {userData?.roles && userData?.roles.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {userData?.roles?.map((role, index) => (
-                  <Badge
-                    key={index}
-                    variant="outline"
-                    className={getUserRoleColor(role)}
-                  >
+                {userData.roles.map((role, index) => (
+                  <span key={index} className="bg-gray-200 px-2 py-1 rounded">
                     {formatEnumToDisplay(role)}
-                  </Badge>
+                  </span>
                 ))}
               </div>
             )}
