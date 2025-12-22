@@ -1,7 +1,7 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
 import { ClientProviders } from "@/context/client-provider";
-import { getMessages, getTranslations } from "next-intl/server";
+import { getMessages } from "next-intl/server";
 import localFont from "next/font/local";
 import { locales, defaultLocale, type Locale } from "@/i18n/request";
 import "../styles/globals.css";

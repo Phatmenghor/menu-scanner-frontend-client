@@ -229,7 +229,7 @@ export default function UserBusinessModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] p-0 flex flex-col">
+      <DialogContent className="max-w-xl max-h-[90vh] p-0 flex flex-col">
         <FormHeader
           title={isCreate ? "Create New User Business" : "Edit User Business"}
           description={
@@ -259,7 +259,7 @@ export default function UserBusinessModal({
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4 bg-fuchsia-700">
+              <div className="grid grid-cols-2 gap-4 bf">
                 {isCreate && (
                   <>
                     <TextField
