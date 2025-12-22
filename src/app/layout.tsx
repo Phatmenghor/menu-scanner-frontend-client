@@ -6,7 +6,7 @@ import "@/styles/globals.css";
 import { LocaleProvider } from "@/context/locale-provider";
 import { type Locale } from "@/i18n/request";
 import "../styles/globals.css";
-import PageProgressBar from "@/components/shared/global-n-progress";
+import PageProgressBar from "@/components/shared/progress/global-n-progress";
 
 const geistSans = localFont({
   src: "../../public/fonts/GeistVF.woff",
@@ -30,7 +30,6 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Get initial server-side locale and messages (always default for clean URLs)
   const serverLocale = (await getLocale()) as Locale;
   const serverMessages = await getMessages();
 

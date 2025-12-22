@@ -8,7 +8,7 @@ import {
   LoginCredentialsRequest,
 } from "../models/request/auth-request";
 import { axiosClient, axiosClientWithAuth } from "@/utils/axios";
-import { createApiThunk } from "@/utils/axios/apiWrapper";
+import { createApiThunk } from "@/utils/axios/api-wrapper";
 
 /**
  * Login thunk

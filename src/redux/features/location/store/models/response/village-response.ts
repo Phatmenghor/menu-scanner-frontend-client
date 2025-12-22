@@ -1,7 +1,7 @@
-import { Pagination } from "@/utils/common/pagination";
+import { BasePagination } from "@/utils/common/pagination";
 import { CommuneResponseModel } from "./commune-response";
 
-export interface AllVillageResponseModel extends Pagination {
+export interface AllVillageResponseModel extends BasePagination {
   content: VillageResponseModel[];
 }
 

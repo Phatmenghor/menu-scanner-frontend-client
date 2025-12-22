@@ -4,7 +4,7 @@
  */
 
 import { axiosClientWithAuth } from "@/utils/axios";
-import { createApiThunk } from "@/utils/axios/apiWrapper";
+import { createApiThunk } from "@/utils/axios/api-wrapper";
 import {
   AllProvinceRequest,
   CreateProvinceRequest,

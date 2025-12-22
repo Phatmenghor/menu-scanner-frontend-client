@@ -1,4 +1,3 @@
-import { ActionButton } from "@/components/button/action-button";
 import { indexDisplay } from "@/utils/common/common";
 import { dateTimeFormat } from "@/utils/date/date-time-format";
 import { Edit, Eye, RotateCw, Trash } from "lucide-react";
@@ -8,6 +7,7 @@ import {
   AllUserResponseModel,
   UserResponseModel,
 } from "../store/models/response/users-response";
+import { ActionButton } from "@/components/shared/button/action-button";
 
 interface UserTableHandlers {
   handleEditUser: (user: UserResponseModel) => void;

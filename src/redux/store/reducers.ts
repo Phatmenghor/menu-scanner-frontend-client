@@ -5,7 +5,6 @@
 
 import authReducer from "../features/auth/store/slice/auth-slice";
 import usersReducer from "../features/auth/store/slice/users-slice";
-import businessOwnerReducer from "../features/auth/store/slice/business-owner-slice";
 
 import communeReducer from "../features/location/store/slice/commune-slice";
 import provinceReducer from "../features/location/store/slice/province-slice";
@@ -23,5 +22,4 @@ export const reducers = {
   province: provinceReducer,
   district: districtReducer,
   village: villageReducer,
-  businessOwner: businessOwnerReducer,
 };

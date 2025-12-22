@@ -12,7 +12,7 @@ import {
 } from "../models/request/users-request";
 import { UserResponseModel } from "../models/response/users-response";
 import { axiosClientWithAuth } from "@/utils/axios";
-import { createApiThunk } from "@/utils/axios/apiWrapper";
+import { createApiThunk } from "@/utils/axios/api-wrapper";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
 /**
