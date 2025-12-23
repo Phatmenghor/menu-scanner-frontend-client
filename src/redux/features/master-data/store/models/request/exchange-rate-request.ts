@@ -3,7 +3,7 @@ import { UpdateBrandData } from "../schema/brand-schema";
 import { UpdateExchangeRateData } from "../schema/exchange-rate-schema";
 
 export interface AllExchangeRateRequest extends BaseGetAllRequest {
-  status?: string;
+  isActive?: boolean;
 }
 
 export interface UpdateExchangeRateParams {

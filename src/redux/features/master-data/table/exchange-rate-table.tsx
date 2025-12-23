@@ -9,21 +9,21 @@ import {
 import { ActionButton } from "@/components/shared/button/action-button";
 
 interface HandlersTableHandlers {
-  handleEdit: (param: ExchangeRateResponseModel) => void;
-  handleViewDetail: (param: ExchangeRateResponseModel) => void;
-  handleDelete: (param: ExchangeRateResponseModel) => void;
+  handleEditRate: (param: ExchangeRateResponseModel) => void;
+  handleViewRateDetail: (param: ExchangeRateResponseModel) => void;
+  handleDeleteRate: (param: ExchangeRateResponseModel) => void;
 }
 
 interface TableOptions {
-  parameter: AllExchangeRateResponseModel | null;
+  data: AllExchangeRateResponseModel | null;
   handlers: HandlersTableHandlers;
 }
 
-export const bannerTableColumns = ({
-  parameter,
+export const exchangeRateTableColumns = ({
+  data,
   handlers,
 }: TableOptions): TableColumn<ExchangeRateResponseModel>[] => {
-  const { handleEdit, handleViewDetail, handleDelete } = handlers;
+  const { handleEditRate, handleViewRateDetail, handleDeleteRate } = handlers;
 
   return [
     {
@@ -33,7 +33,7 @@ export const bannerTableColumns = ({
       maxWidth: "400px",
       render: (_, index) => (
         <span className="font-medium">
-          {indexDisplay(parameter?.pageNo, parameter?.pageSize, index + 1)}
+          {indexDisplay(data?.pageNo, data?.pageSize, index + 1)}
         </span>
       ),
     },
@@ -122,17 +122,17 @@ export const bannerTableColumns = ({
           <ActionButton
             icon={<Eye className="w-4 h-4" />}
             tooltip="View Details"
-            onClick={() => handleViewDetail(parameter)}
+            onClick={() => handleViewRateDetail(parameter)}
           />
           <ActionButton
             icon={<Edit className="w-4 h-4" />}
-            tooltip="Edit Banner"
-            onClick={() => handleEdit(parameter)}
+            tooltip="Edit Rate"
+            onClick={() => handleEditRate(parameter)}
           />
           <ActionButton
             icon={<Trash className="w-4 h-4" />}
-            tooltip="Delete Banner"
-            onClick={() => handleDelete(parameter)}
+            tooltip="Delete Rate"
+            onClick={() => handleDeleteRate(parameter)}
             variant="destructive"
           />
         </div>

@@ -15,7 +15,18 @@ import {
   setPageNo,
   setSearchFilter,
 } from "@/redux/features/auth/store/slice/users-slice";
-import { ModalMode } from "@/constants/status/status";
+import { ExchangeRateStatus, ModalMode } from "@/constants/status/status";
+import ExchangeRateModal from "@/redux/features/master-data/components/exchange-rate-modal";
+import { ExchangeRateDetailModal } from "@/redux/features/master-data/components/exchange-rate-detail-modal";
+import { useExchangeRateState } from "@/redux/features/master-data/store/state/exchange-rate-state";
+import { ExchangeRateResponseModel } from "@/redux/features/master-data/store/models/response/exchange-rate-response";
+import {
+  deleteExchangeRateService,
+  fetchAllExchangeRateService,
+} from "@/redux/features/master-data/store/thunks/exchange-rate-thunks";
+import { setExchangeRateStatusFilter } from "@/redux/features/master-data/store/slice/exchange-rate-slice";
+import { exchangeRateTableColumns } from "@/redux/features/master-data/table/exchange-rate-table";
+import { EXCHAGE_RATE_FILTER } from "@/constants/status/filter-status";
 
 export default function ExchangeRatePage() {
   const searchParams = useSearchParams();
@@ -91,7 +102,7 @@ export default function ExchangeRatePage() {
     });
   };
 
-  const handleEditExchangeRate = (exchage: ExchangeRateResponseModel) => {
+  const handleEditRate = (exchage: ExchangeRateResponseModel) => {
     setModalState({
       isOpen: true,
       mode: ModalMode.UPDATE_MODE,
@@ -99,14 +110,14 @@ export default function ExchangeRatePage() {
     });
   };
 
-  const handleExchangeRateViewDetail = (exchage: ExchangeRateResponseModel) => {
+  const handleViewRateDetail = (exchage: ExchangeRateResponseModel) => {
     setDetailModalState({
       isOpen: true,
       exchangeRateId: exchage.id || "",
     });
   };
 
-  const handleDeleteExchangeRate = (exchage: ExchangeRateResponseModel) => {
+  const handleDeleteRate = (exchage: ExchangeRateResponseModel) => {
     setDeleteState({
       isOpen: true,
       exchage: exchage,
@@ -115,9 +126,9 @@ export default function ExchangeRatePage() {
 
   const tableHandlers = useMemo(
     () => ({
-      handleEditExchangeRate,
-      handleExchangeRateViewDetail,
-      handleDeleteExchangeRate,
+      handleEditRate,
+      handleViewRateDetail,
+      handleDeleteRate,
     }),
     []
   );
@@ -148,7 +159,9 @@ export default function ExchangeRatePage() {
     if (!deleteState.exchage?.id) return;
 
     try {
-      await dispatch(deleteBusinessService(deleteState.exchage.id)).unwrap();
+      await dispatch(
+        deleteExchangeRateService(deleteState.exchage.id)
+      ).unwrap();
 
       showToast.success(
         `Exchange Rate "${
@@ -196,7 +209,7 @@ export default function ExchangeRatePage() {
       <div className="space-y-4">
         <CardHeaderSection
           breadcrumbs={[
-            { label: "Dashboard", href: ROUTES.DASHBOARD.INDEX },
+            { label: "Dashboard", href: ROUTES.ADMIN.ROOT },
             { label: "Exchange Rate", href: "" },
           ]}
           title="Exchange Rate"
@@ -216,7 +229,7 @@ export default function ExchangeRatePage() {
               onValueChange={(value) =>
                 handleStatusChange(value as ExchangeRateStatus)
               }
-              label="Account Status"
+              label="ExchangeRate Status"
             />
           </div>
         </CardHeaderSection>
@@ -238,13 +251,13 @@ export default function ExchangeRatePage() {
       <ExchangeRateModal
         isOpen={modalState.isOpen}
         onClose={closeModal}
-        exchangeId={modalState.exchangeRateId}
+        exchangeRateId={modalState.exchangeRateId}
         mode={modalState.mode}
       />
 
       {/* Modals exchange rate platform Detail */}
       <ExchangeRateDetailModal
-        exchangeId={detailModalState.exchangeRateId}
+        exchangeRateId={detailModalState.exchangeRateId}
         isOpen={detailModalState.isOpen}
         onClose={closeDetailModal}
       />

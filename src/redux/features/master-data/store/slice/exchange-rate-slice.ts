@@ -55,7 +55,10 @@ const exchnageRateSlice = createSlice({
       state.error = null;
     },
 
-    setStatusFilter: (state, action: PayloadAction<ExchangeRateStatus>) => {
+    setExchangeRateStatusFilter: (
+      state,
+      action: PayloadAction<ExchangeRateStatus>
+    ) => {
       state.filters.isActive = action.payload;
       state.filters.pageNo = 1;
     },
@@ -185,7 +188,7 @@ export const {
   setSearchFilter,
   setPageNo,
   clearError,
-  setStatusFilter,
+  setExchangeRateStatusFilter,
   clearSelectedExchangeRate,
   resetFilters,
   resetState,
