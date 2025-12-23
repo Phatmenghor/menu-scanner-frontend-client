@@ -1,25 +1,25 @@
 /**
- * Banner Management - Redux Slice
- * Manages Banner state: data, loading, errors, filters, operations
+ * DeliveryOptions Management - Redux Slice
+ * Manages DeliveryOptions state: data, loading, errors, filters, operations
  */
 
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { BannerManagementState } from "../models/type/banner-type";
+import { DeliveryOptionsManagementState } from "../models/type/delivery-options-type";
 import { Status } from "@/constants/status/status";
 import {
-  createBannerService,
-  deleteBannerService,
-  fetchAllBannerService,
-  fetchBannerByIdService,
-  updateBannerService,
-} from "../thunks/banner-thunks";
+  createDeliveryOptionsService,
+  deleteDeliveryOptionsService,
+  fetchAllDeliveryOptionsService,
+  fetchDeliveryOptionsByIdService,
+  updateDeliveryOptionsService,
+} from "../thunks/delivery-options-thunks";
 
 /**
  * Initial state
  */
-const initialState: BannerManagementState = {
+const initialState: DeliveryOptionsManagementState = {
   data: null,
-  selectedBanner: null,
+  selectedDeliveryOptions: null,
   isLoading: true,
   error: null,
   filters: {
@@ -36,10 +36,10 @@ const initialState: BannerManagementState = {
 };
 
 /**
- * Banner slice
+ * DeliveryOptions slice
  */
-const bannerSlice = createSlice({
-  name: "banners",
+const deliveryOptionsSlice = createSlice({
+  name: "delivery-options",
   initialState,
   reducers: {
     setSearchFilter: (state, action: PayloadAction<string>) => {
@@ -60,8 +60,8 @@ const bannerSlice = createSlice({
       state.filters.pageNo = 1;
     },
 
-    clearSelectedBanner: (state) => {
-      state.selectedBanner = null;
+    clearSelectedDeliveryOptions: (state) => {
+      state.selectedDeliveryOptions = null;
     },
 
     resetFilters: (state) => {
@@ -75,27 +75,27 @@ const bannerSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
-      .addCase(fetchAllBannerService.pending, (state) => {
+      .addCase(fetchAllDeliveryOptionsService.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(fetchAllBannerService.fulfilled, (state, action) => {
+      .addCase(fetchAllDeliveryOptionsService.fulfilled, (state, action) => {
         state.data = action.payload;
         state.isLoading = false;
       })
-      .addCase(fetchAllBannerService.rejected, (state, action) => {
+      .addCase(fetchAllDeliveryOptionsService.rejected, (state, action) => {
         state.error = action.payload as string;
         state.isLoading = false;
       });
 
     builder
-      .addCase(fetchBannerByIdService.pending, (state) => {
+      .addCase(fetchDeliveryOptionsByIdService.pending, (state) => {
         state.operations.isFetchingDetail = true;
         state.error = null;
-        state.selectedBanner = null;
+        state.selectedDeliveryOptions = null;
       })
-      .addCase(fetchBannerByIdService.fulfilled, (state, action) => {
-        state.selectedBanner = action.payload;
+      .addCase(fetchDeliveryOptionsByIdService.fulfilled, (state, action) => {
+        state.selectedDeliveryOptions = action.payload;
         state.operations.isFetchingDetail = false;
 
         // Also update in list if exists (for consistency)
@@ -108,17 +108,17 @@ const bannerSlice = createSlice({
           }
         }
       })
-      .addCase(fetchBannerByIdService.rejected, (state, action) => {
+      .addCase(fetchDeliveryOptionsByIdService.rejected, (state, action) => {
         state.error = action.payload as string;
         state.operations.isFetchingDetail = false;
       });
 
     builder
-      .addCase(createBannerService.pending, (state) => {
+      .addCase(createDeliveryOptionsService.pending, (state) => {
         state.operations.isCreating = true;
         state.error = null;
       })
-      .addCase(createBannerService.fulfilled, (state, action) => {
+      .addCase(createDeliveryOptionsService.fulfilled, (state, action) => {
         if (state.data) {
           state.data.content = [action.payload, ...state.data.content];
           state.data.totalElements += 1;
@@ -128,18 +128,18 @@ const bannerSlice = createSlice({
         }
         state.operations.isCreating = false;
       })
-      .addCase(createBannerService.rejected, (state, action) => {
+      .addCase(createDeliveryOptionsService.rejected, (state, action) => {
         state.error = action.payload as string;
         state.operations.isCreating = false;
       });
 
     builder
-      .addCase(updateBannerService.pending, (state) => {
+      .addCase(updateDeliveryOptionsService.pending, (state) => {
         state.operations.isUpdating = true;
         state.error = null;
       })
-      .addCase(updateBannerService.fulfilled, (state, action) => {
-        state.selectedBanner = action.payload;
+      .addCase(updateDeliveryOptionsService.fulfilled, (state, action) => {
+        state.selectedDeliveryOptions = action.payload;
         state.operations.isUpdating = false;
 
         // Update in list
@@ -149,17 +149,17 @@ const bannerSlice = createSlice({
           );
         }
       })
-      .addCase(updateBannerService.rejected, (state, action) => {
+      .addCase(updateDeliveryOptionsService.rejected, (state, action) => {
         state.error = action.payload as string;
         state.operations.isUpdating = false;
       });
 
     builder
-      .addCase(deleteBannerService.pending, (state) => {
+      .addCase(deleteDeliveryOptionsService.pending, (state) => {
         state.operations.isDeleting = true;
         state.error = null;
       })
-      .addCase(deleteBannerService.fulfilled, (state, action) => {
+      .addCase(deleteDeliveryOptionsService.fulfilled, (state, action) => {
         if (state.data) {
           state.data.content = state.data.content.filter(
             (user) => user.id !== action.payload
@@ -174,7 +174,7 @@ const bannerSlice = createSlice({
         }
         state.operations.isDeleting = false;
       })
-      .addCase(deleteBannerService.rejected, (state, action) => {
+      .addCase(deleteDeliveryOptionsService.rejected, (state, action) => {
         state.error = action.payload as string;
         state.operations.isDeleting = false;
       });
@@ -186,9 +186,9 @@ export const {
   setPageNo,
   clearError,
   setStatusFilter,
-  clearSelectedBanner,
+  clearSelectedDeliveryOptions,
   resetFilters,
   resetState,
-} = bannerSlice.actions;
+} = deliveryOptionsSlice.actions;
 
-export default bannerSlice.reducer;
+export default deliveryOptionsSlice.reducer;

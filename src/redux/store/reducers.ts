@@ -10,6 +10,7 @@ import bannerReducer from "../features/master-data/store/slice/banner-slice";
 import brandReducer from "../features/master-data/store/slice/brand-slice";
 import categoriesReducer from "../features/master-data/store/slice/categories-slice";
 import exchangeRateReducer from "../features/master-data/store/slice/exchange-rate-slice";
+import deliveryOptionsReducer from "../features/master-data/store/slice/delivery-options-slice";
 
 /**
  * Root reducer configuration
@@ -22,4 +23,5 @@ export const reducers = {
   brand: brandReducer,
   categories: categoriesReducer,
   exchangeRate: exchangeRateReducer,
+  deliveryOptions: deliveryOptionsReducer,
 };
