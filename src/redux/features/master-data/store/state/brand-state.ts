@@ -1,22 +1,22 @@
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import {
-  selectDistrict,
-  selectDistrictContent,
-  selectDistrictState,
+  selectBrand,
+  selectBrandContent,
+  selectBrandState,
   selectError,
   selectFilters,
   selectIsLoading,
   selectOperations,
   selectPagination,
-} from "../selectors/district-selector";
+} from "../selectors/brand-selector";
 
-export const useDistrictState = () => {
+export const useBrandState = () => {
   const dispatch = useAppDispatch();
 
   // Redux selectors
-  const districtState = useAppSelector(selectDistrictState);
-  const districtData = useAppSelector(selectDistrict);
-  const districtContent = useAppSelector(selectDistrictContent);
+  const brandState = useAppSelector(selectBrandState);
+  const brandData = useAppSelector(selectBrand);
+  const brandContent = useAppSelector(selectBrandContent);
   const filters = useAppSelector(selectFilters);
   const operations = useAppSelector(selectOperations);
   const pagination = useAppSelector(selectPagination);
@@ -24,9 +24,9 @@ export const useDistrictState = () => {
   const error = useAppSelector(selectError);
 
   return {
-    districtState,
-    districtData,
-    districtContent,
+    brandState,
+    brandData,
+    brandContent,
     isLoading,
     error,
     filters,

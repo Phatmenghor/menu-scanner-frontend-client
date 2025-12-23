@@ -1,22 +1,22 @@
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import {
+  selectCategories,
+  selectCategoriesContent,
+  selectCategoriesState,
   selectError,
   selectFilters,
   selectIsLoading,
   selectOperations,
   selectPagination,
-  selectProvince,
-  selectProvinceContent,
-  selectProvinceState,
-} from "../selectors/province-selector";
+} from "../selectors/categories-selector";
 
-export const useProvinceState = () => {
+export const useCategoriesState = () => {
   const dispatch = useAppDispatch();
 
   // Redux selectors
-  const provinceState = useAppSelector(selectProvinceState);
-  const provinceData = useAppSelector(selectProvince);
-  const provinceContent = useAppSelector(selectProvinceContent);
+  const categoriesState = useAppSelector(selectCategoriesState);
+  const categoriesData = useAppSelector(selectCategories);
+  const categoriesContent = useAppSelector(selectCategoriesContent);
   const filters = useAppSelector(selectFilters);
   const operations = useAppSelector(selectOperations);
   const pagination = useAppSelector(selectPagination);
@@ -24,9 +24,9 @@ export const useProvinceState = () => {
   const error = useAppSelector(selectError);
 
   return {
-    provinceState,
-    provinceData,
-    provinceContent,
+    categoriesState,
+    categoriesData,
+    categoriesContent,
     isLoading,
     error,
     filters,

@@ -1,10 +1,10 @@
 import { BasePagination } from "@/utils/common/pagination";
 
-export interface AllBannerResponseModel extends BasePagination {
-  content: BannerResponseModel[];
+export interface AllBrandResponseModel extends BasePagination {
+  content: BrandResponseModel[];
 }
 
-export interface BannerResponseModel {
+export interface BrandResponseModel {
   id: string;
   createdAt: string;
   updatedAt: string;
@@ -12,7 +12,10 @@ export interface BannerResponseModel {
   updatedBy: string;
   businessId: string;
   businessName: string;
+  name: string;
   imageUrl: string;
-  linkUrl: string;
+  description: string;
   status: string;
+  totalProducts: number;
+  activeProducts: number;
 }

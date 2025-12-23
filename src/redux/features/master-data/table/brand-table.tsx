@@ -1,29 +1,30 @@
-import { ActionButton } from "@/components/button/action-button";
 import { indexDisplay } from "@/utils/common/common";
 import { dateTimeFormat } from "@/utils/date/date-time-format";
 import { Edit, Eye, Trash } from "lucide-react";
-import {
-  AllDistrictResponseModel,
-  DistrictResponseModel,
-} from "../store/models/response/district-response";
 import { TableColumn } from "@/components/shared/common/data-table";
+import { ActionButton } from "@/components/shared/button/action-button";
+import { CustomAvatar } from "@/components/shared/avator/custom-avator";
+import {
+  AllBrandResponseModel,
+  BrandResponseModel,
+} from "../store/models/response/brand-response";
 
-interface DistrictTableHandlers {
-  handleEditDistrict: (district: DistrictResponseModel) => void;
-  handleDistrictViewDetail: (district: DistrictResponseModel) => void;
-  handleDeleteDistrict: (district: DistrictResponseModel) => void;
+interface BrandTableHandlers {
+  handleEditBrand: (brand: BrandResponseModel) => void;
+  handleBrandViewDetail: (brand: BrandResponseModel) => void;
+  handleDeleteBrand: (brand: BrandResponseModel) => void;
 }
 
-interface DistrictTableOptions {
-  data: AllDistrictResponseModel | null;
-  handlers: DistrictTableHandlers;
+interface BrandTableOptions {
+  data: AllBrandResponseModel | null;
+  handlers: BrandTableHandlers;
 }
 
-export const districtTableColumns = ({
+export const brandTableColumns = ({
   data,
   handlers,
-}: DistrictTableOptions): TableColumn<DistrictResponseModel>[] => {
-  const { handleEditDistrict, handleDistrictViewDetail, handleDeleteDistrict } =
+}: BrandTableOptions): TableColumn<BrandResponseModel>[] => {
+  const { handleEditBrand, handleBrandViewDetail, handleDeleteBrand } =
     handlers;
 
   return [
@@ -34,70 +35,74 @@ export const districtTableColumns = ({
       maxWidth: "400px",
       render: (_, index) => (
         <span className="font-medium">
-          {indexDisplay(data?.pageNo || 1, data?.pageSize || 10, index + 1)}
+          {indexDisplay(data?.pageNo || 1, data?.pageSize || 15, index + 1)}
         </span>
       ),
     },
     {
-      key: "districtCode",
-      label: "District Code",
+      key: "imageUrl",
+      label: "Brand Image",
       minWidth: "10px",
       maxWidth: "400px",
-      truncate: true,
-      render: (district) => (
-        <span className="text-xs text-muted-foreground">
-          {district?.districtCode || "---"}
-        </span>
-      ),
+      render: (brand) => {
+        return (
+          <CustomAvatar
+            imageUrl={brand.imageUrl}
+            name={brand?.name}
+            size="md"
+          />
+        );
+      },
     },
+
     {
-      key: "districtEn",
-      label: "District EN",
+      key: "name",
+      label: "Brand Name",
       minWidth: "10px",
       maxWidth: "400px",
       truncate: true,
-      render: (district) => (
+      render: (brand) => (
         <span className="text-xs text-muted-foreground">
-          {district?.districtEn || "---"}
+          {brand?.name || "---"}
         </span>
       ),
     },
 
     {
-      key: "districtKh",
-      label: "District KH",
+      key: "status",
+      label: "Status",
       minWidth: "10px",
       maxWidth: "400px",
       truncate: true,
-      render: (district) => (
+      render: (brand) => (
         <span className="text-xs text-muted-foreground">
-          {district?.districtKh || "---"}
+          {brand?.status || "---"}
         </span>
       ),
     },
 
     {
-      key: "provinceCode",
-      label: "Province Code",
+      key: "totalProducts",
+      label: "Total Products",
       minWidth: "10px",
       maxWidth: "400px",
       truncate: true,
-      render: (district) => (
+      render: (brand) => (
         <span className="text-xs text-muted-foreground">
-          {district?.province?.provinceCode || "---"}
+          {brand?.totalProducts || "---"}
         </span>
       ),
     },
 
     {
-      key: "provinceEn",
-      label: "Province EN",
+      key: "activeProducts",
+      label: "Active Products",
       minWidth: "10px",
       maxWidth: "400px",
       truncate: true,
-      render: (district) => (
+      render: (brand) => (
         <span className="text-xs text-muted-foreground">
-          {district?.province?.provinceEn || "---"}
+          {brand?.activeProducts || "---"}
         </span>
       ),
     },
@@ -107,9 +112,9 @@ export const districtTableColumns = ({
       label: "Created At",
       minWidth: "10px",
       maxWidth: "400px",
-      render: (district) => (
+      render: (banner) => (
         <span className="text-sm text-muted-foreground">
-          {dateTimeFormat(district?.createdAt)}
+          {dateTimeFormat(banner?.createdAt)}
         </span>
       ),
     },
@@ -119,22 +124,22 @@ export const districtTableColumns = ({
       label: "Actions",
       minWidth: "10px",
       maxWidth: "400px",
-      render: (district) => (
+      render: (brand) => (
         <div className="flex items-center gap-2">
           <ActionButton
             icon={<Eye className="w-4 h-4" />}
             tooltip="View Details"
-            onClick={() => handleDistrictViewDetail(district)}
+            onClick={() => handleBrandViewDetail(brand)}
           />
           <ActionButton
             icon={<Edit className="w-4 h-4" />}
-            tooltip="Edit District"
-            onClick={() => handleEditDistrict(district)}
+            tooltip="Edit Brand"
+            onClick={() => handleEditBrand(brand)}
           />
           <ActionButton
             icon={<Trash className="w-4 h-4" />}
-            tooltip="Delete District"
-            onClick={() => handleDeleteDistrict(district)}
+            tooltip="Delete Brand"
+            onClick={() => handleDeleteBrand(brand)}
             variant="destructive"
           />
         </div>

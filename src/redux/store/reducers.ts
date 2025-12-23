@@ -7,6 +7,8 @@ import authReducer from "../features/auth/store/slice/auth-slice";
 import usersReducer from "../features/auth/store/slice/users-slice";
 
 import bannerReducer from "../features/master-data/store/slice/banner-slice";
+import brandReducer from "../features/master-data/store/slice/brand-slice";
+import categoriesReducer from "../features/master-data/store/slice/categories-slice";
 
 /**
  * Root reducer configuration
@@ -16,4 +18,6 @@ export const reducers = {
   auth: authReducer,
   users: usersReducer,
   banner: bannerReducer,
+  brand: brandReducer,
+  categories: categoriesReducer,
 };
