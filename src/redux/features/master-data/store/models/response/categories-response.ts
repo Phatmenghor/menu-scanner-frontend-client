@@ -16,4 +16,5 @@ export interface CategoriesResponseModel {
   imageUrl: string;
   status: string;
   totalProducts: number;
+  activeProducts: number;
 }

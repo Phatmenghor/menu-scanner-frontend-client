@@ -10,54 +10,54 @@ import { CustomSelect } from "@/components/shared/common/custom-select";
 import { DeleteConfirmationModal } from "@/components/shared/modal/delete-confirmation-modal";
 import { DataTableWithPagination } from "@/components/shared/common/data-table";
 import { showToast } from "@/components/shared/common/show-toast";
-import { useBannerState } from "@/redux/features/master-data/store/state/banner-state";
 import { ModalMode, Status } from "@/constants/status/status";
-import { BannerResponseModel } from "@/redux/features/master-data/store/models/response/banner-response";
 import { usePagination } from "@/redux/store/use-pagination";
+import { STATUS_FILTER } from "@/constants/status/filter-status";
+import { useBrandState } from "@/redux/features/master-data/store/state/brand-state";
+import { BrandResponseModel } from "@/redux/features/master-data/store/models/response/brand-response";
 import {
   setPageNo,
   setSearchFilter,
   setStatusFilter,
-} from "@/redux/features/master-data/store/slice/banner-slice";
+} from "@/redux/features/master-data/store/slice/brand-slice";
 import {
-  deleteBannerService,
-  fetchAllBannerService,
-} from "@/redux/features/master-data/store/thunks/banner-thunks";
-import { bannerTableColumns } from "@/redux/features/master-data/table/banner-table";
-import { STATUS_FILTER } from "@/constants/status/filter-status";
-import BannerModal from "@/redux/features/master-data/components/banner-modal";
-import { BannerDetailModal } from "@/redux/features/master-data/components/banner-detail-modal";
+  deleteBrandService,
+  fetchAllBrandService,
+} from "@/redux/features/master-data/store/thunks/brand-thunks";
+import { brandTableColumns } from "@/redux/features/master-data/table/brand-table";
+import BrandModal from "@/redux/features/master-data/components/brand-modal";
+import { BrandDetailModal } from "@/redux/features/master-data/components/brand-detail-modal";
 
 export default function BrandPage() {
   const searchParams = useSearchParams();
 
   // Redux state
   const {
-    bannerState,
-    bannerData,
-    bannerContent,
+    brandState,
+    brandData,
+    brandContent,
     isLoading,
     filters,
     operations,
     pagination,
     dispatch,
-  } = useBannerState();
+  } = useBrandState();
 
   // Local UI state for modals only
   const [modalState, setModalState] = useState({
     isOpen: false,
     mode: ModalMode.CREATE_MODE,
-    bannerId: "",
+    brandId: "",
   });
 
   const [detailModalState, setDetailModalState] = useState({
     isOpen: false,
-    bannerId: "",
+    brandId: "",
   });
 
   const [deleteState, setDeleteState] = useState({
     isOpen: false,
-    banner: null as BannerResponseModel | null,
+    brand: null as BrandResponseModel | null,
   });
 
   const debouncedSearch = useDebounce(filters.search, 400);
@@ -79,7 +79,7 @@ export default function BrandPage() {
 
   useEffect(() => {
     dispatch(
-      fetchAllBannerService({
+      fetchAllBrandService({
         search: debouncedSearch,
         pageNo: filters.pageNo,
         status: filters.status == Status.ALL ? undefined : filters.status,
@@ -88,52 +88,52 @@ export default function BrandPage() {
   }, [dispatch, debouncedSearch, filters.status, filters.pageNo]);
 
   // Event handlers
-  const handleCreateBanner = () => {
+  const handleCreateBrand = () => {
     setModalState({
       isOpen: true,
       mode: ModalMode.CREATE_MODE,
-      bannerId: "",
+      brandId: "",
     });
   };
 
-  const handleEditBanner = (banner: BannerResponseModel) => {
+  const handleEditBrand = (brand: BrandResponseModel) => {
     setModalState({
       isOpen: true,
       mode: ModalMode.UPDATE_MODE,
-      bannerId: banner?.id || "",
+      brandId: brand?.id || "",
     });
   };
 
-  const handleBannerViewDetail = (banner: BannerResponseModel) => {
+  const handleBrandViewDetail = (brand: BrandResponseModel) => {
     setDetailModalState({
       isOpen: true,
-      bannerId: banner.id || "",
+      brandId: brand.id || "",
     });
   };
 
-  const handleDeleteBanner = (banner: BannerResponseModel) => {
+  const handleDeleteBrand = (brand: BrandResponseModel) => {
     setDeleteState({
       isOpen: true,
-      banner: banner,
+      brand: brand,
     });
   };
 
   const tableHandlers = useMemo(
     () => ({
-      handleEditBanner,
-      handleBannerViewDetail,
-      handleDeleteBanner,
+      handleEditBrand,
+      handleBrandViewDetail,
+      handleDeleteBrand,
     }),
     []
   );
 
   const columns = useMemo(
     () =>
-      bannerTableColumns({
-        data: bannerData,
+      brandTableColumns({
+        data: brandData,
         handlers: tableHandlers,
       }),
-    [bannerState, tableHandlers]
+    [brandState, tableHandlers]
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -150,25 +150,25 @@ export default function BrandPage() {
   };
 
   const handleDelete = async () => {
-    if (!deleteState.banner?.id) return;
+    if (!deleteState.brand?.id) return;
 
     try {
-      await dispatch(deleteBannerService(deleteState.banner.id)).unwrap();
+      await dispatch(deleteBrandService(deleteState.brand.id)).unwrap();
 
       showToast.success(
-        `Banner "${deleteState.banner.businessName ?? ""}" deleted successfully`
+        `Brand "${deleteState.brand.businessName ?? ""}" deleted successfully`
       );
 
       closeDeleteModal();
 
       // Navigate to previous page if this was the last item
-      if (bannerContent.length === 1 && pagination.currentPage > 1) {
+      if (brandContent.length === 1 && pagination.currentPage > 1) {
         const newPage = pagination.currentPage - 1;
         dispatch(setPageNo(newPage));
         updateUrlWithPage(newPage);
       }
     } catch (error: any) {
-      showToast.error(error || "Failed to delete user business");
+      showToast.error(error || "Failed to delete brand");
     }
   };
 
@@ -176,21 +176,21 @@ export default function BrandPage() {
     setModalState({
       isOpen: false,
       mode: ModalMode.CREATE_MODE,
-      bannerId: "",
+      brandId: "",
     });
   };
 
   const closeDetailModal = () => {
     setDetailModalState({
       isOpen: false,
-      bannerId: "",
+      brandId: "",
     });
   };
 
   const closeDeleteModal = () => {
     setDeleteState({
       isOpen: false,
-      banner: null,
+      brand: null,
     });
   };
 
@@ -200,16 +200,16 @@ export default function BrandPage() {
         <CardHeaderSection
           breadcrumbs={[
             { label: "Dashboard", href: ROUTES.ADMIN.ROOT },
-            { label: "Banner", href: "" },
+            { label: "Brand", href: "" },
           ]}
-          title="Banner Information"
+          title="Brand Information"
           searchValue={filters.search}
-          searchPlaceholder="Search banner..."
-          buttonTooltip="Create a new banner"
+          searchPlaceholder="Search brand..."
+          buttonTooltip="Create a new brand"
           buttonIcon={<Plus className="w-3 h-3" />}
           buttonText="New"
           onSearchChange={handleSearchChange}
-          openModal={handleCreateBanner}
+          openModal={handleCreateBrand}
         >
           <div className="flex items-center gap-3">
             <CustomSelect
@@ -217,18 +217,18 @@ export default function BrandPage() {
               value={filters.status}
               placeholder="All Status"
               onValueChange={(value) => handleStatusChange(value as Status)}
-              label="Banner Status"
+              label="Brand Status"
             />
           </div>
         </CardHeaderSection>
 
         {/* Data Table with Your Custom Pagination */}
         <DataTableWithPagination
-          data={bannerContent}
+          data={brandContent}
           columns={columns}
           loading={isLoading}
-          emptyMessage="No banners found"
-          getRowKey={(user) => user.id}
+          emptyMessage="No brand found"
+          getRowKey={(brand) => brand.id}
           currentPage={filters.pageNo}
           totalPages={pagination.totalPages}
           onPageChange={handlePageChangeWrapper}
@@ -236,30 +236,30 @@ export default function BrandPage() {
       </div>
 
       {/* Modals Add/Edit */}
-      <BannerModal
+      <BrandModal
         isOpen={modalState.isOpen}
         onClose={closeModal}
-        bannerId={modalState.bannerId}
+        brandId={modalState.brandId}
         mode={modalState.mode}
       />
 
-      {/* Modals User Detail */}
-      <BannerDetailModal
-        bannerId={detailModalState.bannerId}
+      {/* Modals Brand Detail */}
+      <BrandDetailModal
+        brandId={detailModalState.brandId}
         isOpen={detailModalState.isOpen}
         onClose={closeDetailModal}
       />
 
-      {/* Modals Delete User */}
+      {/* Modals Delete Brand */}
       <DeleteConfirmationModal
         isOpen={deleteState.isOpen}
         onClose={closeDeleteModal}
         onDelete={handleDelete}
-        title="Delete User"
-        description={`Are you sure you want to delete this banner ${
-          deleteState.banner?.businessName || ""
+        title="Delete Brand"
+        description={`Are you sure you want to delete this brand ${
+          deleteState.brand?.name || ""
         }?`}
-        itemName={deleteState.banner?.businessName || ""}
+        itemName={deleteState.brand?.name || ""}
         isSubmitting={operations.isDeleting}
       />
     </div>

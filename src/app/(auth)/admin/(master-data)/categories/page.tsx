@@ -10,54 +10,54 @@ import { CustomSelect } from "@/components/shared/common/custom-select";
 import { DeleteConfirmationModal } from "@/components/shared/modal/delete-confirmation-modal";
 import { DataTableWithPagination } from "@/components/shared/common/data-table";
 import { showToast } from "@/components/shared/common/show-toast";
-import { useBannerState } from "@/redux/features/master-data/store/state/banner-state";
 import { ModalMode, Status } from "@/constants/status/status";
-import { BannerResponseModel } from "@/redux/features/master-data/store/models/response/banner-response";
 import { usePagination } from "@/redux/store/use-pagination";
+import { STATUS_FILTER } from "@/constants/status/filter-status";
+import { useCategoriesState } from "@/redux/features/master-data/store/state/categories-state";
+import { CategoriesResponseModel } from "@/redux/features/master-data/store/models/response/categories-response";
 import {
   setPageNo,
   setSearchFilter,
   setStatusFilter,
-} from "@/redux/features/master-data/store/slice/banner-slice";
+} from "@/redux/features/master-data/store/slice/categories-slice";
 import {
-  deleteBannerService,
-  fetchAllBannerService,
-} from "@/redux/features/master-data/store/thunks/banner-thunks";
-import { bannerTableColumns } from "@/redux/features/master-data/table/banner-table";
-import { STATUS_FILTER } from "@/constants/status/filter-status";
-import BannerModal from "@/redux/features/master-data/components/banner-modal";
-import { BannerDetailModal } from "@/redux/features/master-data/components/banner-detail-modal";
+  deleteCategoriesService,
+  fetchAllCategoriesService,
+} from "@/redux/features/master-data/store/thunks/categories-thunks";
+import { categoriesTableColumns } from "@/redux/features/master-data/table/categories-table";
+import CategoriesModal from "@/redux/features/master-data/components/categories-modal";
+import { CategoriesDetailModal } from "@/redux/features/master-data/components/categories-detail-modal";
 
 export default function CategoriesPage() {
   const searchParams = useSearchParams();
 
   // Redux state
   const {
-    bannerState,
-    bannerData,
-    bannerContent,
+    categoriesState,
+    categoriesData,
+    categoriesContent,
     isLoading,
     filters,
     operations,
     pagination,
     dispatch,
-  } = useBannerState();
+  } = useCategoriesState();
 
   // Local UI state for modals only
   const [modalState, setModalState] = useState({
     isOpen: false,
     mode: ModalMode.CREATE_MODE,
-    bannerId: "",
+    categoriesId: "",
   });
 
   const [detailModalState, setDetailModalState] = useState({
     isOpen: false,
-    bannerId: "",
+    categoriesId: "",
   });
 
   const [deleteState, setDeleteState] = useState({
     isOpen: false,
-    banner: null as BannerResponseModel | null,
+    categories: null as CategoriesResponseModel | null,
   });
 
   const debouncedSearch = useDebounce(filters.search, 400);
@@ -79,7 +79,7 @@ export default function CategoriesPage() {
 
   useEffect(() => {
     dispatch(
-      fetchAllBannerService({
+      fetchAllCategoriesService({
         search: debouncedSearch,
         pageNo: filters.pageNo,
         status: filters.status == Status.ALL ? undefined : filters.status,
@@ -88,52 +88,52 @@ export default function CategoriesPage() {
   }, [dispatch, debouncedSearch, filters.status, filters.pageNo]);
 
   // Event handlers
-  const handleCreateBanner = () => {
+  const handleCreateCategories = () => {
     setModalState({
       isOpen: true,
       mode: ModalMode.CREATE_MODE,
-      bannerId: "",
+      categoriesId: "",
     });
   };
 
-  const handleEditBanner = (banner: BannerResponseModel) => {
+  const handleEditCategories = (categories: CategoriesResponseModel) => {
     setModalState({
       isOpen: true,
       mode: ModalMode.UPDATE_MODE,
-      bannerId: banner?.id || "",
+      categoriesId: categories?.id || "",
     });
   };
 
-  const handleBannerViewDetail = (banner: BannerResponseModel) => {
+  const handleCategoriesViewDetail = (categories: CategoriesResponseModel) => {
     setDetailModalState({
       isOpen: true,
-      bannerId: banner.id || "",
+      categoriesId: categories.id || "",
     });
   };
 
-  const handleDeleteBanner = (banner: BannerResponseModel) => {
+  const handleDeleteCategories = (categories: CategoriesResponseModel) => {
     setDeleteState({
       isOpen: true,
-      banner: banner,
+      categories: categories,
     });
   };
 
   const tableHandlers = useMemo(
     () => ({
-      handleEditBanner,
-      handleBannerViewDetail,
-      handleDeleteBanner,
+      handleEditCategories,
+      handleCategoriesViewDetail,
+      handleDeleteCategories,
     }),
     []
   );
 
   const columns = useMemo(
     () =>
-      bannerTableColumns({
-        data: bannerData,
+      categoriesTableColumns({
+        data: categoriesData,
         handlers: tableHandlers,
       }),
-    [bannerState, tableHandlers]
+    [categoriesState, tableHandlers]
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -150,25 +150,27 @@ export default function CategoriesPage() {
   };
 
   const handleDelete = async () => {
-    if (!deleteState.banner?.id) return;
+    if (!deleteState.categories?.id) return;
 
     try {
-      await dispatch(deleteBannerService(deleteState.banner.id)).unwrap();
+      await dispatch(
+        deleteCategoriesService(deleteState.categories.id)
+      ).unwrap();
 
       showToast.success(
-        `Banner "${deleteState.banner.businessName ?? ""}" deleted successfully`
+        `Categories "${deleteState.categories.name ?? ""}" deleted successfully`
       );
 
       closeDeleteModal();
 
       // Navigate to previous page if this was the last item
-      if (bannerContent.length === 1 && pagination.currentPage > 1) {
+      if (categoriesContent.length === 1 && pagination.currentPage > 1) {
         const newPage = pagination.currentPage - 1;
         dispatch(setPageNo(newPage));
         updateUrlWithPage(newPage);
       }
     } catch (error: any) {
-      showToast.error(error || "Failed to delete user business");
+      showToast.error(error || "Failed to delete categories");
     }
   };
 
@@ -176,21 +178,21 @@ export default function CategoriesPage() {
     setModalState({
       isOpen: false,
       mode: ModalMode.CREATE_MODE,
-      bannerId: "",
+      categoriesId: "",
     });
   };
 
   const closeDetailModal = () => {
     setDetailModalState({
       isOpen: false,
-      bannerId: "",
+      categoriesId: "",
     });
   };
 
   const closeDeleteModal = () => {
     setDeleteState({
       isOpen: false,
-      banner: null,
+      categories: null,
     });
   };
 
@@ -200,16 +202,16 @@ export default function CategoriesPage() {
         <CardHeaderSection
           breadcrumbs={[
             { label: "Dashboard", href: ROUTES.ADMIN.ROOT },
-            { label: "Banner", href: "" },
+            { label: "Categories", href: "" },
           ]}
-          title="Banner Information"
+          title="Categories Information"
           searchValue={filters.search}
-          searchPlaceholder="Search banner..."
+          searchPlaceholder="Search categories..."
           buttonTooltip="Create a new banner"
           buttonIcon={<Plus className="w-3 h-3" />}
           buttonText="New"
           onSearchChange={handleSearchChange}
-          openModal={handleCreateBanner}
+          openModal={handleCreateCategories}
         >
           <div className="flex items-center gap-3">
             <CustomSelect
@@ -224,11 +226,11 @@ export default function CategoriesPage() {
 
         {/* Data Table with Your Custom Pagination */}
         <DataTableWithPagination
-          data={bannerContent}
+          data={categoriesContent}
           columns={columns}
           loading={isLoading}
-          emptyMessage="No banners found"
-          getRowKey={(user) => user.id}
+          emptyMessage="No Categories found"
+          getRowKey={(categories) => categories.id}
           currentPage={filters.pageNo}
           totalPages={pagination.totalPages}
           onPageChange={handlePageChangeWrapper}
@@ -236,16 +238,16 @@ export default function CategoriesPage() {
       </div>
 
       {/* Modals Add/Edit */}
-      <BannerModal
+      <CategoriesModal
         isOpen={modalState.isOpen}
         onClose={closeModal}
-        bannerId={modalState.bannerId}
+        categoriesId={modalState.categoriesId}
         mode={modalState.mode}
       />
 
-      {/* Modals User Detail */}
-      <BannerDetailModal
-        bannerId={detailModalState.bannerId}
+      {/* Modals categories Detail */}
+      <CategoriesDetailModal
+        categoriesId={detailModalState.categoriesId}
         isOpen={detailModalState.isOpen}
         onClose={closeDetailModal}
       />
@@ -255,11 +257,11 @@ export default function CategoriesPage() {
         isOpen={deleteState.isOpen}
         onClose={closeDeleteModal}
         onDelete={handleDelete}
-        title="Delete User"
-        description={`Are you sure you want to delete this banner ${
-          deleteState.banner?.businessName || ""
+        title="Delete Categories"
+        description={`Are you sure you want to delete this categories ${
+          deleteState.categories?.name || ""
         }?`}
-        itemName={deleteState.banner?.businessName || ""}
+        itemName={deleteState.categories?.name || ""}
         isSubmitting={operations.isDeleting}
       />
     </div>

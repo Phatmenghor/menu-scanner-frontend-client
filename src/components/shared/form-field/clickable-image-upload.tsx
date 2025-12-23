@@ -7,7 +7,9 @@ import { Upload, X, ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FieldError } from "react-hook-form";
 
-interface ClickableBannerUploadProps {
+type AspectRatio = "square" | "banner" | "portrait" | "landscape" | "auto";
+
+interface ClickableImageUploadProps {
   label: string;
   value?: string;
   onChange: (base64: string) => void;
@@ -15,9 +17,14 @@ interface ClickableBannerUploadProps {
   required?: boolean;
   error?: FieldError;
   maxSize?: number;
+  aspectRatio?: AspectRatio;
+  height?: string;
+  placeholder?: string;
+  helperText?: string;
+  showPreviewText?: boolean;
 }
 
-export function ClickableBannerUpload({
+export function ClickableImageUpload({
   label,
   value,
   onChange,
@@ -25,8 +32,37 @@ export function ClickableBannerUpload({
   required = false,
   error,
   maxSize = 10,
-}: ClickableBannerUploadProps) {
+  aspectRatio = "square",
+  height,
+  placeholder = "Click to upload image",
+  helperText,
+  showPreviewText = true,
+}: ClickableImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const getAspectRatioClass = () => {
+    switch (aspectRatio) {
+      case "square":
+        return "aspect-square";
+      case "banner":
+        return "aspect-[16/6]";
+      case "portrait":
+        return "aspect-[3/4]";
+      case "landscape":
+        return "aspect-[4/3]";
+      case "auto":
+        return "";
+      default:
+        return "aspect-square";
+    }
+  };
+
+  const getHeightClass = () => {
+    if (height) return height;
+    if (aspectRatio === "banner") return "h-48";
+    if (aspectRatio === "auto") return "h-64";
+    return "h-56";
+  };
 
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -91,11 +127,12 @@ export function ClickableBannerUpload({
       </Label>
 
       <div className="space-y-3">
-        {/* Banner Display/Upload Area */}
         <div
           onClick={handleClick}
           className={cn(
-            "relative h-48 w-full rounded-lg overflow-hidden border-2 transition-all",
+            "relative w-full rounded-lg overflow-hidden border-2 transition-all",
+            getHeightClass(),
+            getAspectRatioClass(),
             value
               ? "border-border hover:border-primary/50"
               : "border-dashed border-border hover:border-primary",
@@ -116,14 +153,12 @@ export function ClickableBannerUpload({
 
           {value ? (
             <>
-              {/* Banner Image */}
               <img
                 src={value}
-                alt="Banner preview"
+                alt="Preview"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
               />
 
-              {/* Overlay on hover */}
               <div className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-all duration-300 flex items-center justify-center">
                 <div className="opacity-0 hover:opacity-100 transition-opacity duration-300 flex flex-col items-center gap-2 text-white">
                   <Upload className="h-8 w-8" />
@@ -131,7 +166,6 @@ export function ClickableBannerUpload({
                 </div>
               </div>
 
-              {/* Remove button */}
               {!disabled && (
                 <Button
                   type="button"
@@ -145,27 +179,23 @@ export function ClickableBannerUpload({
               )}
             </>
           ) : (
-            <>
-              {/* Empty state - Click to upload */}
-              <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-muted/30">
-                <div className="p-4 bg-muted rounded-full">
-                  <ImageIcon className="h-10 w-10 text-muted-foreground" />
-                </div>
-                <div className="text-center px-4">
-                  <p className="text-sm font-medium text-foreground">
-                    Click to upload banner image
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    PNG, JPG, GIF up to {maxSize}MB
-                  </p>
-                </div>
+            <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-muted/30">
+              <div className="p-4 bg-muted rounded-full">
+                <ImageIcon className="h-10 w-10 text-muted-foreground" />
               </div>
-            </>
+              <div className="text-center px-4">
+                <p className="text-sm font-medium text-foreground">
+                  {placeholder}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {helperText || `PNG, JPG, GIF up to ${maxSize}MB`}
+                </p>
+              </div>
+            </div>
           )}
         </div>
 
-        {/* Helper text */}
-        {value && !disabled && (
+        {value && !disabled && showPreviewText && (
           <p className="text-xs text-muted-foreground text-center">
             Click on the image to change it
           </p>

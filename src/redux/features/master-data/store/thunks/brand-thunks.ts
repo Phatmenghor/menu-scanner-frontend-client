@@ -28,7 +28,7 @@ export const fetchAllBrandService = createApiThunk<any, AllBrandRequest>(
 /**
  * Fetch brands by ID
  */
-export const fetchBrandrByIdService = createApiThunk<any, string>(
+export const fetchBrandByIdService = createApiThunk<any, string>(
   "brands/fetchById",
   async (brandId) => {
     const response = await axiosClientWithAuth.get(`/api/v1/brands/${brandId}`);

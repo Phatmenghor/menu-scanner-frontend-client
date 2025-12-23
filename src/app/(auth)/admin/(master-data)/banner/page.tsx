@@ -255,7 +255,7 @@ export default function BannerPage() {
         isOpen={deleteState.isOpen}
         onClose={closeDeleteModal}
         onDelete={handleDelete}
-        title="Delete User"
+        title="Delete Banner"
         description={`Are you sure you want to delete this banner ${
           deleteState.banner?.businessName || ""
         }?`}

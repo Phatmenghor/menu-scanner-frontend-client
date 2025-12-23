@@ -14,41 +14,36 @@ import { FormBody } from "@/components/shared/form-field/form-body";
 import { FormFooter } from "@/components/shared/form-field/form-footer";
 import { ModalMode, Status } from "@/constants/status/status";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
+import { uploadImage, isBase64Image } from "@/utils/common/upload-image";
+import { showToast } from "@/components/shared/common/show-toast";
+import { BANNER_STATUS_CREATE_UPDATE } from "@/constants/status/create-update-status";
+import {
+  CreateBrandData,
+  createBrandSchema,
+  updateBrandSchema,
+} from "../store/models/schema/brand-schema";
+import {
+  createBrandService,
+  fetchBrandByIdService,
+  updateBrandService,
+} from "../store/thunks/brand-thunks";
+import { clearError, clearSelectedBrand } from "../store/slice/brand-slice";
 import {
   selectError,
   selectIsFetchingDetail,
   selectOperations,
-  selectSelectedBanner,
-} from "../store/selectors/banner-selector";
-import {
-  CreateBannerData,
-  createBannerSchema,
-  updateBannerSchema,
-} from "../store/models/schema/banner-schema";
-import {
-  fetchBannerByIdService,
-  createBannerService,
-  updateBannerService,
-} from "../store/thunks/banner-thunks";
-import { clearError, clearSelectedBanner } from "../store/slice/banner-slice";
-import { uploadImage, isBase64Image } from "@/utils/common/upload-image";
-import { showToast } from "@/components/shared/common/show-toast";
-import { BANNER_STATUS_CREATE_UPDATE } from "@/constants/status/create-update-status";
+} from "../store/selectors/brand-selector";
 import { ClickableImageUpload } from "@/components/shared/form-field/clickable-image-upload";
+import { TextareaField } from "@/components/shared/form-field/text-area-field";
 
 type Props = {
   mode: ModalMode;
-  bannerId?: string;
+  brandId?: string;
   onClose: () => void;
   isOpen: boolean;
 };
 
-export default function BannerModal({
-  isOpen,
-  onClose,
-  bannerId,
-  mode,
-}: Props) {
+export default function BrandModal({ isOpen, onClose, brandId, mode }: Props) {
   const isCreate = mode === ModalMode.CREATE_MODE;
 
   // Local state for image upload loading
@@ -68,11 +63,12 @@ export default function BannerModal({
     setValue,
     watch,
     formState: { errors, isDirty },
-  } = useForm<CreateBannerData>({
-    resolver: zodResolver(isCreate ? createBannerSchema : updateBannerSchema),
+  } = useForm<CreateBrandData>({
+    resolver: zodResolver(isCreate ? createBrandSchema : updateBrandSchema),
     defaultValues: {
+      name: "",
       imageUrl: "",
-      linkUrl: "",
+      description: "",
       status: Status.ACTIVE,
     },
     mode: "onChange",
@@ -83,37 +79,39 @@ export default function BannerModal({
   useEffect(() => {
     if (isOpen) {
       reset({
+        name: "",
         imageUrl: "",
-        linkUrl: "",
+        description: "",
         status: Status.ACTIVE,
       });
     }
-  }, [isOpen, bannerId, reset]);
+  }, [isOpen, brandId, reset]);
 
   // Fetch banner data for edit mode
   useEffect(() => {
-    const fetchBannerData = async () => {
-      if (!bannerId || !isOpen || isCreate) return;
+    const fetchBrandData = async () => {
+      if (!brandId || !isOpen || isCreate) return;
 
       try {
-        const resultAction = await dispatch(fetchBannerByIdService(bannerId));
+        const resultAction = await dispatch(fetchBrandByIdService(brandId));
 
-        if (fetchBannerByIdService.fulfilled.match(resultAction)) {
+        if (fetchBrandByIdService.fulfilled.match(resultAction)) {
           const data = resultAction.payload;
 
           reset({
+            name: data?.name || "",
             imageUrl: data?.imageUrl || "",
-            linkUrl: data?.linkUrl || "",
+            description: data?.description || "",
             status: data?.status || "",
           });
         }
       } catch (error) {
-        console.error("Error fetching banner data:", error);
+        console.error("Error fetching brand data:", error);
       }
     };
 
-    fetchBannerData();
-  }, [bannerId, isOpen, isCreate, reset, dispatch]);
+    fetchBrandData();
+  }, [brandId, isOpen, isCreate, reset, dispatch]);
 
   // Clear errors when modal opens
   useEffect(() => {
@@ -122,7 +120,7 @@ export default function BannerModal({
     }
   }, [isOpen, dispatch]);
 
-  const onSubmit = async (data: CreateBannerData) => {
+  const onSubmit = async (data: CreateBrandData) => {
     try {
       let finalImageUrl = data.imageUrl;
 
@@ -132,34 +130,35 @@ export default function BannerModal({
         try {
           finalImageUrl = await uploadImage(finalImageUrl);
         } catch (uploadError) {
-          console.error("Error uploading banner image:", uploadError);
-          showToast.error("Failed to upload banner image. Please try again.");
+          console.error("Error uploading brand image:", uploadError);
+          showToast.error("Failed to upload brand image. Please try again.");
           return;
         } finally {
           setIsUploadingImage(false);
         }
       }
 
-      const payload = {
+      const payload: CreateBrandData = {
+        name: data?.name || "",
         imageUrl: finalImageUrl,
-        linkUrl: data.linkUrl || "",
+        description: data.description || "",
         status: data.status,
       };
 
       if (isCreate) {
-        await dispatch(createBannerService(payload)).unwrap();
-        showToast.success("Banner created successfully");
+        await dispatch(createBrandService(payload)).unwrap();
+        showToast.success("Brand created successfully");
         handleClose();
       } else {
         await dispatch(
-          updateBannerService({ bannerId: bannerId!, bannerData: payload })
+          updateBrandService({ brandId: brandId!, brandData: payload })
         ).unwrap();
-        showToast.success("Banner updated successfully");
+        showToast.success("Brand updated successfully");
         handleClose();
       }
     } catch (error: any) {
       showToast.error(
-        error?.message || `Failed to ${isCreate ? "create" : "update"} banner`
+        error?.message || `Failed to ${isCreate ? "create" : "update"} brand`
       );
     }
   };
@@ -168,7 +167,7 @@ export default function BannerModal({
     reset();
     setIsUploadingImage(false);
     dispatch(clearError());
-    dispatch(clearSelectedBanner());
+    dispatch(clearSelectedBrand());
     onClose();
   };
 
@@ -179,11 +178,11 @@ export default function BannerModal({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="w-[90%] max-w-4xl max-h-[90vh] p-0 flex flex-col">
         <FormHeader
-          title={isCreate ? "Create New Banner" : "Edit Banner"}
+          title={isCreate ? "Create New Brand" : "Edit Brand"}
           description={
             isCreate
-              ? "Upload an image and configure banner settings"
-              : "Update banner information below"
+              ? "Upload an image and configure brand settings"
+              : "Update brand information below"
           }
           isCreate={isCreate}
         />
@@ -212,13 +211,16 @@ export default function BannerModal({
                 {/* Banner Image Section - Prominent display */}
                 <div className="space-y-3">
                   <ClickableImageUpload
-                    label="Banner Image"
+                    label="Brand Logo"
                     value={imageUrl}
                     onChange={(base64) => setValue("imageUrl", base64)}
-                    aspectRatio="banner"
+                    aspectRatio="square"
+                    height="h-40"
+                    maxSize={5}
                     required
                     error={errors.imageUrl}
-                    placeholder="Click to upload banner image"
+                    placeholder="Click to upload brand logo"
+                    helperText="PNG with transparent background recommended"
                   />
                 </div>
 
@@ -232,12 +234,11 @@ export default function BannerModal({
                   <div className="grid grid-cols-2 gap-4">
                     <TextField
                       control={control}
-                      name="linkUrl"
-                      label="Link URL"
-                      type="url"
-                      placeholder="https://example.com (optional)"
+                      name="name"
+                      label="Name Brand"
+                      placeholder="Enter name brand"
                       disabled={isProcessing}
-                      error={errors.linkUrl}
+                      error={errors.name}
                     />
 
                     <SelectField
@@ -251,6 +252,16 @@ export default function BannerModal({
                       error={errors.status}
                     />
                   </div>
+
+                  <TextareaField
+                    control={control}
+                    name="description"
+                    label="Description"
+                    placeholder="Enter any additional description (optional)"
+                    rows={5}
+                    disabled={isProcessing}
+                    error={errors.description}
+                  />
                 </div>
               </div>
             </FormBody>
@@ -260,10 +271,10 @@ export default function BannerModal({
               isDirty={isDirty}
               isCreate={isCreate}
               createMessage={
-                isProcessing ? "Uploading banner..." : "Creating banner..."
+                isProcessing ? "Uploading brand..." : "Creating brand..."
               }
               updateMessage={
-                isProcessing ? "Uploading banner..." : "Updating banner..."
+                isProcessing ? "Uploading brand..." : "Updating brand..."
               }
             >
               <CancelButton onClick={handleClose} disabled={isProcessing} />
@@ -271,8 +282,8 @@ export default function BannerModal({
                 isSubmitting={isProcessing}
                 isDirty={isDirty}
                 isCreate={isCreate}
-                createText="Create Banner"
-                updateText="Update Banner"
+                createText="Create Brand"
+                updateText="Update Brand"
                 submittingCreateText={
                   isProcessing ? "Uploading..." : "Creating..."
                 }

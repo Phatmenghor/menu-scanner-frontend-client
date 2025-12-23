@@ -14,39 +14,41 @@ import { FormBody } from "@/components/shared/form-field/form-body";
 import { FormFooter } from "@/components/shared/form-field/form-footer";
 import { ModalMode, Status } from "@/constants/status/status";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
-import {
-  selectError,
-  selectIsFetchingDetail,
-  selectOperations,
-  selectSelectedBanner,
-} from "../store/selectors/banner-selector";
-import {
-  CreateBannerData,
-  createBannerSchema,
-  updateBannerSchema,
-} from "../store/models/schema/banner-schema";
-import {
-  fetchBannerByIdService,
-  createBannerService,
-  updateBannerService,
-} from "../store/thunks/banner-thunks";
-import { clearError, clearSelectedBanner } from "../store/slice/banner-slice";
 import { uploadImage, isBase64Image } from "@/utils/common/upload-image";
 import { showToast } from "@/components/shared/common/show-toast";
 import { BANNER_STATUS_CREATE_UPDATE } from "@/constants/status/create-update-status";
 import { ClickableImageUpload } from "@/components/shared/form-field/clickable-image-upload";
+import {
+  selectError,
+  selectIsFetchingDetail,
+  selectOperations,
+} from "../store/selectors/categories-selector";
+import {
+  CreateCategoriesData,
+  createCategoriesSchema,
+  updateCategoriesSchema,
+} from "../store/models/schema/categories-schema";
+import {
+  createCategoriesService,
+  fetchCategoriesByIdService,
+  updateCategoriesService,
+} from "../store/thunks/categories-thunks";
+import {
+  clearError,
+  clearSelectedCategories,
+} from "../store/slice/categories-slice";
 
 type Props = {
   mode: ModalMode;
-  bannerId?: string;
+  categoriesId?: string;
   onClose: () => void;
   isOpen: boolean;
 };
 
-export default function BannerModal({
+export default function CategoriesModal({
   isOpen,
   onClose,
-  bannerId,
+  categoriesId,
   mode,
 }: Props) {
   const isCreate = mode === ModalMode.CREATE_MODE;
@@ -68,11 +70,13 @@ export default function BannerModal({
     setValue,
     watch,
     formState: { errors, isDirty },
-  } = useForm<CreateBannerData>({
-    resolver: zodResolver(isCreate ? createBannerSchema : updateBannerSchema),
+  } = useForm<CreateCategoriesData>({
+    resolver: zodResolver(
+      isCreate ? createCategoriesSchema : updateCategoriesSchema
+    ),
     defaultValues: {
+      name: "",
       imageUrl: "",
-      linkUrl: "",
       status: Status.ACTIVE,
     },
     mode: "onChange",
@@ -83,37 +87,39 @@ export default function BannerModal({
   useEffect(() => {
     if (isOpen) {
       reset({
+        name: "",
         imageUrl: "",
-        linkUrl: "",
         status: Status.ACTIVE,
       });
     }
-  }, [isOpen, bannerId, reset]);
+  }, [isOpen, categoriesId, reset]);
 
   // Fetch banner data for edit mode
   useEffect(() => {
-    const fetchBannerData = async () => {
-      if (!bannerId || !isOpen || isCreate) return;
+    const fetchBrandData = async () => {
+      if (!categoriesId || !isOpen || isCreate) return;
 
       try {
-        const resultAction = await dispatch(fetchBannerByIdService(bannerId));
+        const resultAction = await dispatch(
+          fetchCategoriesByIdService(categoriesId)
+        );
 
-        if (fetchBannerByIdService.fulfilled.match(resultAction)) {
+        if (fetchCategoriesByIdService.fulfilled.match(resultAction)) {
           const data = resultAction.payload;
 
           reset({
+            name: data?.name || "",
             imageUrl: data?.imageUrl || "",
-            linkUrl: data?.linkUrl || "",
             status: data?.status || "",
           });
         }
       } catch (error) {
-        console.error("Error fetching banner data:", error);
+        console.error("Error fetching categories data:", error);
       }
     };
 
-    fetchBannerData();
-  }, [bannerId, isOpen, isCreate, reset, dispatch]);
+    fetchBrandData();
+  }, [categoriesId, isOpen, isCreate, reset, dispatch]);
 
   // Clear errors when modal opens
   useEffect(() => {
@@ -122,7 +128,7 @@ export default function BannerModal({
     }
   }, [isOpen, dispatch]);
 
-  const onSubmit = async (data: CreateBannerData) => {
+  const onSubmit = async (data: CreateCategoriesData) => {
     try {
       let finalImageUrl = data.imageUrl;
 
@@ -132,34 +138,40 @@ export default function BannerModal({
         try {
           finalImageUrl = await uploadImage(finalImageUrl);
         } catch (uploadError) {
-          console.error("Error uploading banner image:", uploadError);
-          showToast.error("Failed to upload banner image. Please try again.");
+          console.error("Error uploading categories image:", uploadError);
+          showToast.error(
+            "Failed to upload categories image. Please try again."
+          );
           return;
         } finally {
           setIsUploadingImage(false);
         }
       }
 
-      const payload = {
+      const payload: CreateCategoriesData = {
+        name: data?.name || "",
         imageUrl: finalImageUrl,
-        linkUrl: data.linkUrl || "",
         status: data.status,
       };
 
       if (isCreate) {
-        await dispatch(createBannerService(payload)).unwrap();
-        showToast.success("Banner created successfully");
+        await dispatch(createCategoriesService(payload)).unwrap();
+        showToast.success("Categories created successfully");
         handleClose();
       } else {
         await dispatch(
-          updateBannerService({ bannerId: bannerId!, bannerData: payload })
+          updateCategoriesService({
+            categoriesId: categoriesId!,
+            categoriesData: payload,
+          })
         ).unwrap();
-        showToast.success("Banner updated successfully");
+        showToast.success("Categories updated successfully");
         handleClose();
       }
     } catch (error: any) {
       showToast.error(
-        error?.message || `Failed to ${isCreate ? "create" : "update"} banner`
+        error?.message ||
+          `Failed to ${isCreate ? "create" : "update"} categories`
       );
     }
   };
@@ -168,7 +180,7 @@ export default function BannerModal({
     reset();
     setIsUploadingImage(false);
     dispatch(clearError());
-    dispatch(clearSelectedBanner());
+    dispatch(clearSelectedCategories());
     onClose();
   };
 
@@ -179,11 +191,11 @@ export default function BannerModal({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="w-[90%] max-w-4xl max-h-[90vh] p-0 flex flex-col">
         <FormHeader
-          title={isCreate ? "Create New Banner" : "Edit Banner"}
+          title={isCreate ? "Create New Categories" : "Edit Categories"}
           description={
             isCreate
-              ? "Upload an image and configure banner settings"
-              : "Update banner information below"
+              ? "Upload an image and configure categories settings"
+              : "Update categories information below"
           }
           isCreate={isCreate}
         />
@@ -209,16 +221,17 @@ export default function BannerModal({
               )}
 
               <div className="space-y-6">
-                {/* Banner Image Section - Prominent display */}
+                {/* Categories Image Section - Prominent display */}
                 <div className="space-y-3">
                   <ClickableImageUpload
-                    label="Banner Image"
+                    label="Category Image"
                     value={imageUrl}
                     onChange={(base64) => setValue("imageUrl", base64)}
-                    aspectRatio="banner"
+                    aspectRatio="square"
                     required
                     error={errors.imageUrl}
-                    placeholder="Click to upload banner image"
+                    placeholder="Click to upload category image"
+                    helperText="Square image works best (500x500)"
                   />
                 </div>
 
@@ -232,12 +245,11 @@ export default function BannerModal({
                   <div className="grid grid-cols-2 gap-4">
                     <TextField
                       control={control}
-                      name="linkUrl"
-                      label="Link URL"
-                      type="url"
-                      placeholder="https://example.com (optional)"
+                      name="name"
+                      label="Name Brand"
+                      placeholder="Enter name brand"
                       disabled={isProcessing}
-                      error={errors.linkUrl}
+                      error={errors.name}
                     />
 
                     <SelectField
@@ -260,10 +272,14 @@ export default function BannerModal({
               isDirty={isDirty}
               isCreate={isCreate}
               createMessage={
-                isProcessing ? "Uploading banner..." : "Creating banner..."
+                isProcessing
+                  ? "Uploading categories..."
+                  : "Creating categories..."
               }
               updateMessage={
-                isProcessing ? "Uploading banner..." : "Updating banner..."
+                isProcessing
+                  ? "Uploading categories..."
+                  : "Updating categories..."
               }
             >
               <CancelButton onClick={handleClose} disabled={isProcessing} />
@@ -271,8 +287,8 @@ export default function BannerModal({
                 isSubmitting={isProcessing}
                 isDirty={isDirty}
                 isCreate={isCreate}
-                createText="Create Banner"
-                updateText="Update Banner"
+                createText="Create Brand"
+                updateText="Update Brand"
                 submittingCreateText={
                   isProcessing ? "Uploading..." : "Creating..."
                 }

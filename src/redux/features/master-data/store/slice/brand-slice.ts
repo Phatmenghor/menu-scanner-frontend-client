@@ -10,7 +10,7 @@ import {
   createBrandService,
   deleteBrandService,
   fetchAllBrandService,
-  fetchBrandrByIdService,
+  fetchBrandByIdService,
   updateBrandService,
 } from "../thunks/brand-thunks";
 
@@ -89,12 +89,12 @@ const brandSlice = createSlice({
       });
 
     builder
-      .addCase(fetchBrandrByIdService.pending, (state) => {
+      .addCase(fetchBrandByIdService.pending, (state) => {
         state.operations.isFetchingDetail = true;
         state.error = null;
         state.selectedBrand = null;
       })
-      .addCase(fetchBrandrByIdService.fulfilled, (state, action) => {
+      .addCase(fetchBrandByIdService.fulfilled, (state, action) => {
         state.selectedBrand = action.payload;
         state.operations.isFetchingDetail = false;
 
@@ -108,7 +108,7 @@ const brandSlice = createSlice({
           }
         }
       })
-      .addCase(fetchBrandrByIdService.rejected, (state, action) => {
+      .addCase(fetchBrandByIdService.rejected, (state, action) => {
         state.error = action.payload as string;
         state.operations.isFetchingDetail = false;
       });
