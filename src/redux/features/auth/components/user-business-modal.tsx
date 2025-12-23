@@ -229,7 +229,7 @@ export default function UserBusinessModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-xl max-h-[90vh] p-0 flex flex-col">
+      <DialogContent className="max-w-3xl max-h-[90vh] p-0 flex flex-col">
         <FormHeader
           title={isCreate ? "Create New User Business" : "Edit User Business"}
           description={
@@ -259,7 +259,8 @@ export default function UserBusinessModal({
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* Make sure grid is properly structured */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {isCreate && (
                   <>
                     <TextField
@@ -324,29 +325,32 @@ export default function UserBusinessModal({
                   error={getFieldError(errors.position)}
                 />
 
-                <TextField
-                  control={control}
-                  name="address"
-                  label="Address"
-                  placeholder="Enter address (optional)"
-                  className="md:col-span-2"
-                  disabled={isSubmitting}
-                  error={getFieldError(errors.address)}
-                />
+                {/* Full width for address */}
+                <div className="md:col-span-2">
+                  <TextField
+                    control={control}
+                    name="address"
+                    label="Address"
+                    placeholder="Enter address (optional)"
+                    disabled={isSubmitting}
+                    error={getFieldError(errors.address)}
+                  />
+                </div>
 
                 {isCreate && (
-                  <PasswordField
-                    control={control}
-                    name="password"
-                    label="Password"
-                    placeholder="Enter password"
-                    required
-                    showPassword={showPassword}
-                    onTogglePassword={() => setShowPassword(!showPassword)}
-                    className="md:col-span-2"
-                    disabled={isSubmitting}
-                    error={getFieldError(errors.password)}
-                  />
+                  <div className="md:col-span-2">
+                    <PasswordField
+                      control={control}
+                      name="password"
+                      label="Password"
+                      placeholder="Enter password"
+                      required
+                      showPassword={showPassword}
+                      onTogglePassword={() => setShowPassword(!showPassword)}
+                      disabled={isSubmitting}
+                      error={getFieldError(errors.password)}
+                    />
+                  </div>
                 )}
 
                 <SelectField
@@ -378,6 +382,7 @@ export default function UserBusinessModal({
                 />
               </div>
 
+              {/* Notes field outside grid for full width */}
               <TextareaField
                 control={control}
                 name="notes"

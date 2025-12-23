@@ -22,7 +22,15 @@ export default function DashboardLayout({
   }, [pathname, isMobile]);
 
   return (
-    <div className="flex overflow-x-hidden h-screen w-full bg-background">
+    <div
+      className="flex overflow-x-hidden h-screen w-full bg-background"
+      style={{
+        transform: "scale(0.75)",
+        transformOrigin: "top left",
+        width: "133.33%",
+        height: "133.33%",
+      }}
+    >
       <DashboardSidebar
         isOpen={isSidebarOpen}
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
