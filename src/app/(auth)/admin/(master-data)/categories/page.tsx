@@ -219,7 +219,7 @@ export default function CategoriesPage() {
               value={filters.status}
               placeholder="All Status"
               onValueChange={(value) => handleStatusChange(value as Status)}
-              label="Banner Status"
+              label="Categories Status"
             />
           </div>
         </CardHeaderSection>
