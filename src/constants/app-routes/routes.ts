@@ -67,6 +67,10 @@ export const SIDEBAR_MENU: MenuItem[] = [
         title: "Brand",
         href: ROUTES.ADMIN.BRAND,
       },
+      {
+        title: "Exchange Rate",
+        href: ROUTES.ADMIN.EXCHANGE_RATE,
+      },
     ],
   },
 ];

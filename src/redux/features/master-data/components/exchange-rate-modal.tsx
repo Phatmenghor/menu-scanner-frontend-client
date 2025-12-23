@@ -68,7 +68,7 @@ export default function ExchangeRateModal({
       isCreate ? createExchangeRateSchema : updateExchangeRateSchema
     ),
     defaultValues: {
-      usdToKhrRate: 0,
+      usdToKhrRate: undefined,
       usdToCnyRate: undefined,
       usdToThbRate: undefined,
       usdToVndRate: undefined,
@@ -77,10 +77,11 @@ export default function ExchangeRateModal({
     mode: "onChange",
   });
 
+  // Reset form when modal opens in create mode
   useEffect(() => {
     if (isOpen && isCreate) {
       reset({
-        usdToKhrRate: 0,
+        usdToKhrRate: undefined,
         usdToCnyRate: undefined,
         usdToThbRate: undefined,
         usdToVndRate: undefined,
@@ -103,7 +104,7 @@ export default function ExchangeRateModal({
           const data = resultAction.payload;
 
           reset({
-            usdToKhrRate: data?.usdToKhrRate || 0,
+            usdToKhrRate: data?.usdToKhrRate || undefined,
             usdToCnyRate: data?.usdToCnyRate || undefined,
             usdToThbRate: data?.usdToThbRate || undefined,
             usdToVndRate: data?.usdToVndRate || undefined,
@@ -129,10 +130,10 @@ export default function ExchangeRateModal({
     try {
       const payload: CreateExchangeRateData = {
         usdToKhrRate: data.usdToKhrRate,
-        usdToCnyRate: data.usdToCnyRate || undefined,
-        usdToThbRate: data.usdToThbRate || undefined,
-        usdToVndRate: data.usdToVndRate || undefined,
-        notes: data.notes || undefined,
+        usdToCnyRate: data.usdToCnyRate,
+        usdToThbRate: data.usdToThbRate,
+        usdToVndRate: data.usdToVndRate,
+        notes: data.notes,
       };
 
       if (isCreate) {
@@ -207,6 +208,7 @@ export default function ExchangeRateModal({
                   label="USD To KHR Rate"
                   placeholder="Enter USD to KHR rate"
                   type="number"
+                  valueAsNumber
                   disabled={isSubmitting}
                   required
                   error={errors.usdToKhrRate}
@@ -218,6 +220,7 @@ export default function ExchangeRateModal({
                   label="USD To CNY Rate"
                   placeholder="Enter USD to CNY rate (optional)"
                   type="number"
+                  valueAsNumber
                   disabled={isSubmitting}
                   error={errors.usdToCnyRate}
                 />
@@ -228,6 +231,7 @@ export default function ExchangeRateModal({
                   label="USD To THB Rate"
                   placeholder="Enter USD to THB rate (optional)"
                   type="number"
+                  valueAsNumber
                   disabled={isSubmitting}
                   error={errors.usdToThbRate}
                 />
@@ -238,6 +242,7 @@ export default function ExchangeRateModal({
                   label="USD To VND Rate"
                   placeholder="Enter USD to VND rate (optional)"
                   type="number"
+                  valueAsNumber
                   disabled={isSubmitting}
                   error={errors.usdToVndRate}
                 />
