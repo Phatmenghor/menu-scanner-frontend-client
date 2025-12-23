@@ -8,8 +8,10 @@ export const selectUsers = (state: RootState) => state.users.data;
 export const selectSelectedUser = (state: RootState) =>
   state.users.selectedUser;
 
-export const selectUsersContent = (state: RootState) =>
-  state.users.data?.content || [];
+export const selectUsersContent = createSelector(
+  [selectUsers],
+  (data) => data?.content || []
+);
 
 export const selectIsLoading = (state: RootState) => state.users.isLoading;
 
@@ -32,7 +34,7 @@ export const selectPagination = createSelector([selectUsers], (data) => ({
   currentPage: data?.pageNo || 1,
   totalPages: data?.totalPages || 1,
   totalElements: data?.totalElements || 0,
-  pageSize: data?.pageSize || 10,
+  pageSize: data?.pageSize || 15,
   last: data?.last || false,
   first: data?.first || true,
   hasNext: data?.hasNext || false,
