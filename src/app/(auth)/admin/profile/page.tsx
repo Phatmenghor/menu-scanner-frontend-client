@@ -33,6 +33,7 @@ import { clearUserInfo } from "@/utils/local-storage/userInfo";
 import { CustomAvatar } from "@/components/shared/avator/custom-avator";
 import { uploadImageService } from "@/services/image-service";
 import Loading from "@/components/shared/common/loading";
+import { isBase64Image, uploadImage } from "@/utils/common/upload-image";
 
 // Profile update schema
 const profileSchema = z.object({
@@ -112,23 +113,11 @@ export default function UserProfilePage() {
     try {
       let profileImageUrl = data.profileImageUrl || "";
 
-      // Upload image if it's a base64 string
-      if (profileImageUrl && profileImageUrl.startsWith("data:image")) {
+      if (profileImageUrl && isBase64Image(profileImageUrl)) {
         try {
-          const imageType = profileImageUrl.split(";")[0].split("/")[1];
-
-          const uploadResult = await uploadImageService({
-            base64: profileImageUrl,
-            type: imageType,
-          });
-
-          if (uploadResult && uploadResult.imageUrl) {
-            profileImageUrl = uploadResult.imageUrl;
-          } else {
-            throw new Error("Failed to upload image");
-          }
+          profileImageUrl = await uploadImage(profileImageUrl);
         } catch (uploadError) {
-          console.error("Error uploading image:", uploadError);
+          console.error("Error uploading profile image:", uploadError);
           showToast.error("Failed to upload profile image. Please try again.");
           return;
         }
@@ -320,7 +309,7 @@ export default function UserProfilePage() {
                         value={field.value}
                         onChange={field.onChange}
                         disabled={!isEditing}
-                        error={errors.profileImageUrl?.message}
+                        error={errors.profileImageUrl}
                         accept="image/*"
                         maxSize={5}
                       />

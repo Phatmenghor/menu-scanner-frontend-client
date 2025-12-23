@@ -2,7 +2,13 @@
 "use client";
 
 import React from "react";
-import { Controller, Control, FieldValues, Path } from "react-hook-form";
+import {
+  Controller,
+  Control,
+  FieldValues,
+  Path,
+  FieldError,
+} from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -10,7 +16,7 @@ interface NumberFieldProps<T extends FieldValues> {
   name: Path<T>;
   label: string;
   control: Control<T>;
-  error?: any;
+  error?: FieldError;
   disabled?: boolean;
   required?: boolean;
   placeholder?: string;

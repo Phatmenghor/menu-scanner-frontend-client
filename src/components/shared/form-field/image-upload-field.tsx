@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { FieldError } from "react-hook-form";
 
 interface ImageUploadFieldProps {
   label: string;
@@ -12,7 +13,7 @@ interface ImageUploadFieldProps {
   onChange: (base64: string) => void;
   disabled?: boolean;
   required?: boolean;
-  error?: string;
+  error?: FieldError;
   className?: string;
   accept?: string;
   maxSize?: number;
@@ -176,7 +177,7 @@ export function ImageUploadField({
         )}
       </div>
 
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-red-500">{error.message}</p>}
     </div>
   );
 }

@@ -1,7 +1,13 @@
 "use client";
 
 import React from "react";
-import { Controller, Control, FieldValues, Path } from "react-hook-form";
+import {
+  Controller,
+  Control,
+  FieldValues,
+  Path,
+  FieldError,
+} from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { CustomDatePicker } from "../common/custom-date-picker";
 
@@ -9,7 +15,7 @@ interface DatePickerFieldProps<T extends FieldValues> {
   name: Path<T>;
   label: string;
   control: Control<T>;
-  error?: any;
+  error?: FieldError;
   disabled?: boolean;
   required?: boolean;
   placeholder?: string;

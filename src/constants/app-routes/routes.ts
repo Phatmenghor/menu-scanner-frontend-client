@@ -1,4 +1,5 @@
 import { Home, Users, Database, Pin, Bell, LucideIcon } from "lucide-react";
+import { BRAND } from "zod/v3";
 
 /**
  * Clean Routes Configuration
@@ -17,6 +18,9 @@ export const ROUTES = {
     DASHBOARD: "/admin",
     PROFILE: "/admin/profile",
     USERS: "/admin/users",
+    BRAND: "/admin/brand",
+    BANNER: "/admin/banner",
+    CATEGORIES: "/admin/categories",
   },
 } as const;
 
@@ -44,6 +48,24 @@ export const SIDEBAR_MENU: MenuItem[] = [
     title: "User",
     href: ROUTES.ADMIN.USERS,
     icon: Users,
+  },
+  {
+    title: "Master Data",
+    icon: Database,
+    items: [
+      {
+        title: "Banner",
+        href: ROUTES.ADMIN.BANNER,
+      },
+      {
+        title: "Categories",
+        href: ROUTES.ADMIN.CATEGORIES,
+      },
+      {
+        title: "Brand",
+        href: ROUTES.ADMIN.BRAND,
+      },
+    ],
   },
 ];
 

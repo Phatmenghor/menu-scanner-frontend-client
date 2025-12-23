@@ -4,6 +4,7 @@ import {
   PaymentMethod,
   PaymentStatus,
   PaymentType,
+  Status,
   SubscriptionPlanStatus,
   UserRole,
 } from "./status";
@@ -69,4 +70,9 @@ export const PAYMENT_TYPE_CREATE_UPDATE = [
   { value: PaymentType.BUSINESS_RECORD, label: "Business Record" },
   { value: PaymentType.REFUND, label: "Refund" },
   { value: PaymentType.OTHER, label: "Other" },
+];
+
+export const BANNER_STATUS_CREATE_UPDATE = [
+  { value: Status.ACTIVE, label: "Active" },
+  { value: Status.INACTIVE, label: "Draft" },
 ];

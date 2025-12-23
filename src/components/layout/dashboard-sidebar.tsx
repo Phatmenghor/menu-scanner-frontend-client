@@ -23,7 +23,6 @@ export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const isMobile = useIsMobile();
 
-  // Get auth state from Redux
   const { profile, isProfileLoading, dispatch } = useAuthState();
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -31,7 +30,6 @@ export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
   });
   const [collapsed, setCollapsed] = useState(false);
 
-  // Fetch profile on mount if not already loaded
   useEffect(() => {
     if (!profile && !isProfileLoading) {
       dispatch(getProfileService());
@@ -56,16 +54,8 @@ export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
   const renderNavItems = (isCollapsed = false) => (
     <nav className="flex flex-col gap-1">
       {SIDEBAR_MENU.map((route) => {
-        // Check if this route has sub-items (items property exists)
         const hasSubItems = route.items && route.items.length > 0;
-
-        // For items without sub-items, check if the current route matches
         const isActive = route.href ? pathname === route.href : false;
-
-        // For parent items with sub-items, check if any child is active
-        const hasActiveChild = hasSubItems
-          ? route.items!.some((item) => pathname === item.href)
-          : false;
 
         if (hasSubItems) {
           const isOpen = route.title ? openSections[route.title] : false;
@@ -74,11 +64,7 @@ export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
             <div key={route.title} className="w-full">
               <Button
                 variant="ghost"
-                className={cn(
-                  "w-full justify-start hover:bg-primary/10 hover:text-primary rounded relative",
-                  hasActiveChild &&
-                    "bg-primary/15 text-primary font-medium border-l-2 border-primary"
-                )}
+                className="w-full justify-start hover:bg-primary/10 hover:text-primary rounded relative transition-all duration-200"
                 onClick={() =>
                   route.title && !isCollapsed && toggleSection(route.title)
                 }
@@ -87,16 +73,18 @@ export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
               >
                 <div className="flex w-full items-center">
                   {route.icon && (
-                    <route.icon className="w-5 h-5 flex-shrink-0" />
+                    <route.icon className="w-5 h-5 flex-shrink-0 transition-colors duration-200" />
                   )}
                   {!isCollapsed && (
                     <>
-                      <span className="ml-3 truncate">{route.title}</span>
+                      <span className="ml-3 truncate transition-colors duration-200">
+                        {route.title}
+                      </span>
                       <div className="ml-auto">
                         {isOpen ? (
-                          <ChevronDown className="h-4 w-4" />
+                          <ChevronDown className="h-4 w-4 transition-colors duration-200" />
                         ) : (
-                          <ChevronRight className="h-4 w-4" />
+                          <ChevronRight className="h-4 w-4 transition-colors duration-200" />
                         )}
                       </div>
                     </>
@@ -106,60 +94,61 @@ export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
 
               {!isCollapsed && isOpen && (
                 <div className="relative ml-6 mt-1 space-y-1">
-                  {/* Vertical line */}
                   <div className="absolute left-0 top-0 bottom-0 w-px bg-gray-300 z-0"></div>
 
-                  {route.items!.map((subItem, index) => (
-                    <div key={subItem.title} className="relative">
-                      {/* Horizontal line */}
-                      <div className="absolute left-0 top-1/2 w-4 h-px bg-gray-300 z-0"></div>
+                  {route.items!.map((subItem) => {
+                    const isSubItemActive = pathname === subItem.href;
 
-                      {/* Dot */}
-                      <div className="absolute left-0 top-1/2 w-1.5 h-1.5 bg-gray-400 rounded-full transform -translate-x-0.5 -translate-y-0.5 z-10"></div>
-
-                      {/* Hide vertical line below last item */}
-                      {index === route.items!.length - 1 && (
+                    return (
+                      <div key={subItem.title} className="relative">
                         <div
-                          className="absolute left-0 top-1/2 w-px bg-background z-10"
-                          style={{ height: "50%" }}
+                          className={cn(
+                            "absolute left-0 top-1/2 w-4 h-px z-0 transition-colors duration-200",
+                            isSubItemActive ? "bg-primary/40" : "bg-gray-300"
+                          )}
                         ></div>
-                      )}
 
-                      {/* Small connector line */}
-                      <div className="absolute left-4 top-1/2 w-2 h-px bg-gray-200 z-0"></div>
+                        <div
+                          className={cn(
+                            "absolute left-0 top-1/2 w-1.5 h-1.5 rounded-full transform -translate-x-0.5 -translate-y-0.5 z-10 transition-colors duration-200",
+                            isSubItemActive ? "bg-primary" : "bg-gray-400"
+                          )}
+                        ></div>
 
-                      <Button
-                        variant="ghost"
-                        asChild
-                        className={cn(
-                          "relative w-full justify-start hover:bg-primary/10 hover:text-primary pl-6 rounded z-20 border-l border-transparent hover:border-l-primary/30 transition-all duration-200",
-                          pathname === subItem.href &&
-                            "bg-primary/15 text-primary font-medium border-l-2 border-primary shadow-sm"
-                        )}
-                      >
-                        <Link
-                          href={subItem.href}
-                          className="flex items-center gap-2"
+                        <div className="absolute left-4 top-1/2 w-2 h-px z-0 transition-colors duration-200 bg-gray-200"></div>
+
+                        <Button
+                          variant="ghost"
+                          asChild
+                          className={cn(
+                            "relative w-full justify-start hover:bg-primary/10 hover:text-primary pl-6 rounded z-20 border-l border-transparent hover:border-l-primary/30 transition-all duration-200",
+                            isSubItemActive &&
+                              "bg-primary/15 text-primary font-medium border-l-2 border-primary shadow-sm"
+                          )}
                         >
-                          <span className="truncate">{subItem.title}</span>
-                        </Link>
-                      </Button>
-                    </div>
-                  ))}
+                          <Link
+                            href={subItem.href}
+                            className="flex items-center gap-2"
+                          >
+                            <span className="truncate">{subItem.title}</span>
+                          </Link>
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
           );
         }
 
-        // Render simple menu item (no sub-items)
         return (
           <Button
             key={route.title}
             variant="ghost"
             asChild
             className={cn(
-              "w-full justify-start hover:bg-primary/10 hover:text-primary rounded",
+              "w-full justify-start hover:bg-primary/10 hover:text-primary rounded transition-all duration-200",
               isActive &&
                 "bg-primary/15 text-primary font-medium border-l-2 border-primary"
             )}
@@ -180,7 +169,6 @@ export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile overlay */}
       {isMobile && isOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/20 backdrop-blur-md"
@@ -188,7 +176,6 @@ export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
         />
       )}
 
-      {/* Sidebar */}
       <div
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-border/50 bg-background/95 backdrop-blur-xl transition-all duration-300 ease-out shadow-xl",
@@ -196,7 +183,6 @@ export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
           isMobile && !isOpen && "hidden"
         )}
       >
-        {/* Header */}
         <div className="relative flex h-20 items-center justify-between border-b border-border/50 px-4 bg-gradient-to-br from-primary/5 via-background/50 to-accent/5">
           <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-accent/10 opacity-50 blur-3xl"></div>
 
@@ -248,12 +234,10 @@ export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
           </Button>
         </div>
 
-        {/* Navigation */}
         <ScrollArea className="flex-1 py-6">
           <div className="px-4 space-y-2">{renderNavItems(collapsed)}</div>
         </ScrollArea>
 
-        {/* User Avatar Card */}
         {profile && (
           <UserAvatarCard
             user={profile}

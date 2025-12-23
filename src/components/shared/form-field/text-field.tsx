@@ -9,10 +9,10 @@ interface TextFieldProps {
   name: string;
   label: string;
   control: any;
-  error?: any;
+  error?: FieldError;
   disabled?: boolean;
   required?: boolean;
-  type?: "text" | "email" | "tel" | "password" | "number";
+  type?: "text" | "email" | "tel" | "password" | "number" | "url";
   placeholder?: string;
   className?: string;
 }

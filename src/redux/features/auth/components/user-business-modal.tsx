@@ -37,7 +37,10 @@ import {
 import { FormHeader } from "@/components/shared/form-field/form-header";
 import { FormBody } from "@/components/shared/form-field/form-body";
 import { FormFooter } from "@/components/shared/form-field/form-footer";
-import { getFieldError } from "@/utils/common/get-field-error";
+import {
+  getArrayFieldError,
+  getFieldError,
+} from "@/utils/common/get-field-error";
 import {
   AccountStatus,
   ModalMode,
@@ -268,7 +271,7 @@ export default function UserBusinessModal({
                       placeholder="Enter user identifier"
                       required
                       disabled={isSubmitting}
-                      error={getFieldError(errors.userIdentifier)}
+                      error={errors.userIdentifier}
                     />
 
                     <TextField
@@ -279,7 +282,7 @@ export default function UserBusinessModal({
                       placeholder="Enter email address"
                       required
                       disabled={isSubmitting}
-                      error={getFieldError(errors.email)}
+                      error={errors.email}
                     />
                   </>
                 )}
@@ -291,7 +294,7 @@ export default function UserBusinessModal({
                   placeholder="Enter first name"
                   required
                   disabled={isSubmitting}
-                  error={getFieldError(errors.firstName)}
+                  error={errors.firstName}
                 />
 
                 <TextField
@@ -301,7 +304,7 @@ export default function UserBusinessModal({
                   placeholder="Enter last name"
                   required
                   disabled={isSubmitting}
-                  error={getFieldError(errors.lastName)}
+                  error={errors.lastName}
                 />
 
                 <TextField
@@ -311,7 +314,7 @@ export default function UserBusinessModal({
                   placeholder="Enter phone number"
                   required
                   disabled={isSubmitting}
-                  error={getFieldError(errors.phoneNumber)}
+                  error={errors.phoneNumber}
                 />
 
                 <TextField
@@ -320,7 +323,7 @@ export default function UserBusinessModal({
                   label="Position"
                   placeholder="Enter position (optional)"
                   disabled={isSubmitting}
-                  error={getFieldError(errors.position)}
+                  error={errors.position}
                 />
 
                 {/* Changed: col-span-2 (always full width, no responsive) */}
@@ -331,7 +334,7 @@ export default function UserBusinessModal({
                     label="Address"
                     placeholder="Enter address (optional)"
                     disabled={isSubmitting}
-                    error={getFieldError(errors.address)}
+                    error={errors.address}
                   />
                 </div>
 
@@ -345,7 +348,7 @@ export default function UserBusinessModal({
                     showPassword={showPassword}
                     onTogglePassword={() => setShowPassword(!showPassword)}
                     disabled={isSubmitting}
-                    error={getFieldError(errors.password)}
+                    error={errors.password}
                   />
                 )}
 
@@ -357,7 +360,7 @@ export default function UserBusinessModal({
                   options={USER_BUSINESS_ROLE_CREATE_UPDATE}
                   required
                   disabled={isSubmitting}
-                  error={getFieldError(errors.roles)}
+                  error={getArrayFieldError(errors.roles)}
                   onValueChange={(value) => {
                     setValue("roles", [value], {
                       shouldDirty: true,
@@ -374,7 +377,7 @@ export default function UserBusinessModal({
                   options={ACCOUNT_STATUS_CREATE_UPDATE}
                   required
                   disabled={isSubmitting}
-                  error={getFieldError(errors.accountStatus)}
+                  error={errors.accountStatus}
                 />
               </div>
 
@@ -385,7 +388,7 @@ export default function UserBusinessModal({
                 placeholder="Enter any additional notes (optional)"
                 rows={5}
                 disabled={isSubmitting}
-                error={getFieldError(errors.notes)}
+                error={errors.notes}
               />
             </FormBody>
 

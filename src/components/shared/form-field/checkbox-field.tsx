@@ -2,7 +2,13 @@
 "use client";
 
 import React from "react";
-import { Controller, Control, FieldValues, Path } from "react-hook-form";
+import {
+  Controller,
+  Control,
+  FieldValues,
+  Path,
+  FieldError,
+} from "react-hook-form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
@@ -10,7 +16,7 @@ interface CheckboxFieldProps<T extends FieldValues> {
   name: Path<T>;
   label: string;
   control: Control<T>;
-  error?: any;
+  error?: FieldError;
   disabled?: boolean;
   className?: string;
 }

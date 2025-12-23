@@ -25,7 +25,7 @@ export function FormHeader({
   description,
   avatarName,
   avatarImageUrl,
-  showAvatar = true,
+  showAvatar = false,
   isCreate = true,
   className,
 }: FormHeaderProps) {

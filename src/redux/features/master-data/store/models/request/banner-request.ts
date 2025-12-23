@@ -1,0 +1,11 @@
+import { BaseGetAllRequest } from "@/utils/common/get-all-request";
+import { UpdateBannerData } from "../schema/banner-schema";
+
+export interface AllBannerRequest extends BaseGetAllRequest {
+  status?: string;
+}
+
+export interface UpdateBannerParams {
+  bannerId: string;
+  bannerData: UpdateBannerData;
+}
