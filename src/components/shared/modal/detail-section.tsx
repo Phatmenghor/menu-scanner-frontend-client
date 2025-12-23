@@ -27,14 +27,14 @@ interface DetailRowProps {
 export function DetailRow({ label, value, isLast = false }: DetailRowProps) {
   return (
     <div
-      className={`flex items-start justify-between py-2 ${
+      className={`flex items-start justify-between gap-4 py-2 ${
         !isLast ? "border-b border-border/40" : ""
       }`}
     >
-      <Label className="text-sm font-medium text-muted-foreground">
+      <Label className="text-sm font-medium text-muted-foreground whitespace-nowrap flex-shrink-0 min-w-[120px]">
         {label}
       </Label>
-      <div className="text-sm text-right">{value}</div>
+      <div className="text-sm text-right flex-1 break-words">{value}</div>
     </div>
   );
 }

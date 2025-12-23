@@ -165,7 +165,6 @@ export default function UserBusinessModal({
   const onSubmit = async (data: UserFormData) => {
     try {
       if (isCreate) {
-        // TypeScript now knows data is CreateUserFormData
         const payload: CreateUserRequest = {
           userIdentifier: data.userIdentifier!,
           email: data.email,
@@ -189,7 +188,6 @@ export default function UserBusinessModal({
         );
         handleClose();
       } else {
-        // TypeScript now knows data is UpdateUserFormData
         const payload: UpdateUserRequest = {
           firstName: data.firstName,
           lastName: data.lastName,
@@ -229,7 +227,7 @@ export default function UserBusinessModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] p-0 flex flex-col">
+      <DialogContent className="w-[90%] max-w-4xl max-h-[90vh] p-0 flex flex-col">
         <FormHeader
           title={isCreate ? "Create New User Business" : "Edit User Business"}
           description={
@@ -259,8 +257,8 @@ export default function UserBusinessModal({
                 </div>
               )}
 
-              {/* Make sure grid is properly structured */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Changed: grid-cols-2 (always 2 columns, no responsive) */}
+              <div className="grid grid-cols-2 gap-4">
                 {isCreate && (
                   <>
                     <TextField
@@ -325,8 +323,8 @@ export default function UserBusinessModal({
                   error={getFieldError(errors.position)}
                 />
 
-                {/* Full width for address */}
-                <div className="md:col-span-2">
+                {/* Changed: col-span-2 (always full width, no responsive) */}
+                <div className="col-span-2">
                   <TextField
                     control={control}
                     name="address"
@@ -338,19 +336,17 @@ export default function UserBusinessModal({
                 </div>
 
                 {isCreate && (
-                  <div className="md:col-span-2">
-                    <PasswordField
-                      control={control}
-                      name="password"
-                      label="Password"
-                      placeholder="Enter password"
-                      required
-                      showPassword={showPassword}
-                      onTogglePassword={() => setShowPassword(!showPassword)}
-                      disabled={isSubmitting}
-                      error={getFieldError(errors.password)}
-                    />
-                  </div>
+                  <PasswordField
+                    control={control}
+                    name="password"
+                    label="Password"
+                    placeholder="Enter password"
+                    required
+                    showPassword={showPassword}
+                    onTogglePassword={() => setShowPassword(!showPassword)}
+                    disabled={isSubmitting}
+                    error={getFieldError(errors.password)}
+                  />
                 )}
 
                 <SelectField
@@ -382,7 +378,6 @@ export default function UserBusinessModal({
                 />
               </div>
 
-              {/* Notes field outside grid for full width */}
               <TextareaField
                 control={control}
                 name="notes"

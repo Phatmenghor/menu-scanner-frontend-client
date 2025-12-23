@@ -18,13 +18,11 @@ interface DetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   isLoading?: boolean;
-  // Header props
   title?: string;
   description?: string;
   avatarUrl?: string;
   avatarName?: string;
   badges?: ReactNode;
-  // Body content
   children: ReactNode;
 }
 
@@ -41,7 +39,8 @@ export function DetailModal({
 }: DetailModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl h-[90vh] p-0 gap-0 flex flex-col">
+      {/* Changed: w-[90%] for 90% width, max-w-3xl for maximum limit */}
+      <DialogContent className="w-[90%] max-w-3xl h-[90vh] p-0 gap-0 flex flex-col">
         {/* Header */}
         <DialogHeader className="px-6 py-4 border-b bg-muted/30 flex-shrink-0">
           <div className="flex items-center gap-4 pr-8">
@@ -67,7 +66,7 @@ export function DetailModal({
 
         {/* Content */}
         <ScrollArea className="flex-1 min-h-0">
-          <div className="p-6 ">{isLoading ? <Loading /> : children}</div>
+          <div className="p-6">{isLoading ? <Loading /> : children}</div>
         </ScrollArea>
       </DialogContent>
     </Dialog>
