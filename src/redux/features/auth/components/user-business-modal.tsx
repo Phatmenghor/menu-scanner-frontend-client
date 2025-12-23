@@ -259,7 +259,7 @@ export default function UserBusinessModal({
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4 bf">
+              <div className="grid grid-cols-2 gap-4">
                 {isCreate && (
                   <>
                     <TextField

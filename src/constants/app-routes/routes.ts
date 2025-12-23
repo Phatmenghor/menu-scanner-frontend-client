@@ -7,7 +7,9 @@ import { Home, Users, Database, Pin, Bell, LucideIcon } from "lucide-react";
 
 export const ROUTES = {
   HOME: "/",
-  LOGIN: "/login",
+  AUTH: {
+    LOGIN: "/login",
+  },
 
   // Admin routes
   ADMIN: {
@@ -50,7 +52,7 @@ export const SIDEBAR_MENU: MenuItem[] = [
  */
 
 export const isPublicRoute = (pathname: string): boolean => {
-  return pathname === ROUTES.HOME || pathname === ROUTES.LOGIN;
+  return pathname === ROUTES.HOME || pathname === ROUTES.AUTH.LOGIN;
 };
 
 export const isAdminRoute = (pathname: string): boolean => {
@@ -110,7 +112,7 @@ export const getDefaultAdminRoute = (): string => {
 };
 
 export const getLoginRedirectUrl = (): string => {
-  return ROUTES.LOGIN;
+  return ROUTES.AUTH.LOGIN;
 };
 
 export const getDashboardRedirectUrl = (): string => {
