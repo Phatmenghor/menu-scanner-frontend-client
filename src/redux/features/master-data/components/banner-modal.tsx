@@ -14,7 +14,7 @@ import { FormBody } from "@/components/shared/form-field/form-body";
 import { FormFooter } from "@/components/shared/form-field/form-footer";
 import { ClickableBannerUpload } from "@/components/shared/form-field/clickable-banner-upload";
 import { getFieldError } from "@/utils/common/get-field-error";
-import { ModalMode } from "@/constants/status/status";
+import { ModalMode, Status } from "@/constants/status/status";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import {
   selectError,
@@ -74,7 +74,7 @@ export default function BannerModal({
     defaultValues: {
       imageUrl: "",
       linkUrl: "",
-      status: "",
+      status: Status.ACTIVE,
     },
     mode: "onChange",
   });
@@ -86,7 +86,7 @@ export default function BannerModal({
       reset({
         imageUrl: "",
         linkUrl: "",
-        status: "",
+        status: Status.ACTIVE,
       });
     }
   }, [isOpen, bannerId, reset]);
