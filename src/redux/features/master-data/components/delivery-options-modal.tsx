@@ -36,6 +36,8 @@ import {
   clearError,
   clearSelectedDeliveryOptions,
 } from "../store/slice/delivery-options-slice";
+import { TextField } from "@/components/shared/form-field/text-field";
+import { TextareaField } from "@/components/shared/form-field/text-area-field";
 
 type Props = {
   mode: ModalMode;
@@ -247,8 +249,28 @@ export default function DeliveryOptionsModal({
                     Delivery Options Details
                   </h3>
 
-                  {/* Banner Details Grid */}
+                  {/* Delivery Options Details Grid */}
                   <div className="grid grid-cols-2 gap-4">
+                    <TextField
+                      control={control}
+                      name="name"
+                      label="Name Delivery Options"
+                      placeholder="Enter name delivery options"
+                      disabled={isProcessing}
+                      error={errors.name}
+                    />
+
+                    <TextField
+                      control={control}
+                      name="price"
+                      label="Delivery Options Price"
+                      placeholder="Enter delivery options price (optional)"
+                      type="number"
+                      valueAsNumber
+                      disabled={isProcessing}
+                      error={errors.price}
+                    />
+
                     <SelectField
                       control={control}
                       name="status"
@@ -260,6 +282,16 @@ export default function DeliveryOptionsModal({
                       error={errors.status}
                     />
                   </div>
+
+                  <TextareaField
+                    control={control}
+                    name="description"
+                    label="Description"
+                    placeholder="Enter any additional description (optional)"
+                    rows={5}
+                    disabled={isProcessing}
+                    error={errors.description}
+                  />
                 </div>
               </div>
             </FormBody>
