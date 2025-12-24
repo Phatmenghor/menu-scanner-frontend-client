@@ -76,3 +76,8 @@ export const BANNER_STATUS_CREATE_UPDATE = [
   { value: Status.ACTIVE, label: "Active" },
   { value: Status.INACTIVE, label: "Draft" },
 ];
+
+export const DELIVERY_OPTIONS_STATUS_CREATE_UPDATE = [
+  { value: Status.ACTIVE, label: "Active" },
+  { value: Status.INACTIVE, label: "Draft" },
+];

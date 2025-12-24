@@ -10,7 +10,7 @@ import {
   selectPagination,
 } from "../selectors/delivery-options-selector";
 
-export const useBannerState = () => {
+export const useDeliveryOptionsState = () => {
   const dispatch = useAppDispatch();
 
   // Redux selectors

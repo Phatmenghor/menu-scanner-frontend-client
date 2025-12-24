@@ -11,53 +11,53 @@ import { DeleteConfirmationModal } from "@/components/shared/modal/delete-confir
 import { DataTableWithPagination } from "@/components/shared/common/data-table";
 import { showToast } from "@/components/shared/common/show-toast";
 import { usePagination } from "@/redux/store/use-pagination";
+import { DELIVERY_OPTIONS_FILTER } from "@/constants/status/filter-status";
+import { ModalMode, Status } from "@/constants/status/status";
+import { useDeliveryOptionsState } from "@/redux/features/master-data/store/state/delivery-options-state";
+import { DeliveryOptionsResponseModel } from "@/redux/features/master-data/store/models/response/delivery-options-response";
 import {
   setPageNo,
   setSearchFilter,
-} from "@/redux/features/auth/store/slice/users-slice";
-import { ExchangeRateStatus, ModalMode } from "@/constants/status/status";
-import ExchangeRateModal from "@/redux/features/master-data/components/exchange-rate-modal";
-import { ExchangeRateDetailModal } from "@/redux/features/master-data/components/exchange-rate-detail-modal";
-import { useExchangeRateState } from "@/redux/features/master-data/store/state/exchange-rate-state";
-import { ExchangeRateResponseModel } from "@/redux/features/master-data/store/models/response/exchange-rate-response";
+  setStatusFilter,
+} from "@/redux/features/master-data/store/slice/delivery-options-slice";
 import {
-  deleteExchangeRateService,
-  fetchAllExchangeRateService,
-} from "@/redux/features/master-data/store/thunks/exchange-rate-thunks";
-import { setExchangeRateStatusFilter } from "@/redux/features/master-data/store/slice/exchange-rate-slice";
-import { exchangeRateTableColumns } from "@/redux/features/master-data/table/exchange-rate-table";
-import { EXCHAGE_RATE_FILTER } from "@/constants/status/filter-status";
+  deleteDeliveryOptionsService,
+  fetchAllDeliveryOptionsService,
+} from "@/redux/features/master-data/store/thunks/delivery-options-thunks";
+import { deliveryOptionsTableColumns } from "@/redux/features/master-data/table/delivery-options-table";
+import DeliveryOptionsModal from "@/redux/features/master-data/components/delivery-options-modal";
+import { DeliveryOptionsDetailModal } from "@/redux/features/master-data/components/delivery-options-detail-modal";
 
-export default function ExchangeRatePage() {
+export default function DeliveryOptionsPage() {
   const searchParams = useSearchParams();
 
   // Redux state
   const {
-    exchangeRateState,
-    exchangeRateData,
-    exchangeRateContent,
+    deliveryOptionsState,
+    deliveryOptionsData,
+    deliveryOptionsContent,
     isLoading,
     filters,
     operations,
     pagination,
     dispatch,
-  } = useExchangeRateState();
+  } = useDeliveryOptionsState();
 
   // Local UI state for modals only
   const [modalState, setModalState] = useState({
     isOpen: false,
     mode: ModalMode.CREATE_MODE,
-    exchangeRateId: "",
+    deliveryOptionsId: "",
   });
 
   const [detailModalState, setDetailModalState] = useState({
     isOpen: false,
-    exchangeRateId: "",
+    deliveryOptionsId: "",
   });
 
   const [deleteState, setDeleteState] = useState({
     isOpen: false,
-    exchage: null as ExchangeRateResponseModel | null,
+    deliveryOptions: null as DeliveryOptionsResponseModel | null,
   });
 
   const debouncedSearch = useDebounce(filters.search, 400);
@@ -77,77 +77,78 @@ export default function ExchangeRatePage() {
     }
   }, [searchParams, filters.pageNo, dispatch]);
 
-  // Fetch exchage rate when filters change
+  // Fetch delivery options when filters change
   useEffect(() => {
     dispatch(
-      fetchAllExchangeRateService({
+      fetchAllDeliveryOptionsService({
         search: debouncedSearch,
         pageNo: filters.pageNo,
-        isActive:
-          filters.isActive === ExchangeRateStatus.ALL
-            ? undefined
-            : filters.isActive == ExchangeRateStatus.ACTIVE
-            ? true
-            : false,
+        statuses: filters.status ? [filters.status] : [],
       })
     );
-  }, [dispatch, debouncedSearch, filters.isActive, filters.pageNo]);
+  }, [dispatch, debouncedSearch, filters.status, filters.pageNo]);
 
   // Event handlers
-  const handleCreateUser = () => {
+  const handleCreateDeliveryOptions = () => {
     setModalState({
       isOpen: true,
       mode: ModalMode.CREATE_MODE,
-      exchangeRateId: "",
+      deliveryOptionsId: "",
     });
   };
 
-  const handleEditRate = (exchage: ExchangeRateResponseModel) => {
+  const handleEditDeliveryOptions = (
+    deliveryOptions: DeliveryOptionsResponseModel
+  ) => {
     setModalState({
       isOpen: true,
       mode: ModalMode.UPDATE_MODE,
-      exchangeRateId: exchage?.id || "",
+      deliveryOptionsId: deliveryOptions?.id || "",
     });
   };
 
-  const handleViewRateDetail = (exchage: ExchangeRateResponseModel) => {
+  const handleDeliveryOptionsViewDetail = (
+    deliveryOptions: DeliveryOptionsResponseModel
+  ) => {
     setDetailModalState({
       isOpen: true,
-      exchangeRateId: exchage.id || "",
+      deliveryOptionsId: deliveryOptions.id || "",
     });
   };
 
-  const handleDeleteRate = (exchage: ExchangeRateResponseModel) => {
+  const handleDeleteDeliveryOptions = (
+    deliveryOptions: DeliveryOptionsResponseModel
+  ) => {
     setDeleteState({
       isOpen: true,
-      exchage: exchage,
+      deliveryOptions: deliveryOptions,
     });
   };
 
   const tableHandlers = useMemo(
     () => ({
-      handleEditRate,
-      handleViewRateDetail,
-      handleDeleteRate,
+      handleEditDeliveryOptions,
+      handleDeliveryOptionsViewDetail,
+      handleDeleteDeliveryOptions,
     }),
     []
   );
 
   const columns = useMemo(
     () =>
-      exchangeRateTableColumns({
-        data: exchangeRateData,
+      deliveryOptionsTableColumns({
+        data: deliveryOptionsData,
         handlers: tableHandlers,
       }),
-    [exchangeRateState, tableHandlers]
+    [deliveryOptionsState, tableHandlers]
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     dispatch(setSearchFilter(e.target.value));
   };
 
-  const handleStatusChange = (status: ExchangeRateStatus) => {
-    dispatch(setExchangeRateStatusFilter(status));
+  const handleStatusChange = (status: Status) => {
+    dispatch(setStatusFilter(status));
   };
 
   const handlePageChangeWrapper = (page: number) => {
@@ -156,29 +157,29 @@ export default function ExchangeRatePage() {
   };
 
   const handleDelete = async () => {
-    if (!deleteState.exchage?.id) return;
+    if (!deleteState.deliveryOptions?.id) return;
 
     try {
       await dispatch(
-        deleteExchangeRateService(deleteState.exchage.id)
+        deleteDeliveryOptionsService(deleteState.deliveryOptions.id)
       ).unwrap();
 
       showToast.success(
-        `Exchange Rate "${
-          deleteState.exchage.usdToKhrRate ?? ""
+        `Delivery options "${
+          deleteState.deliveryOptions.name ?? ""
         }" deleted successfully`
       );
 
       closeDeleteModal();
 
       // Navigate to previous page if this was the last item
-      if (exchangeRateContent.length === 1 && pagination.currentPage > 1) {
+      if (deliveryOptionsContent.length === 1 && pagination.currentPage > 1) {
         const newPage = pagination.currentPage - 1;
         dispatch(setPageNo(newPage));
         updateUrlWithPage(newPage);
       }
     } catch (error: any) {
-      showToast.error(error || "Failed to delete Exchange Rate");
+      showToast.error(error || "Failed to delete Delivery options");
     }
   };
 
@@ -186,21 +187,21 @@ export default function ExchangeRatePage() {
     setModalState({
       isOpen: false,
       mode: ModalMode.CREATE_MODE,
-      exchangeRateId: "",
+      deliveryOptionsId: "",
     });
   };
 
   const closeDetailModal = () => {
     setDetailModalState({
       isOpen: false,
-      exchangeRateId: "",
+      deliveryOptionsId: "",
     });
   };
 
   const closeDeleteModal = () => {
     setDeleteState({
       isOpen: false,
-      exchage: null,
+      deliveryOptions: null,
     });
   };
 
@@ -210,37 +211,35 @@ export default function ExchangeRatePage() {
         <CardHeaderSection
           breadcrumbs={[
             { label: "Dashboard", href: ROUTES.ADMIN.ROOT },
-            { label: "Exchange Rate", href: "" },
+            { label: "Delivery Options", href: "" },
           ]}
-          title="Exchange Rate"
-          buttonTooltip="Create a new exchange rate"
+          title="Delivery Options Information"
+          buttonTooltip="Create a new delivery options"
           searchValue={filters.search}
-          searchPlaceholder="Search exchange rate..."
+          searchPlaceholder="Search delivery options..."
           buttonIcon={<Plus className="w-3 h-3" />}
           buttonText="New"
           onSearchChange={handleSearchChange}
-          openModal={handleCreateUser}
+          openModal={handleCreateDeliveryOptions}
         >
           <div className="flex items-center gap-3">
             <CustomSelect
-              options={EXCHAGE_RATE_FILTER}
-              value={filters.isActive}
+              options={DELIVERY_OPTIONS_FILTER}
+              value={filters.status}
               placeholder="All Status"
-              onValueChange={(value) =>
-                handleStatusChange(value as ExchangeRateStatus)
-              }
-              label="ExchangeRate Status"
+              onValueChange={(value) => handleStatusChange(value as Status)}
+              label="Delivery Options Status"
             />
           </div>
         </CardHeaderSection>
 
         {/* Data Table with Pagination */}
         <DataTableWithPagination
-          data={exchangeRateContent}
+          data={deliveryOptionsContent}
           columns={columns}
           loading={isLoading}
-          emptyMessage="No Exchange Rate found"
-          getRowKey={(exchange) => exchange.id}
+          emptyMessage="No Delivery options found"
+          getRowKey={(deliveryOptions) => deliveryOptions.id}
           currentPage={filters.pageNo}
           totalPages={pagination.totalPages}
           onPageChange={handlePageChangeWrapper}
@@ -248,16 +247,16 @@ export default function ExchangeRatePage() {
       </div>
 
       {/* Modals Add/Edit */}
-      <ExchangeRateModal
+      <DeliveryOptionsModal
         isOpen={modalState.isOpen}
         onClose={closeModal}
-        exchangeRateId={modalState.exchangeRateId}
+        deliveryOptionsId={modalState.deliveryOptionsId}
         mode={modalState.mode}
       />
 
-      {/* Modals exchange rate platform Detail */}
-      <ExchangeRateDetailModal
-        exchangeRateId={detailModalState.exchangeRateId}
+      {/* Modals delivery options Detail */}
+      <DeliveryOptionsDetailModal
+        deliveryOptionsId={detailModalState.deliveryOptionsId}
         isOpen={detailModalState.isOpen}
         onClose={closeDetailModal}
       />
@@ -267,13 +266,14 @@ export default function ExchangeRatePage() {
         isOpen={deleteState.isOpen}
         onClose={closeDeleteModal}
         onDelete={handleDelete}
-        title="Delete Exchage Rate"
-        description={`Are you sure you want to delete this Exchage Rate ${
-          deleteState.exchage?.usdToKhrRate || deleteState.exchage?.notes
+        title="Delete Delivery Options"
+        description={`Are you sure you want to delete this Delivery Options ${
+          deleteState.deliveryOptions?.name ||
+          deleteState.deliveryOptions?.description
         }?`}
         itemName={
-          deleteState.exchage?.usdToKhrRate.toString() ||
-          deleteState.exchage?.notes
+          deleteState.deliveryOptions?.name ||
+          deleteState.deliveryOptions?.description
         }
         isSubmitting={operations.isDeleting}
       />

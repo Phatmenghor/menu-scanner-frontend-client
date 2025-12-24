@@ -3,7 +3,10 @@ import { UpdateBannerData } from "../schema/banner-schema";
 import { UpdateDeliveryOptionsData } from "../schema/delivery-options-schema";
 
 export interface AllDeliveryOptionsRequest extends BaseGetAllRequest {
-  status?: string;
+  businessId?: string;
+  statuses?: string[];
+  minPrice?: number;
+  maxPrice?: number;
 }
 
 export interface UpdateDeliveryOptionsParams {

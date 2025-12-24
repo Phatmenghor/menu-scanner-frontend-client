@@ -18,15 +18,15 @@ interface DeliveryOptionsTableHandlers {
   handleDeleteDeliveryOptions: (delivery: DeliveryOptionsResponseModel) => void;
 }
 
-interface BannerTableOptions {
+interface DeliveryOptionsTableOptions {
   data: AllDeliveryOptionsResponseModel | null;
   handlers: DeliveryOptionsTableHandlers;
 }
 
-export const bannerTableColumns = ({
+export const deliveryOptionsTableColumns = ({
   data,
   handlers,
-}: BannerTableOptions): TableColumn<DeliveryOptionsResponseModel>[] => {
+}: DeliveryOptionsTableOptions): TableColumn<DeliveryOptionsResponseModel>[] => {
   const {
     handleEditDeliveryOptions,
     handleDeliveryOptionsViewDetail,
@@ -47,41 +47,54 @@ export const bannerTableColumns = ({
     },
     {
       key: "imageUrl",
-      label: "Banner Image",
+      label: "Delivery options Image",
       minWidth: "10px",
       maxWidth: "400px",
-      render: (banner) => {
+      render: (deliveryOptions) => {
         return (
           <CustomAvatar
-            variant="banner"
-            imageUrl={banner.imageUrl}
-            name={banner?.businessName}
-            bannerHeight="lg"
+            imageUrl={deliveryOptions.imageUrl}
+            name={deliveryOptions?.name}
+            size="md"
           />
         );
       },
     },
     {
-      key: "linkUrl",
-      label: "Link URL",
+      key: "name",
+      label: "Name",
       minWidth: "10px",
       maxWidth: "400px",
       truncate: true,
-      render: (banner) => (
+      render: (deliveryOptions) => (
         <span className="text-xs text-muted-foreground">
-          {banner?.linkUrl || "---"}
+          {deliveryOptions?.name || "---"}
         </span>
       ),
     },
+
+    {
+      key: "price",
+      label: "Price",
+      minWidth: "10px",
+      maxWidth: "400px",
+      truncate: true,
+      render: (deliveryOptions) => (
+        <span className="text-xs text-muted-foreground">
+          {deliveryOptions?.price || "---"}
+        </span>
+      ),
+    },
+
     {
       key: "status",
       label: "Status",
       minWidth: "10px",
       maxWidth: "400px",
       truncate: true,
-      render: (banner) => (
+      render: (deliveryOptions) => (
         <span className="text-xs text-muted-foreground">
-          {banner?.status || "---"}
+          {deliveryOptions?.status || "---"}
         </span>
       ),
     },
@@ -91,9 +104,9 @@ export const bannerTableColumns = ({
       label: "Created At",
       minWidth: "10px",
       maxWidth: "400px",
-      render: (banner) => (
+      render: (deliveryOptions) => (
         <span className="text-sm text-muted-foreground">
-          {dateTimeFormat(banner?.createdAt)}
+          {dateTimeFormat(deliveryOptions?.createdAt)}
         </span>
       ),
     },
@@ -103,22 +116,22 @@ export const bannerTableColumns = ({
       label: "Actions",
       minWidth: "10px",
       maxWidth: "400px",
-      render: (banner) => (
+      render: (deliveryOptions) => (
         <div className="flex items-center gap-2">
           <ActionButton
             icon={<Eye className="w-4 h-4" />}
             tooltip="View Details"
-            onClick={() => handleDeliveryOptionsViewDetail(banner)}
+            onClick={() => handleDeliveryOptionsViewDetail(deliveryOptions)}
           />
           <ActionButton
             icon={<Edit className="w-4 h-4" />}
             tooltip="Edit Delivery Options"
-            onClick={() => handleEditDeliveryOptions(banner)}
+            onClick={() => handleEditDeliveryOptions(deliveryOptions)}
           />
           <ActionButton
             icon={<Trash className="w-4 h-4" />}
             tooltip="Delete Delivery Options"
-            onClick={() => handleDeleteDeliveryOptions(banner)}
+            onClick={() => handleDeleteDeliveryOptions(deliveryOptions)}
             variant="destructive"
           />
         </div>

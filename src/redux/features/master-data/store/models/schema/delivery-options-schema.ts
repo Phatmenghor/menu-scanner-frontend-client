@@ -25,6 +25,7 @@ export const updateDeliveryOptionsSchema = z.object({
 export type CreateDeliveryOptionsData = z.infer<
   typeof createDeliveryOptionsSchema
 >;
+
 export type UpdateDeliveryOptionsData = z.infer<
   typeof updateDeliveryOptionsSchema
 >;
