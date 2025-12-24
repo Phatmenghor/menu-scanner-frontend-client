@@ -12,6 +12,8 @@ import categoriesReducer from "../features/master-data/store/slice/categories-sl
 import exchangeRateReducer from "../features/master-data/store/slice/exchange-rate-slice";
 import deliveryOptionsReducer from "../features/master-data/store/slice/delivery-options-slice";
 
+import productReducer from "../features/business/store/slice/product-slice";
+
 /**
  * Root reducer configuration
  * Add new feature reducers here
@@ -24,4 +26,5 @@ export const reducers = {
   categories: categoriesReducer,
   exchangeRate: exchangeRateReducer,
   deliveryOptions: deliveryOptionsReducer,
+  products: productReducer,
 };

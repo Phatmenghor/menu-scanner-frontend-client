@@ -1,4 +1,12 @@
-import { Home, Users, Database, Pin, Bell, LucideIcon } from "lucide-react";
+import {
+  Home,
+  Users,
+  Database,
+  Pin,
+  Bell,
+  LucideIcon,
+  LucideBriefcaseBusiness,
+} from "lucide-react";
 import { BRAND } from "zod/v3";
 import { EXCHAGE_RATE_FILTER } from "../status/filter-status";
 
@@ -24,6 +32,7 @@ export const ROUTES = {
     CATEGORIES: "/admin/categories",
     EXCHANGE_RATE: "/admin/exchange-rate",
     DELIVERY_OPTIONS: "/admin/delivery-options",
+    PRODUCTS: "/admin/products",
   },
 } as const;
 
@@ -75,6 +84,17 @@ export const SIDEBAR_MENU: MenuItem[] = [
       {
         title: "Delivery Options",
         href: ROUTES.ADMIN.DELIVERY_OPTIONS,
+      },
+    ],
+  },
+
+  {
+    title: "Business",
+    icon: LucideBriefcaseBusiness,
+    items: [
+      {
+        title: "Products",
+        href: ROUTES.ADMIN.PRODUCTS,
       },
     ],
   },
