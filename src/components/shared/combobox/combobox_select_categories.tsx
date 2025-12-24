@@ -65,11 +65,9 @@ export function ComboboxSelectCategories({
   const { ref, inView } = useInView({ threshold: 0.5 });
   const debouncedSearch = useDebounce(searchTerm, 400);
 
-  // Use refs to track loading state and avoid stale closures
   const loadingRef = useRef(false);
   const lastPageRef = useRef(false);
 
-  // Update refs when state changes
   useEffect(() => {
     loadingRef.current = loading;
     lastPageRef.current = lastPage;
@@ -81,7 +79,20 @@ export function ComboboxSelectCategories({
     lg: "h-10 text-base",
   };
 
-  // Fetch data function
+  // Helper function to remove duplicates by ID
+  const removeDuplicates = (
+    items: CategoriesResponseModel[]
+  ): CategoriesResponseModel[] => {
+    const seen = new Set<string>();
+    return items.filter((item) => {
+      if (seen.has(item.id)) {
+        return false;
+      }
+      seen.add(item.id);
+      return true;
+    });
+  };
+
   const fetchData = async (search: string, newPage: number) => {
     if (loadingRef.current || (lastPageRef.current && newPage > 1)) return;
 
@@ -99,15 +110,15 @@ export function ComboboxSelectCategories({
       if (!result) return;
 
       if (newPage === 1) {
-        // Add "All" option at the beginning only when showAllOption is true and no search
         const newData = result.content;
         if (showAllOption && !search) {
-          setData([ALL_OPTION, ...newData]);
+          setData(removeDuplicates([ALL_OPTION, ...newData]));
         } else {
-          setData(newData);
+          setData(removeDuplicates(newData));
         }
       } else {
-        setData((prev) => [...prev, ...result.content]);
+        // Merge with existing data and remove duplicates
+        setData((prev) => removeDuplicates([...prev, ...result.content]));
       }
 
       setPage(result.pageNo);
@@ -119,7 +130,6 @@ export function ComboboxSelectCategories({
     }
   };
 
-  // Reset and fetch first page when search changes
   useEffect(() => {
     setPage(1);
     setLastPage(false);
@@ -128,7 +138,6 @@ export function ComboboxSelectCategories({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
 
-  // Infinite scroll - load more when scrolling to bottom
   useEffect(() => {
     if (
       inView &&
