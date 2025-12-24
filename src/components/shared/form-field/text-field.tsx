@@ -15,6 +15,7 @@ interface TextFieldProps {
   type?: "text" | "email" | "tel" | "password" | "number" | "url";
   placeholder?: string;
   className?: string;
+  valueAsNumber?: boolean; // New prop
 }
 
 export function TextField({
@@ -27,6 +28,7 @@ export function TextField({
   type = "text",
   placeholder = "",
   className = "",
+  valueAsNumber = false, // Default false
 }: TextFieldProps) {
   return (
     <div className={`space-y-2 ${className}`}>
@@ -39,12 +41,21 @@ export function TextField({
         render={({ field }) => (
           <Input
             {...field}
-            value={field.value || ""}
+            value={field.value ?? ""}
             id={name}
             type={type}
             placeholder={placeholder}
             disabled={disabled}
             autoComplete="off"
+            onChange={(e) => {
+              if (valueAsNumber && type === "number") {
+                const value = e.target.valueAsNumber;
+                // If NaN or 0, set as undefined (for optional fields)
+                field.onChange(isNaN(value) || value === 0 ? undefined : value);
+              } else {
+                field.onChange(e.target.value);
+              }
+            }}
             className={`transition-colors ${disabled ? "bg-muted/50" : ""} ${
               error ? "border-red-500 focus:border-red-500" : ""
             }`}

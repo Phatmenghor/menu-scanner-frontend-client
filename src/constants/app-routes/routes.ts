@@ -1,5 +1,6 @@
 import { Home, Users, Database, Pin, Bell, LucideIcon } from "lucide-react";
 import { BRAND } from "zod/v3";
+import { EXCHAGE_RATE_FILTER } from "../status/filter-status";
 
 /**
  * Clean Routes Configuration
@@ -21,6 +22,8 @@ export const ROUTES = {
     BRAND: "/admin/brand",
     BANNER: "/admin/banner",
     CATEGORIES: "/admin/categories",
+    EXCHANGE_RATE: "/admin/exchange-rate",
+    DELIVERY_OPTIONS: "/admin/delivery-options",
   },
 } as const;
 
@@ -64,6 +67,14 @@ export const SIDEBAR_MENU: MenuItem[] = [
       {
         title: "Brand",
         href: ROUTES.ADMIN.BRAND,
+      },
+      {
+        title: "Exchange Rate",
+        href: ROUTES.ADMIN.EXCHANGE_RATE,
+      },
+      {
+        title: "Delivery Options",
+        href: ROUTES.ADMIN.DELIVERY_OPTIONS,
       },
     ],
   },

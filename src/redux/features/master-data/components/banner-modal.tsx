@@ -152,7 +152,7 @@ export default function BannerModal({
         handleClose();
       } else {
         await dispatch(
-          updateBannerService({ bannerId: bannerId!, bannerData: payload })
+          updateBannerService({ id: bannerId!, payload })
         ).unwrap();
         showToast.success("Banner updated successfully");
         handleClose();

@@ -6,6 +6,6 @@ export interface AllBannerRequest extends BaseGetAllRequest {
 }
 
 export interface UpdateBannerParams {
-  bannerId: string;
-  bannerData: UpdateBannerData;
+  id: string;
+  payload: UpdateBannerData;
 }

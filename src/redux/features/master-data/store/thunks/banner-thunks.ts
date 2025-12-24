@@ -57,10 +57,10 @@ export const createBannerService = createApiThunk<any, CreateBannerData>(
  */
 export const updateBannerService = createApiThunk<any, UpdateBannerParams>(
   "banners/update",
-  async ({ bannerId, bannerData }) => {
+  async ({ id, payload }) => {
     const response = await axiosClientWithAuth.put(
-      `/api/v1/banners/${bannerId}`,
-      bannerData
+      `/api/v1/banners/${id}`,
+      payload
     );
     return response.data.data;
   }

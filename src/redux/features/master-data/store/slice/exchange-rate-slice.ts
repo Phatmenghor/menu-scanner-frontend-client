@@ -1,31 +1,31 @@
 /**
- * Banner Management - Redux Slice
- * Manages Banner state: data, loading, errors, filters, operations
+ * ExchangeRate Management - Redux Slice
+ * Manages ExchangeRate state: data, loading, errors, filters, operations
  */
 
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { BannerManagementState } from "../models/type/banner-type";
-import { Status } from "@/constants/status/status";
+import { ExchangeRateManagementState } from "../models/type/exchange-rate-type";
+import { ExchangeRateStatus } from "@/constants/status/status";
 import {
-  createBannerService,
-  deleteBannerService,
-  fetchAllBannerService,
-  fetchBannerByIdService,
-  updateBannerService,
-} from "../thunks/banner-thunks";
+  createExchangeRateService,
+  deleteExchangeRateService,
+  fetchAllExchangeRateService,
+  fetchExchangeRateByIdService,
+  updateExchangeRateService,
+} from "../thunks/exchange-rate-thunks";
 
 /**
  * Initial state
  */
-const initialState: BannerManagementState = {
+const initialState: ExchangeRateManagementState = {
   data: null,
-  selectedBanner: null,
+  selectedExchangeRate: null,
   isLoading: true,
   error: null,
   filters: {
     search: "",
     pageNo: 1,
-    status: Status.ALL,
+    isActive: ExchangeRateStatus.ALL,
   },
   operations: {
     isCreating: false,
@@ -36,10 +36,10 @@ const initialState: BannerManagementState = {
 };
 
 /**
- * Banner slice
+ * ExchangeRate slice
  */
-const bannerSlice = createSlice({
-  name: "banners",
+const exchnageRateSlice = createSlice({
+  name: "business-exchange-rates",
   initialState,
   reducers: {
     setSearchFilter: (state, action: PayloadAction<string>) => {
@@ -55,13 +55,16 @@ const bannerSlice = createSlice({
       state.error = null;
     },
 
-    setStatusFilter: (state, action: PayloadAction<Status>) => {
-      state.filters.status = action.payload;
+    setExchangeRateStatusFilter: (
+      state,
+      action: PayloadAction<ExchangeRateStatus>
+    ) => {
+      state.filters.isActive = action.payload;
       state.filters.pageNo = 1;
     },
 
-    clearSelectedBanner: (state) => {
-      state.selectedBanner = null;
+    clearSelectedExchangeRate: (state) => {
+      state.selectedExchangeRate = null;
     },
 
     resetFilters: (state) => {
@@ -75,27 +78,27 @@ const bannerSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
-      .addCase(fetchAllBannerService.pending, (state) => {
+      .addCase(fetchAllExchangeRateService.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(fetchAllBannerService.fulfilled, (state, action) => {
+      .addCase(fetchAllExchangeRateService.fulfilled, (state, action) => {
         state.data = action.payload;
         state.isLoading = false;
       })
-      .addCase(fetchAllBannerService.rejected, (state, action) => {
+      .addCase(fetchAllExchangeRateService.rejected, (state, action) => {
         state.error = action.payload as string;
         state.isLoading = false;
       });
 
     builder
-      .addCase(fetchBannerByIdService.pending, (state) => {
+      .addCase(fetchExchangeRateByIdService.pending, (state) => {
         state.operations.isFetchingDetail = true;
         state.error = null;
-        state.selectedBanner = null;
+        state.selectedExchangeRate = null;
       })
-      .addCase(fetchBannerByIdService.fulfilled, (state, action) => {
-        state.selectedBanner = action.payload;
+      .addCase(fetchExchangeRateByIdService.fulfilled, (state, action) => {
+        state.selectedExchangeRate = action.payload;
         state.operations.isFetchingDetail = false;
 
         // Also update in list if exists (for consistency)
@@ -108,17 +111,17 @@ const bannerSlice = createSlice({
           }
         }
       })
-      .addCase(fetchBannerByIdService.rejected, (state, action) => {
+      .addCase(fetchExchangeRateByIdService.rejected, (state, action) => {
         state.error = action.payload as string;
         state.operations.isFetchingDetail = false;
       });
 
     builder
-      .addCase(createBannerService.pending, (state) => {
+      .addCase(createExchangeRateService.pending, (state) => {
         state.operations.isCreating = true;
         state.error = null;
       })
-      .addCase(createBannerService.fulfilled, (state, action) => {
+      .addCase(createExchangeRateService.fulfilled, (state, action) => {
         if (state.data) {
           state.data.content = [action.payload, ...state.data.content];
           state.data.totalElements += 1;
@@ -128,18 +131,18 @@ const bannerSlice = createSlice({
         }
         state.operations.isCreating = false;
       })
-      .addCase(createBannerService.rejected, (state, action) => {
+      .addCase(createExchangeRateService.rejected, (state, action) => {
         state.error = action.payload as string;
         state.operations.isCreating = false;
       });
 
     builder
-      .addCase(updateBannerService.pending, (state) => {
+      .addCase(updateExchangeRateService.pending, (state) => {
         state.operations.isUpdating = true;
         state.error = null;
       })
-      .addCase(updateBannerService.fulfilled, (state, action) => {
-        state.selectedBanner = action.payload;
+      .addCase(updateExchangeRateService.fulfilled, (state, action) => {
+        state.selectedExchangeRate = action.payload;
         state.operations.isUpdating = false;
 
         // Update in list
@@ -149,17 +152,17 @@ const bannerSlice = createSlice({
           );
         }
       })
-      .addCase(updateBannerService.rejected, (state, action) => {
+      .addCase(updateExchangeRateService.rejected, (state, action) => {
         state.error = action.payload as string;
         state.operations.isUpdating = false;
       });
 
     builder
-      .addCase(deleteBannerService.pending, (state) => {
+      .addCase(deleteExchangeRateService.pending, (state) => {
         state.operations.isDeleting = true;
         state.error = null;
       })
-      .addCase(deleteBannerService.fulfilled, (state, action) => {
+      .addCase(deleteExchangeRateService.fulfilled, (state, action) => {
         if (state.data) {
           state.data.content = state.data.content.filter(
             (user) => user.id !== action.payload
@@ -174,7 +177,7 @@ const bannerSlice = createSlice({
         }
         state.operations.isDeleting = false;
       })
-      .addCase(deleteBannerService.rejected, (state, action) => {
+      .addCase(deleteExchangeRateService.rejected, (state, action) => {
         state.error = action.payload as string;
         state.operations.isDeleting = false;
       });
@@ -185,10 +188,10 @@ export const {
   setSearchFilter,
   setPageNo,
   clearError,
-  setStatusFilter,
-  clearSelectedBanner,
+  setExchangeRateStatusFilter,
+  clearSelectedExchangeRate,
   resetFilters,
   resetState,
-} = bannerSlice.actions;
+} = exchnageRateSlice.actions;
 
-export default bannerSlice.reducer;
+export default exchnageRateSlice.reducer;
