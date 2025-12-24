@@ -111,3 +111,16 @@ export enum PaymentType {
   REFUND = "REFUND",
   OTHER = "OTHER",
 }
+
+export enum ProductStatus {
+  ALL = "ALL",
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
+  OUT_OF_STOCK = "OUT_OF_STOCK",
+}
+
+export enum PROMOTION_TYPE_OPTIONS {
+  ALL = "ALL",
+  PERCENTAGE = "PERCENTAGE",
+  FIXED_AMOUNT = "FIXED_AMOUNT",
+}

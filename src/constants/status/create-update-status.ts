@@ -4,6 +4,8 @@ import {
   PaymentMethod,
   PaymentStatus,
   PaymentType,
+  ProductStatus,
+  PROMOTION_TYPE_OPTIONS,
   Status,
   SubscriptionPlanStatus,
   UserRole,
@@ -80,4 +82,16 @@ export const BANNER_STATUS_CREATE_UPDATE = [
 export const DELIVERY_OPTIONS_STATUS_CREATE_UPDATE = [
   { value: Status.ACTIVE, label: "Active" },
   { value: Status.INACTIVE, label: "Draft" },
+];
+
+export const PRODUCT_STATUS_CREATE_UPDATE = [
+  { value: ProductStatus.ACTIVE, label: "Active" },
+  { value: ProductStatus.INACTIVE, label: "Draft" },
+  { value: ProductStatus.OUT_OF_STOCK, label: "Out of Stock" },
+];
+
+export const PROMOTION_TYPE_CREATE_UPDATE = [
+  { value: "", label: "No Promotion" },
+  { value: PROMOTION_TYPE_OPTIONS.PERCENTAGE, label: "Percentage" },
+  { value: PROMOTION_TYPE_OPTIONS.FIXED_AMOUNT, label: "Fixed Amount" },
 ];
