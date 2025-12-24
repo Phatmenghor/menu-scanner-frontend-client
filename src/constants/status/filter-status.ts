@@ -2,6 +2,7 @@ import {
   AccountStatus,
   BusinessStatus,
   ExchangeRateStatus,
+  ProductStatus,
   Status,
   SubscriptionPlanStatus,
   SubscriptionStatus,
@@ -89,4 +90,11 @@ export const ACCOUNT_STATUS_FILTER = [
   { value: AccountStatus.INACTIVE, label: "Inactive" },
   { value: AccountStatus.LOCKED, label: "Locked" },
   { value: AccountStatus.SUSPENDED, label: "Suspended" },
+];
+
+export const PRODUCT_STATUS_FILTER = [
+  { value: ProductStatus.ALL, label: "All Status" },
+  { value: ProductStatus.ACTIVE, label: "Active" },
+  { value: ProductStatus.INACTIVE, label: "Draft" },
+  { value: ProductStatus.OUT_OF_STOCK, label: "Out of Stock" },
 ];

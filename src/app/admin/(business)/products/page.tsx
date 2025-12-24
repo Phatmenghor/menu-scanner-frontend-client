@@ -9,7 +9,7 @@ import { CardHeaderSection } from "@/components/layout/card-header-section";
 import { DeleteConfirmationModal } from "@/components/shared/modal/delete-confirmation-modal";
 import { DataTableWithPagination } from "@/components/shared/common/data-table";
 import { showToast } from "@/components/shared/common/show-toast";
-import { ModalMode, Status } from "@/constants/status/status";
+import { ModalMode, ProductStatus, Status } from "@/constants/status/status";
 import { usePagination } from "@/redux/store/use-pagination";
 import { useProductState } from "@/redux/features/business/store/state/product-state";
 import { ProductDetailResponseModel } from "@/redux/features/business/store/models/response/product-response";
@@ -18,12 +18,19 @@ import {
   fetchAllProductAdminService,
 } from "@/redux/features/business/store/thunks/product-thunks";
 import {
+  selectProductStatus,
   setPageNo,
   setSearchFilter,
 } from "@/redux/features/business/store/slice/product-slice";
 import { productTableColumns } from "@/redux/features/business/table/product-table";
 import ProductModal from "@/redux/features/business/components/product-modal";
 import { ProductDetailModal } from "@/redux/features/business/components/product-detail-modal";
+import { CustomSelect } from "@/components/shared/common/custom-select";
+import { PRODUCT_STATUS_FILTER } from "@/constants/status/filter-status";
+import { ComboboxSelectBrand } from "@/components/shared/combobox/combobox_select_brand";
+import { ComboboxSelectCategories } from "@/components/shared/combobox/combobox_select_categories";
+import { CategoriesResponseModel } from "@/redux/features/master-data/store/models/response/categories-response";
+import { BrandResponseModel } from "@/redux/features/master-data/store/models/response/brand-response";
 
 export default function ProdyuctPage() {
   const searchParams = useSearchParams();
@@ -46,6 +53,12 @@ export default function ProdyuctPage() {
     mode: ModalMode.CREATE_MODE,
     productId: "",
   });
+
+  const [selectedBrand, setSelectedBrand] = useState<BrandResponseModel | null>(
+    null
+  );
+  const [selectedCategories, setSelectedCategories] =
+    useState<CategoriesResponseModel | null>(null);
 
   const [detailModalState, setDetailModalState] = useState({
     isOpen: false,
@@ -79,9 +92,11 @@ export default function ProdyuctPage() {
       fetchAllProductAdminService({
         search: debouncedSearch,
         pageNo: filters.pageNo,
+        status:
+          filters.status == ProductStatus.ALL ? undefined : filters.status,
       })
     );
-  }, [dispatch, debouncedSearch, filters.pageNo]);
+  }, [dispatch, debouncedSearch, filters.pageNo, filters.status]);
 
   // Event handlers
   const handleCreateBrand = () => {
@@ -186,6 +201,20 @@ export default function ProdyuctPage() {
     });
   };
 
+  const handleProductStatusChange = (status: ProductStatus) => {
+    dispatch(selectProductStatus(status));
+  };
+
+  const handleBrandChange = (brand: BrandResponseModel | null) => {
+    setSelectedBrand(brand);
+  };
+
+  const handleCategoriesChange = (
+    categories: CategoriesResponseModel | null
+  ) => {
+    setSelectedCategories(categories);
+  };
+
   return (
     <div className="flex flex-1 flex-col gap-4 px-2">
       <div className="space-y-4">
@@ -202,7 +231,33 @@ export default function ProdyuctPage() {
           buttonText="New"
           onSearchChange={handleSearchChange}
           openModal={handleCreateBrand}
-        ></CardHeaderSection>
+        >
+          <div className="flex items-center gap-3">
+            <ComboboxSelectBrand
+              dataSelect={selectedBrand}
+              onChangeSelected={handleBrandChange}
+              placeholder="All Brand"
+              showAllOption={true}
+            />
+
+            <ComboboxSelectCategories
+              dataSelect={selectedCategories}
+              onChangeSelected={handleCategoriesChange}
+              placeholder="All Categires"
+              showAllOption={true}
+            />
+
+            <CustomSelect
+              options={PRODUCT_STATUS_FILTER}
+              value={filters.status}
+              placeholder="All Status"
+              onValueChange={(value) =>
+                handleProductStatusChange(value as ProductStatus)
+              }
+              label="Product Status"
+            />
+          </div>
+        </CardHeaderSection>
 
         {/* Data Table with Your Custom Pagination */}
         <DataTableWithPagination

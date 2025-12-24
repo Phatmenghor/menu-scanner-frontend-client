@@ -13,6 +13,8 @@ import {
   fetchProductByIdService,
   updateProductService,
 } from "../thunks/product-thunks";
+import { ProductStatus } from "@/constants/status/status";
+import { selectCategories } from "@/redux/features/master-data/store/selectors/categories-selector";
 
 /**
  * Initial state
@@ -56,6 +58,11 @@ const productSlice = createSlice({
 
     clearSelectedProduct: (state) => {
       state.selectedProduct = null;
+    },
+
+    selectProductStatus: (state, action: PayloadAction<ProductStatus>) => {
+      state.filters.status = action.payload;
+      state.filters.pageNo = 1;
     },
 
     resetFilters: (state) => {
@@ -191,6 +198,7 @@ const productSlice = createSlice({
 
 export const {
   setSearchFilter,
+  selectProductStatus,
   setPageNo,
   clearError,
   clearSelectedProduct,

@@ -5,7 +5,7 @@ import {
   PaymentStatus,
   PaymentType,
   ProductStatus,
-  PROMOTION_TYPE_OPTIONS,
+  PromotionType,
   Status,
   SubscriptionPlanStatus,
   UserRole,
@@ -91,7 +91,7 @@ export const PRODUCT_STATUS_CREATE_UPDATE = [
 ];
 
 export const PROMOTION_TYPE_CREATE_UPDATE = [
-  { value: "", label: "No Promotion" },
-  { value: PROMOTION_TYPE_OPTIONS.PERCENTAGE, label: "Percentage" },
-  { value: PROMOTION_TYPE_OPTIONS.FIXED_AMOUNT, label: "Fixed Amount" },
+  { value: PromotionType.NONE, label: "No Promotion" },
+  { value: PromotionType.PERCENTAGE, label: "Percentage" },
+  { value: PromotionType.FIXED_AMOUNT, label: "Fixed Amount" },
 ];

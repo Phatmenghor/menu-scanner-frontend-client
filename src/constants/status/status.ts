@@ -119,8 +119,9 @@ export enum ProductStatus {
   OUT_OF_STOCK = "OUT_OF_STOCK",
 }
 
-export enum PROMOTION_TYPE_OPTIONS {
+export enum PromotionType {
   ALL = "ALL",
   PERCENTAGE = "PERCENTAGE",
   FIXED_AMOUNT = "FIXED_AMOUNT",
+  NONE = "NONE",
 }

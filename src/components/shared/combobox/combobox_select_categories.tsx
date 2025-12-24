@@ -42,7 +42,7 @@ const ALL_OPTION: CategoriesResponseModel = {
   description: "",
 } as unknown as CategoriesResponseModel;
 
-export function ComboboxSelectCategory({
+export function ComboboxSelectCategories({
   dataSelect,
   onChangeSelected,
   disabled = false,
@@ -65,9 +65,11 @@ export function ComboboxSelectCategory({
   const { ref, inView } = useInView({ threshold: 0.5 });
   const debouncedSearch = useDebounce(searchTerm, 400);
 
+  // Use refs to track loading state and avoid stale closures
   const loadingRef = useRef(false);
   const lastPageRef = useRef(false);
 
+  // Update refs when state changes
   useEffect(() => {
     loadingRef.current = loading;
     lastPageRef.current = lastPage;
@@ -79,6 +81,7 @@ export function ComboboxSelectCategory({
     lg: "h-10 text-base",
   };
 
+  // Fetch data function
   const fetchData = async (search: string, newPage: number) => {
     if (loadingRef.current || (lastPageRef.current && newPage > 1)) return;
 
@@ -96,6 +99,7 @@ export function ComboboxSelectCategory({
       if (!result) return;
 
       if (newPage === 1) {
+        // Add "All" option at the beginning only when showAllOption is true and no search
         const newData = result.content;
         if (showAllOption && !search) {
           setData([ALL_OPTION, ...newData]);
@@ -115,13 +119,16 @@ export function ComboboxSelectCategory({
     }
   };
 
+  // Reset and fetch first page when search changes
   useEffect(() => {
     setPage(1);
     setLastPage(false);
     setData([]);
     fetchData(debouncedSearch, 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
 
+  // Infinite scroll - load more when scrolling to bottom
   useEffect(() => {
     if (
       inView &&
@@ -131,6 +138,7 @@ export function ComboboxSelectCategory({
     ) {
       fetchData(debouncedSearch, page + 1);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inView]);
 
   const handleSearchChange = (value: string) => {
@@ -154,7 +162,7 @@ export function ComboboxSelectCategory({
           {required && <span className="text-red-500 ml-1">*</span>}
         </Label>
       )}
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={setOpen} modal={true}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
@@ -177,8 +185,11 @@ export function ComboboxSelectCategory({
         <PopoverContent
           className="w-[var(--radix-popover-trigger-width)] p-0"
           align="start"
+          side="bottom"
+          sideOffset={4}
+          onOpenAutoFocus={(e) => e.preventDefault()}
         >
-          <Command>
+          <Command shouldFilter={false}>
             <CommandInput
               placeholder="Search category..."
               value={searchTerm}

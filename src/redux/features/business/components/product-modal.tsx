@@ -37,7 +37,7 @@ import {
 } from "@/constants/status/create-update-status";
 import { ClickableImageUpload } from "@/components/shared/form-field/clickable-image-upload";
 import { ComboboxSelectBrand } from "@/components/shared/combobox/combobox_select_brand";
-import { ComboboxSelectCategory } from "@/components/shared/combobox/combobox_select_categories";
+import { ComboboxSelectCategories } from "@/components/shared/combobox/combobox_select_categories";
 import { uploadImage, isBase64Image } from "@/utils/common/upload-image";
 import { BrandResponseModel } from "@/redux/features/master-data/store/models/response/brand-response";
 import { CategoriesResponseModel } from "@/redux/features/master-data/store/models/response/categories-response";
@@ -54,6 +54,8 @@ type Props = {
   onClose: () => void;
   isOpen: boolean;
 };
+
+const MAX_PRODUCT_IMAGES = 5; // Maximum number of product images allowed
 
 export default function ProductModal({
   isOpen,
@@ -72,6 +74,7 @@ export default function ProductModal({
   const { isCreating, isUpdating } = operations;
 
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isProcessingImages, setIsProcessingImages] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState<BrandResponseModel | null>(
     null
   );
@@ -97,7 +100,7 @@ export default function ProductModal({
       brandId: "",
       price: 0,
       mainImageUrl: "",
-      promotionType: "",
+      promotionType: "NONE",
       promotionValue: undefined,
       promotionFromDate: "",
       promotionToDate: "",
@@ -129,7 +132,100 @@ export default function ProductModal({
 
   const productName = watch("name");
   const mainImageUrl = watch("mainImageUrl");
+  const promotionType = watch("promotionType");
   const hasSizes = sizeFields.length > 0;
+  const showPromotionFields = promotionType && promotionType !== "NONE";
+
+  // Calculate remaining slots
+  const remainingSlots = MAX_PRODUCT_IMAGES - imageFields.length;
+  const canAddMore = imageFields.length < MAX_PRODUCT_IMAGES;
+
+  // Handle multiple image uploads with max limit
+  const handleMultipleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    // Check if adding these files would exceed the limit
+    if (imageFields.length >= MAX_PRODUCT_IMAGES) {
+      showToast.error(`Maximum ${MAX_PRODUCT_IMAGES} images allowed`);
+      event.target.value = "";
+      return;
+    }
+
+    // Calculate how many files we can actually accept
+    const availableSlots = MAX_PRODUCT_IMAGES - imageFields.length;
+    const filesToProcess = Array.from(files).slice(0, availableSlots);
+
+    if (files.length > availableSlots) {
+      showToast.warning(
+        `Only ${availableSlots} slot${
+          availableSlots > 1 ? "s" : ""
+        } remaining. Processing first ${availableSlots} image${
+          availableSlots > 1 ? "s" : ""
+        }.`
+      );
+    }
+
+    setIsProcessingImages(true);
+
+    try {
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      const fileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      };
+
+      const results = await Promise.all(
+        filesToProcess.map(async (file) => {
+          if (!file.type.startsWith("image/")) {
+            return { success: false, error: `${file.name} is not an image` };
+          }
+          if (file.size > maxSize) {
+            return { success: false, error: `${file.name} exceeds 5MB` };
+          }
+          try {
+            const base64 = await fileToBase64(file);
+            return { success: true, base64 };
+          } catch {
+            return { success: false, error: `Failed to process ${file.name}` };
+          }
+        })
+      );
+
+      const successfulImages = results.filter(
+        (r): r is { success: true; base64: string } => r.success
+      );
+      const failedImages = results.filter(
+        (r): r is { success: false; error: string } => !r.success
+      );
+
+      if (successfulImages.length > 0) {
+        successfulImages.forEach((img) => {
+          appendImage({ imageUrl: img.base64 });
+        });
+        showToast.success(
+          `Added ${successfulImages.length} image${
+            successfulImages.length > 1 ? "s" : ""
+          }`
+        );
+      }
+
+      if (failedImages.length > 0) {
+        showToast.error(`${failedImages.length} image(s) failed to upload`);
+      }
+    } catch (error) {
+      showToast.error("Failed to process images");
+    } finally {
+      setIsProcessingImages(false);
+      event.target.value = "";
+    }
+  };
 
   // Fetch product data for edit mode
   useEffect(() => {
@@ -165,7 +261,7 @@ export default function ProductModal({
             brandId: data.brandId || "",
             price: data.price || 0,
             mainImageUrl: data.mainImageUrl || "",
-            promotionType: data.promotionType || "",
+            promotionType: data.promotionType || "NONE",
             promotionValue: data.promotionValue || undefined,
             promotionFromDate: data.promotionFromDate || "",
             promotionToDate: data.promotionToDate || "",
@@ -194,7 +290,7 @@ export default function ProductModal({
         brandId: "",
         price: 0,
         mainImageUrl: "",
-        promotionType: "",
+        promotionType: "NONE",
         promotionValue: undefined,
         promotionFromDate: "",
         promotionToDate: "",
@@ -211,6 +307,30 @@ export default function ProductModal({
       dispatch(clearError());
     }
   }, [isOpen, dispatch]);
+
+  // Helper function to clean promotion data
+  const cleanPromotionData = (
+    promotionType?: string,
+    promotionValue?: number,
+    promotionFromDate?: string,
+    promotionToDate?: string
+  ) => {
+    if (!promotionType || promotionType === "NONE") {
+      return {
+        promotionType: null,
+        promotionValue: null,
+        promotionFromDate: null,
+        promotionToDate: null,
+      };
+    }
+
+    return {
+      promotionType: promotionType || undefined,
+      promotionValue: promotionValue || undefined,
+      promotionFromDate: promotionFromDate || undefined,
+      promotionToDate: promotionToDate || undefined,
+    };
+  };
 
   const onSubmit = async (data: ProductFormData) => {
     try {
@@ -244,13 +364,12 @@ export default function ProductModal({
           }
 
           return {
-            id: img.id, // Keep id if exists (for update), undefined for new
+            id: img.id,
             imageUrl,
           };
         })
       );
 
-      // Filter out null images and remove empty entries
       const validImages = processedImages.filter(
         (img: any): img is { id?: string; imageUrl: string } =>
           img !== null && !!img.imageUrl
@@ -258,20 +377,32 @@ export default function ProductModal({
 
       setIsUploadingImage(false);
 
-      // Prepare payload based on whether product has sizes
+      // Clean sizes data
+      const cleanedSizes = (data.sizes || []).map((size) => ({
+        id: size.id,
+        name: size.name,
+        price: size.price,
+        ...cleanPromotionData(
+          size.promotionType,
+          size.promotionValue,
+          size.promotionFromDate,
+          size.promotionToDate
+        ),
+      }));
+
+      // Prepare base payload
       const basePayload = {
         name: data.name,
         description: data.description,
         categoryId: data.categoryId,
-        brandId: data.brandId || undefined, // Brand is optional
+        brandId: data.brandId || undefined,
         mainImageUrl: finalMainImageUrl,
         images: validImages.length > 0 ? validImages : undefined,
-        sizes: (data.sizes || []).length > 0 ? data.sizes : undefined,
+        sizes: cleanedSizes.length > 0 ? cleanedSizes : undefined,
         status: data.status,
       };
 
-      // If product has sizes, pricing comes from sizes, so set main product pricing to null
-      // If no sizes, use main product pricing
+      // If product has sizes, pricing comes from sizes
       const payload = hasSizes
         ? {
             ...basePayload,
@@ -284,10 +415,12 @@ export default function ProductModal({
         : {
             ...basePayload,
             price: data.price,
-            promotionType: data.promotionType || undefined,
-            promotionValue: data.promotionValue || undefined,
-            promotionFromDate: data.promotionFromDate || undefined,
-            promotionToDate: data.promotionToDate || undefined,
+            ...cleanPromotionData(
+              data.promotionType,
+              data.promotionValue,
+              data.promotionFromDate,
+              data.promotionToDate
+            ),
           };
 
       if (isCreate) {
@@ -314,6 +447,7 @@ export default function ProductModal({
   const handleClose = () => {
     reset();
     setIsUploadingImage(false);
+    setIsProcessingImages(false);
     setSelectedBrand(null);
     setSelectedCategory(null);
     dispatch(clearError());
@@ -322,7 +456,7 @@ export default function ProductModal({
   };
 
   const isSubmitting = isCreate ? isCreating : isUpdating;
-  const isProcessing = isSubmitting || isUploadingImage;
+  const isProcessing = isSubmitting || isUploadingImage || isProcessingImages;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -390,7 +524,7 @@ export default function ProductModal({
                       error={errors.name}
                     />
 
-                    <ComboboxSelectCategory
+                    <ComboboxSelectCategories
                       dataSelect={selectedCategory}
                       onChangeSelected={(category) => {
                         setSelectedCategory(category);
@@ -479,41 +613,46 @@ export default function ProductModal({
                         error={errors.promotionType}
                       />
 
-                      <TextField
-                        control={control}
-                        name="promotionValue"
-                        label="Promotion Value"
-                        type="number"
-                        placeholder="Enter promotion value"
-                        disabled={isProcessing}
-                        error={errors.promotionValue as any}
-                        valueAsNumber={true}
-                        min={0}
-                        step="0.01"
-                        allowZero={false}
-                      />
+                      {/* Only show promotion fields when type is not NONE */}
+                      {showPromotionFields && (
+                        <>
+                          <TextField
+                            control={control}
+                            name="promotionValue"
+                            label="Promotion Value"
+                            type="number"
+                            placeholder="Enter promotion value"
+                            disabled={isProcessing}
+                            error={errors.promotionValue as any}
+                            valueAsNumber={true}
+                            min={0}
+                            step="0.01"
+                            allowZero={false}
+                          />
 
-                      <div className="col-span-2 grid grid-cols-2 gap-4">
-                        <DateTimePickerField
-                          control={control}
-                          name="promotionFromDate"
-                          label="Promotion From"
-                          mode="datetime"
-                          placeholder="Select start date & time"
-                          disabled={isProcessing}
-                          error={errors.promotionFromDate}
-                        />
+                          <div className="col-span-2 grid grid-cols-2 gap-4">
+                            <DateTimePickerField
+                              control={control}
+                              name="promotionFromDate"
+                              label="Promotion From"
+                              mode="datetime"
+                              placeholder="Select start date & time"
+                              disabled={isProcessing}
+                              error={errors.promotionFromDate}
+                            />
 
-                        <DateTimePickerField
-                          control={control}
-                          name="promotionToDate"
-                          label="Promotion To"
-                          mode="datetime"
-                          placeholder="Select end date & time"
-                          disabled={isProcessing}
-                          error={errors.promotionToDate}
-                        />
-                      </div>
+                            <DateTimePickerField
+                              control={control}
+                              name="promotionToDate"
+                              label="Promotion To"
+                              mode="datetime"
+                              placeholder="Select end date & time"
+                              disabled={isProcessing}
+                              error={errors.promotionToDate}
+                            />
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -521,61 +660,165 @@ export default function ProductModal({
                 {/* Product Images */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold">Product Images</h3>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => appendImage({ imageUrl: "" })}
-                      disabled={isProcessing}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Image
-                    </Button>
+                    <div>
+                      <h3 className="text-lg font-semibold">Product Images</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {imageFields.length > 0
+                          ? `${
+                              imageFields.length
+                            }/${MAX_PRODUCT_IMAGES} images uploaded${
+                              !canAddMore ? " (Maximum reached)" : ""
+                            }`
+                          : `Upload up to ${MAX_PRODUCT_IMAGES} additional product images`}
+                      </p>
+                    </div>
+                    {canAddMore && (
+                      <div className="flex gap-2">
+                        <input
+                          type="file"
+                          id="multiple-image-upload"
+                          multiple
+                          accept="image/*"
+                          onChange={handleMultipleImageUpload}
+                          className="hidden"
+                          disabled={isProcessing}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            document
+                              .getElementById("multiple-image-upload")
+                              ?.click()
+                          }
+                          disabled={isProcessing}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          {isProcessingImages
+                            ? "Processing..."
+                            : `Upload Images (${remainingSlots} left)`}
+                        </Button>
+                      </div>
+                    )}
                   </div>
 
                   {imageFields.length === 0 ? (
-                    <div className="text-center py-8 border-2 border-dashed rounded-lg">
-                      <p className="text-sm text-muted-foreground">
-                        No additional images. Click "Add Image" to add more
-                        product images.
-                      </p>
+                    <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/10">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Plus className="h-8 w-8 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">
+                            No additional images
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Upload up to {MAX_PRODUCT_IMAGES} product images at
+                            once
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            document
+                              .getElementById("multiple-image-upload")
+                              ?.click()
+                          }
+                          disabled={isProcessing}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Upload Images
+                        </Button>
+                      </div>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-3 gap-4">
-                      {imageFields.map((field, index) => (
-                        <Card key={field.id}>
-                          <CardContent className="pt-6">
-                            <div className="space-y-3">
-                              <ClickableImageUpload
-                                label={`Image ${index + 1}`}
-                                value={watch(`images.${index}.imageUrl`) || ""}
-                                onChange={(base64) =>
-                                  setValue(`images.${index}.imageUrl`, base64, {
-                                    shouldDirty: true,
-                                  })
-                                }
-                                aspectRatio="square"
-                                height="h-40"
-                                maxSize={5}
-                                disabled={isProcessing}
-                                error={errors.images?.[index]?.imageUrl as any}
-                              />
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => removeImage(index)}
-                                disabled={isProcessing}
-                                className="w-full"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Remove
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        {imageFields.map((field, index) => (
+                          <Card key={field.id} className="overflow-hidden">
+                            <CardContent className="p-3">
+                              <div className="space-y-2">
+                                <div className="relative group">
+                                  <ClickableImageUpload
+                                    label=""
+                                    value={
+                                      watch(`images.${index}.imageUrl`) || ""
+                                    }
+                                    onChange={(base64) =>
+                                      setValue(
+                                        `images.${index}.imageUrl`,
+                                        base64,
+                                        {
+                                          shouldDirty: true,
+                                        }
+                                      )
+                                    }
+                                    aspectRatio="square"
+                                    height="h-32"
+                                    maxSize={5}
+                                    disabled={isProcessing}
+                                    error={
+                                      errors.images?.[index]?.imageUrl as any
+                                    }
+                                    showPreviewText={false}
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute top-2 right-2 h-7 w-7 z-20 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                    onClick={() => removeImage(index)}
+                                    disabled={isProcessing}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                                <p className="text-xs text-center text-muted-foreground">
+                                  Image {index + 1}
+                                </p>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 bg-muted/20 rounded-lg border">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">
+                            {imageFields.length}/{MAX_PRODUCT_IMAGES} images
+                          </p>
+                          {canAddMore && (
+                            <span className="text-xs text-muted-foreground">
+                              • {remainingSlots} slot
+                              {remainingSlots > 1 ? "s" : ""} remaining
+                            </span>
+                          )}
+                          {!canAddMore && (
+                            <span className="text-xs text-amber-600 font-medium">
+                              • Maximum reached
+                            </span>
+                          )}
+                        </div>
+                        {canAddMore && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              document
+                                .getElementById("multiple-image-upload")
+                                ?.click()
+                            }
+                            disabled={isProcessing}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add More
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -599,7 +842,7 @@ export default function ProductModal({
                         appendSize({
                           name: "",
                           price: 0,
-                          promotionType: "",
+                          promotionType: "NONE",
                           promotionValue: undefined,
                           promotionFromDate: "",
                           promotionToDate: "",
@@ -620,106 +863,120 @@ export default function ProductModal({
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {sizeFields.map((field, index) => (
-                        <Card key={field.id}>
-                          <CardHeader className="pb-4">
-                            <div className="flex items-center justify-between">
-                              <CardTitle className="text-base">
-                                Size {index + 1}
-                              </CardTitle>
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => removeSize(index)}
-                                disabled={isProcessing}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Remove
-                              </Button>
-                            </div>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="grid grid-cols-2 gap-4">
-                              <TextField
-                                control={control}
-                                name={`sizes.${index}.name`}
-                                label="Size Name"
-                                placeholder="e.g., Small, Medium, Large"
-                                disabled={isProcessing}
-                                error={errors.sizes?.[index]?.name as any}
-                              />
+                      {sizeFields.map((field, index) => {
+                        const sizePromotionType = watch(
+                          `sizes.${index}.promotionType`
+                        );
+                        const showSizePromotionFields =
+                          sizePromotionType && sizePromotionType !== "NONE";
 
-                              <TextField
-                                control={control}
-                                name={`sizes.${index}.price`}
-                                label="Price"
-                                type="number"
-                                placeholder="Enter price"
-                                disabled={isProcessing}
-                                error={errors.sizes?.[index]?.price as any}
-                                valueAsNumber={true}
-                                min={0}
-                                step="0.01"
-                                allowZero={true}
-                              />
+                        return (
+                          <Card key={field.id}>
+                            <CardHeader className="pb-4">
+                              <div className="flex items-center justify-between">
+                                <CardTitle className="text-base">
+                                  Size {index + 1}
+                                </CardTitle>
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => removeSize(index)}
+                                  disabled={isProcessing}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Remove
+                                </Button>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="grid grid-cols-2 gap-4">
+                                <TextField
+                                  control={control}
+                                  name={`sizes.${index}.name`}
+                                  label="Size Name"
+                                  placeholder="e.g., Small, Medium, Large"
+                                  disabled={isProcessing}
+                                  error={errors.sizes?.[index]?.name as any}
+                                />
 
-                              <SelectField
-                                control={control}
-                                name={`sizes.${index}.promotionType`}
-                                label="Promotion Type"
-                                placeholder="Select promotion type"
-                                options={PROMOTION_TYPE_CREATE_UPDATE}
-                                disabled={isProcessing}
-                                error={
-                                  errors.sizes?.[index]?.promotionType as any
-                                }
-                              />
+                                <TextField
+                                  control={control}
+                                  name={`sizes.${index}.price`}
+                                  label="Price"
+                                  type="number"
+                                  placeholder="Enter price"
+                                  disabled={isProcessing}
+                                  error={errors.sizes?.[index]?.price as any}
+                                  valueAsNumber={true}
+                                  min={0}
+                                  step="0.01"
+                                  allowZero={true}
+                                />
 
-                              <TextField
-                                control={control}
-                                name={`sizes.${index}.promotionValue`}
-                                label="Promotion Value"
-                                type="number"
-                                placeholder="Enter promotion value"
-                                disabled={isProcessing}
-                                error={
-                                  errors.sizes?.[index]?.promotionValue as any
-                                }
-                                valueAsNumber={true}
-                                min={0}
-                                step="0.01"
-                                allowZero={false}
-                              />
+                                <SelectField
+                                  control={control}
+                                  name={`sizes.${index}.promotionType`}
+                                  label="Promotion Type"
+                                  placeholder="Select promotion type"
+                                  options={PROMOTION_TYPE_CREATE_UPDATE}
+                                  disabled={isProcessing}
+                                  error={
+                                    errors.sizes?.[index]?.promotionType as any
+                                  }
+                                />
 
-                              <DateTimePickerField
-                                control={control}
-                                name={`sizes.${index}.promotionFromDate`}
-                                label="Promotion From"
-                                mode="datetime"
-                                placeholder="Select start date & time"
-                                disabled={isProcessing}
-                                error={
-                                  errors.sizes?.[index]
-                                    ?.promotionFromDate as any
-                                }
-                              />
+                                {showSizePromotionFields && (
+                                  <>
+                                    <TextField
+                                      control={control}
+                                      name={`sizes.${index}.promotionValue`}
+                                      label="Promotion Value"
+                                      type="number"
+                                      placeholder="Enter promotion value"
+                                      disabled={isProcessing}
+                                      error={
+                                        errors.sizes?.[index]
+                                          ?.promotionValue as any
+                                      }
+                                      valueAsNumber={true}
+                                      min={0}
+                                      step="0.01"
+                                      allowZero={false}
+                                    />
 
-                              <DateTimePickerField
-                                control={control}
-                                name={`sizes.${index}.promotionToDate`}
-                                label="Promotion To"
-                                mode="datetime"
-                                placeholder="Select end date & time"
-                                disabled={isProcessing}
-                                error={
-                                  errors.sizes?.[index]?.promotionToDate as any
-                                }
-                              />
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                                    <DateTimePickerField
+                                      control={control}
+                                      name={`sizes.${index}.promotionFromDate`}
+                                      label="Promotion From"
+                                      mode="datetime"
+                                      placeholder="Select start date & time"
+                                      disabled={isProcessing}
+                                      error={
+                                        errors.sizes?.[index]
+                                          ?.promotionFromDate as any
+                                      }
+                                    />
+
+                                    <DateTimePickerField
+                                      control={control}
+                                      name={`sizes.${index}.promotionToDate`}
+                                      label="Promotion To"
+                                      mode="datetime"
+                                      placeholder="Select end date & time"
+                                      disabled={isProcessing}
+                                      error={
+                                        errors.sizes?.[index]
+                                          ?.promotionToDate as any
+                                      }
+                                    />
+                                  </>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
