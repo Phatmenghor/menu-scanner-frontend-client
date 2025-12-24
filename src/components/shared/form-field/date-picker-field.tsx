@@ -9,9 +9,9 @@ import {
   FieldError,
 } from "react-hook-form";
 import { Label } from "@/components/ui/label";
-import { CustomDatePicker } from "../common/custom-date-picker";
+import { CustomDateTimePicker } from "../common/custom-date-picker";
 
-interface DatePickerFieldProps<T extends FieldValues> {
+interface DateTimePickerFieldProps<T extends FieldValues> {
   name: Path<T>;
   label: string;
   control: Control<T>;
@@ -20,9 +20,10 @@ interface DatePickerFieldProps<T extends FieldValues> {
   required?: boolean;
   placeholder?: string;
   className?: string;
+  mode?: "date" | "datetime";
 }
 
-export function DatePickerField<T extends FieldValues>({
+export function DateTimePickerField<T extends FieldValues>({
   name,
   label,
   control,
@@ -31,7 +32,8 @@ export function DatePickerField<T extends FieldValues>({
   required = false,
   placeholder = "Select date",
   className = "",
-}: DatePickerFieldProps<T>) {
+  mode = "date",
+}: DateTimePickerFieldProps<T>) {
   return (
     <div className={`space-y-2 ${className}`}>
       <Label htmlFor={name} className="text-[12px] font-normal text-gray-300">
@@ -41,12 +43,13 @@ export function DatePickerField<T extends FieldValues>({
         control={control}
         name={name}
         render={({ field }) => (
-          <CustomDatePicker
+          <CustomDateTimePicker
             value={field.value || ""}
             onChange={field.onChange}
             disabled={disabled}
             placeholder={placeholder}
             error={!!error}
+            mode={mode}
           />
         )}
       />

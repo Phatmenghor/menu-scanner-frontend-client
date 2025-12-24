@@ -14,15 +14,6 @@ import { SubmitButton } from "@/components/shared/form-field/submid-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  CreateProductRequest,
-  UpdateProductRequest,
-} from "../store/models/request/product-request";
-import {
-  createProductSchema,
-  updateProductSchema,
-  ProductFormData,
-} from "../store/models/schema/product.schema";
-import {
   fetchProductByIdService,
   createProductService,
   updateProductService,
@@ -39,11 +30,23 @@ import {
 import { FormHeader } from "@/components/shared/form-field/form-header";
 import { FormBody } from "@/components/shared/form-field/form-body";
 import { FormFooter } from "@/components/shared/form-field/form-footer";
-import { ModalMode } from "@/constants/status/status";
+import { ModalMode, ProductStatus } from "@/constants/status/status";
 import {
-  PRODUCT_STATUS_OPTIONS,
-  PROMOTION_TYPE_OPTIONS,
+  PRODUCT_STATUS_CREATE_UPDATE,
+  PROMOTION_TYPE_CREATE_UPDATE,
 } from "@/constants/status/create-update-status";
+import { ClickableImageUpload } from "@/components/shared/form-field/clickable-image-upload";
+import { ComboboxSelectBrand } from "@/components/shared/combobox/combobox_select_brand";
+import { ComboboxSelectCategory } from "@/components/shared/combobox/combobox_select_categories";
+import { uploadImage, isBase64Image } from "@/utils/common/upload-image";
+import { BrandResponseModel } from "@/redux/features/master-data/store/models/response/brand-response";
+import { CategoriesResponseModel } from "@/redux/features/master-data/store/models/response/categories-response";
+import {
+  createProductSchema,
+  ProductFormData,
+  updateProductSchema,
+} from "../store/models/schema/product-schema";
+import { DateTimePickerField } from "@/components/shared/form-field/date-picker-field";
 
 type Props = {
   mode: ModalMode;
@@ -68,6 +71,13 @@ export default function ProductModal({
   const productData = useAppSelector(selectSelectedProduct);
   const { isCreating, isUpdating } = operations;
 
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [selectedBrand, setSelectedBrand] = useState<BrandResponseModel | null>(
+    null
+  );
+  const [selectedCategory, setSelectedCategory] =
+    useState<CategoriesResponseModel | null>(null);
+
   const {
     control,
     handleSubmit,
@@ -88,12 +98,12 @@ export default function ProductModal({
       price: 0,
       mainImageUrl: "",
       promotionType: "",
-      promotionValue: 0,
+      promotionValue: undefined,
       promotionFromDate: "",
       promotionToDate: "",
       images: [],
       sizes: [],
-      status: "ACTIVE",
+      status: ProductStatus.ACTIVE,
     },
     mode: "onChange",
   });
@@ -119,6 +129,7 @@ export default function ProductModal({
 
   const productName = watch("name");
   const mainImageUrl = watch("mainImageUrl");
+  const hasSizes = sizeFields.length > 0;
 
   // Fetch product data for edit mode
   useEffect(() => {
@@ -131,6 +142,21 @@ export default function ProductModal({
         if (fetchProductByIdService.fulfilled.match(resultAction)) {
           const data = resultAction.payload;
 
+          // Set combobox selections
+          if (data.brandId) {
+            setSelectedBrand({
+              id: data.brandId,
+              name: data.brandName,
+            } as BrandResponseModel);
+          }
+
+          if (data.categoryId) {
+            setSelectedCategory({
+              id: data.categoryId,
+              name: data.categoryName,
+            } as CategoriesResponseModel);
+          }
+
           reset({
             id: data.id,
             name: data.name || "",
@@ -140,12 +166,12 @@ export default function ProductModal({
             price: data.price || 0,
             mainImageUrl: data.mainImageUrl || "",
             promotionType: data.promotionType || "",
-            promotionValue: data.promotionValue || 0,
+            promotionValue: data.promotionValue || undefined,
             promotionFromDate: data.promotionFromDate || "",
             promotionToDate: data.promotionToDate || "",
             images: data.images || [],
             sizes: data.sizes || [],
-            status: data.status || "ACTIVE",
+            status: data.status || ProductStatus.ACTIVE,
           });
         }
       } catch (error) {
@@ -159,6 +185,8 @@ export default function ProductModal({
   // Reset form for create mode
   useEffect(() => {
     if (isOpen && isCreate) {
+      setSelectedBrand(null);
+      setSelectedCategory(null);
       reset({
         name: "",
         description: "",
@@ -167,12 +195,12 @@ export default function ProductModal({
         price: 0,
         mainImageUrl: "",
         promotionType: "",
-        promotionValue: 0,
+        promotionValue: undefined,
         promotionFromDate: "",
         promotionToDate: "",
         images: [],
         sizes: [],
-        status: "ACTIVE",
+        status: ProductStatus.ACTIVE,
       });
     }
   }, [isOpen, isCreate, reset]);
@@ -186,68 +214,119 @@ export default function ProductModal({
 
   const onSubmit = async (data: ProductFormData) => {
     try {
-      if (isCreate) {
-        const payload: CreateProductRequest = {
-          name: data.name,
-          description: data.description,
-          categoryId: data.categoryId,
-          brandId: data.brandId || undefined,
-          price: data.price,
-          mainImageUrl: data.mainImageUrl,
-          promotionType: data.promotionType || undefined,
-          promotionValue: data.promotionValue || undefined,
-          promotionFromDate: data.promotionFromDate || undefined,
-          promotionToDate: data.promotionToDate || undefined,
-          images: data.images || [],
-          sizes: data.sizes || [],
-          status: data.status,
-        };
+      setIsUploadingImage(true);
 
-        const result = await dispatch(createProductService(payload)).unwrap();
-        showToast.success(`Product "${result.name}" created successfully`);
+      // Upload main image if it's base64
+      let finalMainImageUrl = data.mainImageUrl;
+      if (finalMainImageUrl && isBase64Image(finalMainImageUrl)) {
+        try {
+          finalMainImageUrl = await uploadImage(finalMainImageUrl);
+        } catch (uploadError) {
+          showToast.error("Failed to upload main image");
+          setIsUploadingImage(false);
+          return;
+        }
+      }
+
+      // Upload product images
+      const processedImages = await Promise.all(
+        (data.images || []).map(async (img: any) => {
+          if (!img.imageUrl) return null;
+
+          let imageUrl = img.imageUrl;
+          if (isBase64Image(imageUrl)) {
+            try {
+              imageUrl = await uploadImage(imageUrl);
+            } catch (error) {
+              console.error("Failed to upload product image:", error);
+              return null;
+            }
+          }
+
+          return {
+            id: img.id, // Keep id if exists (for update), undefined for new
+            imageUrl,
+          };
+        })
+      );
+
+      // Filter out null images and remove empty entries
+      const validImages = processedImages.filter(
+        (img: any): img is { id?: string; imageUrl: string } =>
+          img !== null && !!img.imageUrl
+      );
+
+      setIsUploadingImage(false);
+
+      // Prepare payload based on whether product has sizes
+      const basePayload = {
+        name: data.name,
+        description: data.description,
+        categoryId: data.categoryId,
+        brandId: data.brandId || undefined, // Brand is optional
+        mainImageUrl: finalMainImageUrl,
+        images: validImages.length > 0 ? validImages : undefined,
+        sizes: (data.sizes || []).length > 0 ? data.sizes : undefined,
+        status: data.status,
+      };
+
+      // If product has sizes, pricing comes from sizes, so set main product pricing to null
+      // If no sizes, use main product pricing
+      const payload = hasSizes
+        ? {
+            ...basePayload,
+            price: null,
+            promotionType: null,
+            promotionValue: null,
+            promotionFromDate: null,
+            promotionToDate: null,
+          }
+        : {
+            ...basePayload,
+            price: data.price,
+            promotionType: data.promotionType || undefined,
+            promotionValue: data.promotionValue || undefined,
+            promotionFromDate: data.promotionFromDate || undefined,
+            promotionToDate: data.promotionToDate || undefined,
+          };
+
+      if (isCreate) {
+        await dispatch(createProductService(payload as any)).unwrap();
+        showToast.success("Product created successfully");
         handleClose();
       } else {
-        const payload: UpdateProductRequest = {
-          name: data.name,
-          description: data.description,
-          categoryId: data.categoryId,
-          brandId: data.brandId || undefined,
-          price: data.price,
-          mainImageUrl: data.mainImageUrl,
-          promotionType: data.promotionType || undefined,
-          promotionValue: data.promotionValue || undefined,
-          promotionFromDate: data.promotionFromDate || undefined,
-          promotionToDate: data.promotionToDate || undefined,
-          images: data.images || [],
-          sizes: data.sizes || [],
-          status: data.status,
-        };
-
-        const result = await dispatch(
-          updateProductService({ productId: data.id!, productData: payload })
+        await dispatch(
+          updateProductService({
+            productId: data.id!,
+            productData: payload as any,
+          })
         ).unwrap();
-        showToast.success(`Product "${result.name}" updated successfully`);
+        showToast.success("Product updated successfully");
         handleClose();
       }
     } catch (error: any) {
       showToast.error(
-        error || `Failed to ${isCreate ? "create" : "update"} product`
+        error?.message || `Failed to ${isCreate ? "create" : "update"} product`
       );
     }
   };
 
   const handleClose = () => {
     reset();
+    setIsUploadingImage(false);
+    setSelectedBrand(null);
+    setSelectedCategory(null);
     dispatch(clearError());
     dispatch(clearSelectedProduct());
     onClose();
   };
 
   const isSubmitting = isCreate ? isCreating : isUpdating;
+  const isProcessing = isSubmitting || isUploadingImage;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="w-[90%] max-w-6xl max-h-[90vh] p-0 flex flex-col">
+      <DialogContent className="w-[95%] max-w-6xl max-h-[90vh] p-0 flex flex-col">
         <FormHeader
           title={isCreate ? "Create New Product" : "Edit Product"}
           description={
@@ -257,6 +336,7 @@ export default function ProductModal({
           }
           avatarName={productName}
           avatarImageUrl={mainImageUrl}
+          isCreate={isCreate}
         />
 
         {!isCreate && isFetchingDetail ? (
@@ -270,341 +350,406 @@ export default function ProductModal({
           >
             <FormBody>
               {reduxError && (
-                <div className="p-4 bg-destructive/10 border border-destructive rounded-lg">
+                <div className="p-4 bg-destructive/10 border border-destructive rounded-lg mb-4">
                   <p className="text-sm text-destructive font-medium">
                     {reduxError}
                   </p>
                 </div>
               )}
 
-              {/* Basic Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Basic Information</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <TextField
-                    control={control}
-                    name="name"
-                    label="Product Name"
-                    placeholder="Enter product name"
+              <div className="space-y-6">
+                {/* Main Product Image */}
+                <div className="space-y-3">
+                  <ClickableImageUpload
+                    label="Main Product Image"
+                    value={mainImageUrl}
+                    onChange={(base64) =>
+                      setValue("mainImageUrl", base64, { shouldDirty: true })
+                    }
+                    aspectRatio="square"
+                    height="h-56"
+                    maxSize={5}
                     required
-                    disabled={isSubmitting}
-                    error={errors.name}
-                  />
-
-                  <SelectField
-                    control={control}
-                    name="categoryId"
-                    label="Category"
-                    placeholder="Select category"
-                    options={[]} // You need to provide category options
-                    required
-                    disabled={isSubmitting}
-                    error={errors.categoryId}
-                  />
-
-                  <SelectField
-                    control={control}
-                    name="brandId"
-                    label="Brand"
-                    placeholder="Select brand (optional)"
-                    options={[]} // You need to provide brand options
-                    disabled={isSubmitting}
-                    error={errors.brandId}
-                  />
-
-                  <TextField
-                    control={control}
-                    name="price"
-                    label="Price"
-                    type="number"
-                    placeholder="Enter price"
-                    required
-                    disabled={isSubmitting}
-                    error={errors.price}
-                  />
-
-                  <SelectField
-                    control={control}
-                    name="status"
-                    label="Status"
-                    placeholder="Select status"
-                    options={PRODUCT_STATUS_OPTIONS}
-                    required
-                    disabled={isSubmitting}
-                    error={errors.status}
-                  />
-
-                  <TextField
-                    control={control}
-                    name="mainImageUrl"
-                    label="Main Image URL"
-                    placeholder="Enter main image URL"
-                    required
-                    disabled={isSubmitting}
                     error={errors.mainImageUrl}
+                    placeholder="Click to upload main product image"
+                    helperText="PNG, JPG up to 5MB"
                   />
+                </div>
 
-                  <div className="col-span-2">
-                    <TextareaField
+                {/* Basic Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Basic Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <TextField
                       control={control}
-                      name="description"
-                      label="Description"
-                      placeholder="Enter product description"
-                      rows={4}
+                      name="name"
+                      label="Product Name"
+                      placeholder="Enter product name"
                       required
-                      disabled={isSubmitting}
-                      error={errors.description}
+                      disabled={isProcessing}
+                      error={errors.name}
                     />
+
+                    <ComboboxSelectCategory
+                      dataSelect={selectedCategory}
+                      onChangeSelected={(category) => {
+                        setSelectedCategory(category);
+                        setValue("categoryId", category?.id || "", {
+                          shouldDirty: true,
+                        });
+                      }}
+                      label="Category"
+                      placeholder="Select category"
+                      required
+                      disabled={isProcessing}
+                      error={errors.categoryId?.message}
+                      showAllOption={false}
+                    />
+
+                    <ComboboxSelectBrand
+                      dataSelect={selectedBrand}
+                      onChangeSelected={(brand) => {
+                        setSelectedBrand(brand);
+                        setValue("brandId", brand?.id || "", {
+                          shouldDirty: true,
+                        });
+                      }}
+                      label="Brand (Optional)"
+                      placeholder="Select brand"
+                      disabled={isProcessing}
+                      error={errors.brandId?.message}
+                      showAllOption={false}
+                    />
+
+                    <SelectField
+                      control={control}
+                      name="status"
+                      label="Status"
+                      placeholder="Select status"
+                      options={PRODUCT_STATUS_CREATE_UPDATE}
+                      required
+                      disabled={isProcessing}
+                      error={errors.status}
+                    />
+
+                    <div className="col-span-2">
+                      <TextareaField
+                        control={control}
+                        name="description"
+                        label="Description"
+                        placeholder="Enter product description"
+                        rows={4}
+                        required
+                        disabled={isProcessing}
+                        error={errors.description}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Promotion Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Promotion (Optional)</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <SelectField
-                    control={control}
-                    name="promotionType"
-                    label="Promotion Type"
-                    placeholder="Select promotion type"
-                    options={PROMOTION_TYPE_OPTIONS}
-                    disabled={isSubmitting}
-                    error={errors.promotionType}
-                  />
+                {/* Pricing Section - Only show if no sizes */}
+                {!hasSizes && (
+                  <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
+                    <h3 className="text-lg font-semibold">
+                      Pricing Information
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <TextField
+                        control={control}
+                        name="price"
+                        label="Base Price"
+                        type="number"
+                        placeholder="Enter price"
+                        required
+                        disabled={isProcessing}
+                        error={errors.price}
+                        valueAsNumber={true}
+                        min={0}
+                        step="0.01"
+                        allowZero={true}
+                      />
 
-                  <TextField
-                    control={control}
-                    name="promotionValue"
-                    label="Promotion Value"
-                    type="number"
-                    placeholder="Enter promotion value"
-                    disabled={isSubmitting}
-                    error={errors.promotionValue}
-                  />
+                      <SelectField
+                        control={control}
+                        name="promotionType"
+                        label="Promotion Type"
+                        placeholder="Select promotion type"
+                        options={PROMOTION_TYPE_CREATE_UPDATE}
+                        disabled={isProcessing}
+                        error={errors.promotionType}
+                      />
 
-                  <TextField
-                    control={control}
-                    name="promotionFromDate"
-                    label="Promotion From Date"
-                    type="datetime-local"
-                    placeholder="Select start date"
-                    disabled={isSubmitting}
-                    error={errors.promotionFromDate}
-                  />
+                      <TextField
+                        control={control}
+                        name="promotionValue"
+                        label="Promotion Value"
+                        type="number"
+                        placeholder="Enter promotion value"
+                        disabled={isProcessing}
+                        error={errors.promotionValue as any}
+                        valueAsNumber={true}
+                        min={0}
+                        step="0.01"
+                        allowZero={false}
+                      />
 
-                  <TextField
-                    control={control}
-                    name="promotionToDate"
-                    label="Promotion To Date"
-                    type="datetime-local"
-                    placeholder="Select end date"
-                    disabled={isSubmitting}
-                    error={errors.promotionToDate}
-                  />
-                </div>
-              </div>
+                      <div className="col-span-2 grid grid-cols-2 gap-4">
+                        <DateTimePickerField
+                          control={control}
+                          name="promotionFromDate"
+                          label="Promotion From"
+                          mode="datetime"
+                          placeholder="Select start date & time"
+                          disabled={isProcessing}
+                          error={errors.promotionFromDate}
+                        />
 
-              {/* Product Images */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Product Images</h3>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => appendImage({ imageUrl: "" })}
-                    disabled={isSubmitting}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Image
-                  </Button>
-                </div>
-
-                {imageFields.length === 0 ? (
-                  <div className="text-center py-8 border-2 border-dashed rounded-lg">
-                    <p className="text-sm text-muted-foreground">
-                      No images added yet. Click "Add Image" to add product
-                      images.
-                    </p>
+                        <DateTimePickerField
+                          control={control}
+                          name="promotionToDate"
+                          label="Promotion To"
+                          mode="datetime"
+                          placeholder="Select end date & time"
+                          disabled={isProcessing}
+                          error={errors.promotionToDate}
+                        />
+                      </div>
+                    </div>
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    {imageFields.map((field, index) => (
-                      <Card key={field.id}>
-                        <CardContent className="pt-6">
-                          <div className="flex gap-4 items-start">
-                            <div className="flex-1">
-                              <TextField
-                                control={control}
-                                name={`images.${index}.imageUrl`}
-                                label={`Image ${index + 1} URL`}
-                                placeholder="Enter image URL"
-                                disabled={isSubmitting}
+                )}
+
+                {/* Product Images */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Product Images</h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => appendImage({ imageUrl: "" })}
+                      disabled={isProcessing}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Image
+                    </Button>
+                  </div>
+
+                  {imageFields.length === 0 ? (
+                    <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                      <p className="text-sm text-muted-foreground">
+                        No additional images. Click "Add Image" to add more
+                        product images.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-4">
+                      {imageFields.map((field, index) => (
+                        <Card key={field.id}>
+                          <CardContent className="pt-6">
+                            <div className="space-y-3">
+                              <ClickableImageUpload
+                                label={`Image ${index + 1}`}
+                                value={watch(`images.${index}.imageUrl`) || ""}
+                                onChange={(base64) =>
+                                  setValue(`images.${index}.imageUrl`, base64, {
+                                    shouldDirty: true,
+                                  })
+                                }
+                                aspectRatio="square"
+                                height="h-40"
+                                maxSize={5}
+                                disabled={isProcessing}
                                 error={errors.images?.[index]?.imageUrl as any}
                               />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => removeImage(index)}
+                                disabled={isProcessing}
+                                className="w-full"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Remove
+                              </Button>
                             </div>
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="icon"
-                              onClick={() => removeImage(index)}
-                              disabled={isSubmitting}
-                              className="mt-8"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Product Sizes */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Product Sizes</h3>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      appendSize({
-                        name: "",
-                        price: 0,
-                        promotionType: "",
-                        promotionValue: 0,
-                        promotionFromDate: "",
-                        promotionToDate: "",
-                      })
-                    }
-                    disabled={isSubmitting}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Size
-                  </Button>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {sizeFields.length === 0 ? (
-                  <div className="text-center py-8 border-2 border-dashed rounded-lg">
-                    <p className="text-sm text-muted-foreground">
-                      No sizes added yet. Click "Add Size" to add product sizes.
-                    </p>
+                {/* Product Sizes */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold">Product Sizes</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {hasSizes
+                          ? "Pricing will come from sizes. Main product pricing is disabled."
+                          : "No sizes defined. Using main product pricing."}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        appendSize({
+                          name: "",
+                          price: 0,
+                          promotionType: "",
+                          promotionValue: undefined,
+                          promotionFromDate: "",
+                          promotionToDate: "",
+                        })
+                      }
+                      disabled={isProcessing}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Size
+                    </Button>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {sizeFields.map((field, index) => (
-                      <Card key={field.id}>
-                        <CardHeader className="pb-4">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-base">
-                              Size {index + 1}
-                            </CardTitle>
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => removeSize(index)}
-                              disabled={isSubmitting}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Remove
-                            </Button>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid grid-cols-2 gap-4">
-                            <TextField
-                              control={control}
-                              name={`sizes.${index}.name`}
-                              label="Size Name"
-                              placeholder="e.g., Small, Medium, Large"
-                              disabled={isSubmitting}
-                              error={errors.sizes?.[index]?.name as any}
-                            />
 
-                            <TextField
-                              control={control}
-                              name={`sizes.${index}.price`}
-                              label="Price"
-                              type="number"
-                              placeholder="Enter price"
-                              disabled={isSubmitting}
-                              error={errors.sizes?.[index]?.price as any}
-                            />
+                  {sizeFields.length === 0 ? (
+                    <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                      <p className="text-sm text-muted-foreground">
+                        No sizes defined. Product will use main pricing.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {sizeFields.map((field, index) => (
+                        <Card key={field.id}>
+                          <CardHeader className="pb-4">
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="text-base">
+                                Size {index + 1}
+                              </CardTitle>
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => removeSize(index)}
+                                disabled={isProcessing}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Remove
+                              </Button>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-2 gap-4">
+                              <TextField
+                                control={control}
+                                name={`sizes.${index}.name`}
+                                label="Size Name"
+                                placeholder="e.g., Small, Medium, Large"
+                                disabled={isProcessing}
+                                error={errors.sizes?.[index]?.name as any}
+                              />
 
-                            <SelectField
-                              control={control}
-                              name={`sizes.${index}.promotionType`}
-                              label="Promotion Type"
-                              placeholder="Select promotion type"
-                              options={PROMOTION_TYPE_OPTIONS}
-                              disabled={isSubmitting}
-                              error={
-                                errors.sizes?.[index]?.promotionType as any
-                              }
-                            />
+                              <TextField
+                                control={control}
+                                name={`sizes.${index}.price`}
+                                label="Price"
+                                type="number"
+                                placeholder="Enter price"
+                                disabled={isProcessing}
+                                error={errors.sizes?.[index]?.price as any}
+                                valueAsNumber={true}
+                                min={0}
+                                step="0.01"
+                                allowZero={true}
+                              />
 
-                            <TextField
-                              control={control}
-                              name={`sizes.${index}.promotionValue`}
-                              label="Promotion Value"
-                              type="number"
-                              placeholder="Enter promotion value"
-                              disabled={isSubmitting}
-                              error={
-                                errors.sizes?.[index]?.promotionValue as any
-                              }
-                            />
+                              <SelectField
+                                control={control}
+                                name={`sizes.${index}.promotionType`}
+                                label="Promotion Type"
+                                placeholder="Select promotion type"
+                                options={PROMOTION_TYPE_CREATE_UPDATE}
+                                disabled={isProcessing}
+                                error={
+                                  errors.sizes?.[index]?.promotionType as any
+                                }
+                              />
 
-                            <TextField
-                              control={control}
-                              name={`sizes.${index}.promotionFromDate`}
-                              label="Promotion From"
-                              type="datetime-local"
-                              disabled={isSubmitting}
-                              error={
-                                errors.sizes?.[index]?.promotionFromDate as any
-                              }
-                            />
+                              <TextField
+                                control={control}
+                                name={`sizes.${index}.promotionValue`}
+                                label="Promotion Value"
+                                type="number"
+                                placeholder="Enter promotion value"
+                                disabled={isProcessing}
+                                error={
+                                  errors.sizes?.[index]?.promotionValue as any
+                                }
+                                valueAsNumber={true}
+                                min={0}
+                                step="0.01"
+                                allowZero={false}
+                              />
 
-                            <TextField
-                              control={control}
-                              name={`sizes.${index}.promotionToDate`}
-                              label="Promotion To"
-                              type="datetime-local"
-                              disabled={isSubmitting}
-                              error={
-                                errors.sizes?.[index]?.promotionToDate as any
-                              }
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
+                              <DateTimePickerField
+                                control={control}
+                                name={`sizes.${index}.promotionFromDate`}
+                                label="Promotion From"
+                                mode="datetime"
+                                placeholder="Select start date & time"
+                                disabled={isProcessing}
+                                error={
+                                  errors.sizes?.[index]
+                                    ?.promotionFromDate as any
+                                }
+                              />
+
+                              <DateTimePickerField
+                                control={control}
+                                name={`sizes.${index}.promotionToDate`}
+                                label="Promotion To"
+                                mode="datetime"
+                                placeholder="Select end date & time"
+                                disabled={isProcessing}
+                                error={
+                                  errors.sizes?.[index]?.promotionToDate as any
+                                }
+                              />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </FormBody>
 
             <FormFooter
-              isSubmitting={isSubmitting}
+              isSubmitting={isProcessing}
               isDirty={isDirty}
               isCreate={isCreate}
-              createMessage="Creating product..."
-              updateMessage="Updating product..."
+              createMessage={
+                isUploadingImage ? "Uploading images..." : "Creating product..."
+              }
+              updateMessage={
+                isUploadingImage ? "Uploading images..." : "Updating product..."
+              }
             >
-              <CancelButton onClick={handleClose} disabled={isSubmitting} />
+              <CancelButton onClick={handleClose} disabled={isProcessing} />
               <SubmitButton
-                isSubmitting={isSubmitting}
+                isSubmitting={isProcessing}
                 isDirty={isDirty}
                 isCreate={isCreate}
                 createText="Create Product"
                 updateText="Update Product"
-                submittingCreateText="Creating..."
-                submittingUpdateText="Updating..."
+                submittingCreateText={
+                  isUploadingImage ? "Uploading..." : "Creating..."
+                }
+                submittingUpdateText={
+                  isUploadingImage ? "Uploading..." : "Updating..."
+                }
               />
             </FormFooter>
           </form>

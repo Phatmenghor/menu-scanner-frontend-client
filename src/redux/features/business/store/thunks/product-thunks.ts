@@ -71,10 +71,10 @@ export const createProductService = createApiThunk<any, CreateProductData>(
  */
 export const updateProductService = createApiThunk<any, UpdateProductParams>(
   "products/update",
-  async ({ id, payload }) => {
+  async ({ productId, productData }) => {
     const response = await axiosClientWithAuth.put(
-      `/api/v1/products/${id}`,
-      payload
+      `/api/v1/products/${productId}`,
+      productData
     );
     return response.data.data;
   }

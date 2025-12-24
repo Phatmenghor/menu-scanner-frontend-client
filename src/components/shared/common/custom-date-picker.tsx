@@ -14,16 +14,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, X, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface DatePickerProps {
+interface DateTimePickerProps {
   value?: string;
   onChange: (date: string) => void;
   disabled?: boolean;
   placeholder?: string;
   className?: string;
   error?: boolean;
+  mode?: "date" | "datetime";
 }
 
 const MONTHS = [
@@ -43,40 +44,69 @@ const MONTHS = [
 
 const DAYS = ["S", "M", "T", "W", "T", "F", "S"];
 
-export function CustomDatePicker({
+export function CustomDateTimePicker({
   value,
   onChange,
   disabled = false,
   placeholder = "Select date",
   className,
   error = false,
-}: DatePickerProps) {
+  mode = "date",
+}: DateTimePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [viewDate, setViewDate] = useState<Date>(new Date());
+  const [selectedHour, setSelectedHour] = useState<string>("12");
+  const [selectedMinute, setSelectedMinute] = useState<string>("00");
+  const [selectedPeriod, setSelectedPeriod] = useState<"AM" | "PM">("PM");
 
-  // Initialize selected date from value prop
+  // Initialize selected date and time from value prop
   useEffect(() => {
     if (value) {
       const date = new Date(value);
       if (!isNaN(date.getTime())) {
         setSelectedDate(date);
         setViewDate(date);
+
+        if (mode === "datetime") {
+          const hours = date.getHours();
+          const minutes = date.getMinutes();
+
+          setSelectedPeriod(hours >= 12 ? "PM" : "AM");
+          setSelectedHour(String(hours % 12 || 12).padStart(2, "0"));
+          setSelectedMinute(String(minutes).padStart(2, "0"));
+        }
       }
     }
-  }, [value]);
+  }, [value, mode]);
 
   // Format date for display
   const formatDate = (date: Date): string => {
-    return date.toLocaleDateString("en-US", {
+    const dateStr = date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
     });
+
+    if (mode === "datetime") {
+      const hours = date.getHours();
+      const minutes = date.getMinutes();
+      const period = hours >= 12 ? "PM" : "AM";
+      const displayHour = hours % 12 || 12;
+      return `${dateStr}, ${displayHour}:${String(minutes).padStart(
+        2,
+        "0"
+      )} ${period}`;
+    }
+
+    return dateStr;
   };
 
-  // Format date for form submission (YYYY-MM-DD)
+  // Format date for form submission
   const formatDateForForm = (date: Date): string => {
+    if (mode === "datetime") {
+      return date.toISOString().slice(0, 16);
+    }
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
@@ -86,9 +116,46 @@ export function CustomDatePicker({
   // Handle date selection
   const handleDateSelect = (day: number) => {
     const newDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
+
+    if (mode === "datetime" && selectedDate) {
+      newDate.setHours(selectedDate.getHours());
+      newDate.setMinutes(selectedDate.getMinutes());
+    }
+
+    setSelectedDate(newDate);
+
+    if (mode === "date") {
+      onChange(formatDateForForm(newDate));
+      setIsOpen(false);
+    }
+  };
+
+  // Handle time change
+  const handleTimeChange = () => {
+    if (!selectedDate) return;
+
+    const newDate = new Date(selectedDate);
+    let hours = parseInt(selectedHour);
+
+    if (selectedPeriod === "PM" && hours !== 12) {
+      hours += 12;
+    } else if (selectedPeriod === "AM" && hours === 12) {
+      hours = 0;
+    }
+
+    newDate.setHours(hours);
+    newDate.setMinutes(parseInt(selectedMinute));
+
     setSelectedDate(newDate);
     onChange(formatDateForForm(newDate));
-    setIsOpen(false);
+  };
+
+  // Apply datetime selection
+  const applyDateTime = () => {
+    if (selectedDate && mode === "datetime") {
+      handleTimeChange();
+      setIsOpen(false);
+    }
   };
 
   // Handle month change
@@ -127,7 +194,6 @@ export function CustomDatePicker({
     const days = [];
     const currentDate = new Date(startDate);
 
-    // Generate 5 weeks of days (35 days total) for compact view
     for (let i = 0; i < 35; i++) {
       const dayObj = {
         date: new Date(currentDate),
@@ -155,6 +221,14 @@ export function CustomDatePicker({
     return years;
   };
 
+  // Generate hour/minute options
+  const hours = Array.from({ length: 12 }, (_, i) =>
+    String(i + 1).padStart(2, "0")
+  );
+  const minutes = Array.from({ length: 60 }, (_, i) =>
+    String(i).padStart(2, "0")
+  );
+
   // Clear selection
   const clearSelection = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -181,7 +255,11 @@ export function CustomDatePicker({
           )}
           disabled={disabled}
         >
-          <Calendar className="mr-2 h-4 w-4" />
+          {mode === "datetime" ? (
+            <Clock className="mr-2 h-4 w-4" />
+          ) : (
+            <Calendar className="mr-2 h-4 w-4" />
+          )}
           <span className="flex-1">
             {selectedDate ? formatDate(selectedDate) : placeholder}
           </span>
@@ -267,7 +345,6 @@ export function CustomDatePicker({
 
         {/* Calendar Grid */}
         <div className="p-3">
-          {/* Days header */}
           <div className="grid grid-cols-7 gap-1 mb-2">
             {DAYS.map((day) => (
               <div
@@ -279,7 +356,6 @@ export function CustomDatePicker({
             ))}
           </div>
 
-          {/* Calendar days */}
           <div className="grid grid-cols-7 gap-1">
             {calendarDays.map((dayObj, index) => (
               <Button
@@ -305,8 +381,54 @@ export function CustomDatePicker({
           </div>
         </div>
 
+        {/* Time Picker (only for datetime mode) */}
+        {mode === "datetime" && (
+          <div className="p-3 border-t">
+            <div className="flex items-center justify-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <Select value={selectedHour} onValueChange={setSelectedHour}>
+                <SelectTrigger className="h-9 w-16 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {hours.map((hour) => (
+                    <SelectItem key={hour} value={hour}>
+                      {hour}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="text-lg font-medium">:</span>
+              <Select value={selectedMinute} onValueChange={setSelectedMinute}>
+                <SelectTrigger className="h-9 w-16 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {minutes.map((minute) => (
+                    <SelectItem key={minute} value={minute}>
+                      {minute}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={selectedPeriod}
+                onValueChange={(val) => setSelectedPeriod(val as "AM" | "PM")}
+              >
+                <SelectTrigger className="h-9 w-16 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AM">AM</SelectItem>
+                  <SelectItem value="PM">PM</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+
         {/* Footer */}
-        <div className="p-3 border-t bg-muted/30">
+        <div className="p-3 border-t bg-muted/30 flex gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -314,13 +436,34 @@ export function CustomDatePicker({
               const today = new Date();
               setSelectedDate(today);
               setViewDate(today);
+
+              if (mode === "datetime") {
+                const hours = today.getHours();
+                const minutes = today.getMinutes();
+                setSelectedPeriod(hours >= 12 ? "PM" : "AM");
+                setSelectedHour(String(hours % 12 || 12).padStart(2, "0"));
+                setSelectedMinute(String(minutes).padStart(2, "0"));
+              }
+
               onChange(formatDateForForm(today));
               setIsOpen(false);
             }}
-            className="w-full h-8 text-xs hover:bg-accent"
+            className="flex-1 h-8 text-xs hover:bg-accent"
           >
-            Today
+            Now
           </Button>
+
+          {mode === "datetime" && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={applyDateTime}
+              disabled={!selectedDate}
+              className="flex-1 h-8 text-xs"
+            >
+              Apply
+            </Button>
+          )}
         </div>
       </PopoverContent>
     </Popover>
