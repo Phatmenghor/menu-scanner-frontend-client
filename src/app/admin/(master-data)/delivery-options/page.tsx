@@ -83,7 +83,7 @@ export default function DeliveryOptionsPage() {
       fetchAllDeliveryOptionsService({
         search: debouncedSearch,
         pageNo: filters.pageNo,
-        statuses: filters.status ? [filters.status] : [],
+        statuses: filters.status == Status.ALL ? [] : [filters.status],
       })
     );
   }, [dispatch, debouncedSearch, filters.status, filters.pageNo]);
