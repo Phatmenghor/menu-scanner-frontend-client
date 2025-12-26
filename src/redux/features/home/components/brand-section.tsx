@@ -5,7 +5,6 @@ import { ChevronRight, Store } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 // Mock brand data - replace with actual API call
@@ -92,7 +91,7 @@ export function BrandSection() {
             <div className="h-8 bg-muted rounded w-64" />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[...Array(8)].map((_, i) => (
-                <div key={i} className="h-48 bg-muted rounded-lg" />
+                <div key={i} className="h-32 bg-muted rounded-lg" />
               ))}
             </div>
           </div>
@@ -128,47 +127,31 @@ export function BrandSection() {
           </Link>
         </div>
 
-        {/* Brands Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 md:gap-6">
+        {/* Brands Grid - 4 columns x 2 rows */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           {brands.map((brand) => (
             <Link key={brand.id} href={`/brands/${brand.id}`}>
-              <Card
-                className={cn(
-                  "group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1 cursor-pointer"
-                )}
-              >
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    {/* Brand Logo */}
-                    <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-muted/30">
-                      <Image
-                        src={brand.imageUrl}
-                        alt={brand.name}
-                        fill
-                        className="object-contain p-4 transition-transform duration-300 group-hover:scale-110"
-                      />
-                    </div>
+              <div className="group relative overflow-hidden rounded-lg bg-white border border-gray-200 aspect-[2/1] transition-all duration-300 hover:shadow-lg cursor-pointer">
+                {/* Brand Image */}
+                <div className="relative w-full h-full">
+                  <Image
+                    src={brand.imageUrl}
+                    alt={brand.name}
+                    fill
+                    className="object-contain p-6 transition-transform duration-300 group-hover:scale-105"
+                  />
+                </div>
 
-                    {/* Brand Info */}
-                    <div className="space-y-2">
-                      <h3 className="font-bold text-lg group-hover:text-primary transition-colors">
-                        {brand.name}
-                      </h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {brand.description}
-                      </p>
-
-                      {/* Product Count */}
-                      <div className="flex items-center justify-between pt-2">
-                        <span className="text-xs text-muted-foreground">
-                          {brand.productCount} Products
-                        </span>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                {/* Hover Overlay - Slides up from bottom */}
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out p-4 flex flex-col justify-end">
+                  <h3 className="font-semibold text-white text-sm md:text-base">
+                    {brand.name}
+                  </h3>
+                  <p className="text-xs text-white/80 mt-1">
+                    {brand.productCount} Products
+                  </p>
+                </div>
+              </div>
             </Link>
           ))}
         </div>
