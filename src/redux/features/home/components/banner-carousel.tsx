@@ -62,7 +62,7 @@ export function BannerCarousel() {
   useEffect(() => {
     if (!isAutoPlaying) return;
 
-    const interval = setInterval(nextSlide, 5000); // Change slide every 5 seconds
+    const interval = setInterval(nextSlide, 5000);
 
     return () => clearInterval(interval);
   }, [isAutoPlaying, nextSlide]);
@@ -70,7 +70,8 @@ export function BannerCarousel() {
   return (
     <section className="relative w-full bg-muted/30">
       <div className="container mx-auto px-0">
-        <div className="relative h-[300px] md:h-[400px] lg:h-[500px] overflow-hidden rounded-none md:rounded-lg">
+        {/* Reduced height to 50% of original */}
+        <div className="relative h-[225px] md:h-[250px] lg:h-[300px] overflow-hidden rounded-none md:rounded-lg">
           {/* Slides */}
           {banners.map((banner, index) => (
             <div
@@ -98,16 +99,16 @@ export function BannerCarousel() {
               {/* Content */}
               <div className="absolute inset-0 flex items-center">
                 <div className="container mx-auto px-4 md:px-8">
-                  <div className="max-w-2xl space-y-4">
-                    <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white animate-fade-in">
+                  <div className="max-w-2xl space-y-2">
+                    <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-white animate-fade-in">
                       {banner.title}
                     </h2>
-                    <p className="text-lg md:text-xl text-white/90 animate-fade-in-delay">
+                    <p className="text-sm md:text-base text-white/90 animate-fade-in-delay">
                       {banner.subtitle}
                     </p>
                     <Button
-                      size="lg"
-                      className="mt-4 animate-fade-in-delay-2"
+                      size="sm"
+                      className="mt-2 animate-fade-in-delay-2"
                       onClick={() => (window.location.href = banner.link)}
                     >
                       Shop Now
@@ -119,36 +120,36 @@ export function BannerCarousel() {
           ))}
 
           {/* Navigation Arrows */}
-          <div className="absolute inset-0 flex items-center justify-between p-4">
+          <div className="absolute inset-0 flex items-center justify-between p-2 md:p-4">
             <Button
               variant="outline"
               size="icon"
-              className="bg-white/90 hover:bg-white border-none shadow-lg"
+              className="h-8 w-8 bg-white/90 hover:bg-white border-none shadow-lg"
               onClick={prevSlide}
             >
-              <ChevronLeft className="h-6 w-6" />
+              <ChevronLeft className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"
               size="icon"
-              className="bg-white/90 hover:bg-white border-none shadow-lg"
+              className="h-8 w-8 bg-white/90 hover:bg-white border-none shadow-lg"
               onClick={nextSlide}
             >
-              <ChevronRight className="h-6 w-6" />
+              <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
 
           {/* Indicators */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
             {banners.map((_, index) => (
               <button
                 key={index}
                 onClick={() => goToSlide(index)}
                 className={cn(
-                  "h-2 rounded-full transition-all duration-300",
+                  "h-1.5 rounded-full transition-all duration-300",
                   index === currentIndex
-                    ? "w-8 bg-white"
-                    : "w-2 bg-white/50 hover:bg-white/75"
+                    ? "w-6 bg-white"
+                    : "w-1.5 bg-white/50 hover:bg-white/75"
                 )}
                 aria-label={`Go to slide ${index + 1}`}
               />
