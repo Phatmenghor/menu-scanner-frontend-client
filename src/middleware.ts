@@ -30,17 +30,6 @@ export default function middleware(req: NextRequest) {
   );
 
   // =============================
-  // ROOT ("/") HANDLING ⭐
-  // =============================
-  if (pathname === "/") {
-    if (token) {
-      return NextResponse.redirect(new URL("/admin", req.url));
-    } else {
-      return NextResponse.redirect(new URL("/login", req.url));
-    }
-  }
-
-  // =============================
   // PROTECTED ROUTES
   // =============================
   if (isProtectedRoute && !token) {
