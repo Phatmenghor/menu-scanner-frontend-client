@@ -60,7 +60,7 @@ export const BrandsSection = ({
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
         {displayBrands.map((brand) => (
-          <Link key={brand.id} href={`/brands/${brand.id}`}>
+          <Link key={brand.id} href={`/products?brandId=${brand.id}`}>
             <Card className="overflow-hidden hover:shadow-lg transition-all cursor-pointer group">
               <CardContent className="p-6 flex flex-col items-center justify-center">
                 <div className="w-32 h-32 flex items-center justify-center mb-4 overflow-hidden rounded-full bg-muted group-hover:bg-muted/70 transition-colors">

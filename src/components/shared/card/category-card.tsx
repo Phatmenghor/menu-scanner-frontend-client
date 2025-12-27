@@ -15,7 +15,7 @@ export function CategoryCard({ category, className }: CategoryCardProps) {
   const [imageError, setImageError] = useState(false);
 
   return (
-    <Link href={`/categories/${category.id}`}>
+    <Link href={`/products?categoryId=${category.id}`}>
       <div
         className={cn(
           "group relative bg-card rounded-lg border overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1 h-[200px] flex flex-col",
