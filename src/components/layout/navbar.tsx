@@ -205,11 +205,6 @@ export function Navbar() {
                 <User className="h-5 w-5" />
               </Button>
             )}
-
-            {/* Language Switcher */}
-            <div className="hidden sm:block">
-              <LanguageSwitcher />
-            </div>
           </div>
         </div>
 
