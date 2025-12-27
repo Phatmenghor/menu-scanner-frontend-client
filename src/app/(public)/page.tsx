@@ -1,15 +1,24 @@
+"use client";
+
 import React, { useEffect } from "react";
-import { useHomeState } from "@/redux/features/home/store/state/home-state";
 import { fetchAllBannerService } from "@/redux/features/master-data/store/thunks/banner-thunks";
 import { fetchAllProductService } from "@/redux/features/business/store/thunks/product-thunks";
 import { fetchAllBrandService } from "@/redux/features/master-data/store/thunks/brand-thunks";
-import { setInitialLoadComplete } from "@/redux/features/home/store/slice/home-slice";
-import { BannerSection } from "@/components/home/BannerSection";
-import { ProductsSection } from "@/components/home/ProductsSection";
-import { PromotionsSection } from "@/components/home/PromotionsSection";
-import { BrandsSection } from "@/components/home/BrandsSection";
+import { useAppSelector } from "@/redux/store";
+import { selecBannerContent } from "@/redux/features/master-data/store/selectors/banner-selector";
+import { selectCategoriesContent } from "@/redux/features/master-data/store/selectors/categories-selector";
+import { selectProductContent } from "@/redux/features/business/store/selectors/product-selector";
+import { selectBrandContent } from "@/redux/features/master-data/store/selectors/brand-selector";
+import { useHomeState } from "@/redux/features/main/store/state/home-state";
+import { fetchAllCategoriesService } from "@/redux/features/master-data/store/thunks/categories-thunks";
+import { setInitialLoadComplete } from "@/redux/features/main/store/slice/home-slice";
+import { BannerSection } from "@/redux/features/main/components/home/banner-section";
+import { CategoriesSection } from "@/redux/features/main/components/home/categories-section";
+import { PromotionsSection } from "@/redux/features/main/components/home/promotions-section";
+import { ProductsSection } from "@/redux/features/main/components/home/products-section";
+import { BrandsSection } from "@/redux/features/main/components/home/brand-section";
 
-export const HomePage = () => {
+export default function HomePage() {
   const {
     dispatch,
     bannersLoading,
@@ -18,21 +27,30 @@ export const HomePage = () => {
     bannersError,
     productsError,
     brandsError,
-    bannersLoaded,
-    productsLoaded,
-    brandsLoaded,
     allLoaded,
   } = useHomeState();
 
-  // Progressive loading: Fetch all data simultaneously but render as each completes
+  // Get data from selectors
+  const banners = useAppSelector(selecBannerContent);
+  const categories = useAppSelector(selectCategoriesContent);
+  const products = useAppSelector(selectProductContent);
+  const brands = useAppSelector(selectBrandContent);
+
+  // Categories loading state
+  const categoriesLoading = useAppSelector(
+    (state) => state.categories.isLoading
+  );
+  const categoriesError = useAppSelector((state) => state.categories.error);
+
+  // Progressive loading: Fetch all data simultaneously
   useEffect(() => {
-    // Dispatch all fetch operations at once for fastest loading
     const loadData = async () => {
       try {
         await Promise.allSettled([
-          dispatch(fetchAllBannerService()).unwrap(),
-          dispatch(fetchAllProductService()).unwrap(),
-          dispatch(fetchAllBrandService()).unwrap(),
+          dispatch(fetchAllBannerService({ pageSize: 10 })).unwrap(),
+          dispatch(fetchAllCategoriesService({ pageSize: 20 })).unwrap(),
+          dispatch(fetchAllProductService({ pageSize: 50 })).unwrap(),
+          dispatch(fetchAllBrandService({ pageSize: 20 })).unwrap(),
         ]);
       } catch (error) {
         console.error("Error loading home page data:", error);
@@ -41,7 +59,6 @@ export const HomePage = () => {
       }
     };
 
-    // Only load if we haven't loaded everything yet
     if (!allLoaded) {
       loadData();
     }
@@ -49,50 +66,70 @@ export const HomePage = () => {
 
   return (
     <div className="py-8 px-4 max-w-7xl mx-auto">
-      {/* Banner Section - Shows first when loaded */}
-      <BannerSection loading={bannersLoading} error={bannersError} />
+      {/* 1. Banner Section */}
+      <BannerSection
+        banners={banners}
+        loading={bannersLoading}
+        error={bannersError}
+      />
 
-      {/* Special Deals & Promotions Section */}
+      {/* 2. Categories Section */}
+      <CategoriesSection
+        categories={categories}
+        loading={categoriesLoading}
+        error={categoriesError}
+        limit={8}
+        title="Shop by Category"
+      />
+
+      {/* 3. Promotions Section */}
       <PromotionsSection
+        products={products}
         loading={productsLoading}
         error={productsError}
         limit={6}
         title="🔥 Hot Deals & Promotions"
       />
 
-      {/* Featured Products Section */}
+      {/* 4. Featured Products */}
       <ProductsSection
+        products={products}
         loading={productsLoading}
         error={productsError}
         limit={8}
         title="Featured Products"
+        seeAllLink="/products"
       />
 
-      {/* Brands Section */}
+      {/* 5. Brands Section */}
       <BrandsSection
+        brands={brands}
         loading={brandsLoading}
         error={brandsError}
         limit={12}
         title="Shop by Brand"
       />
 
-      {/* New Arrivals Section */}
+      {/* 6. New Arrivals */}
       <ProductsSection
+        products={products}
         loading={productsLoading}
         error={productsError}
         limit={4}
         title="New Arrivals"
+        seeAllLink="/products?sort=newest"
       />
 
-      {/* Loading indicator for the entire page */}
-      {(bannersLoading || productsLoading || brandsLoading) && (
-        <div className="fixed bottom-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-lg text-sm flex items-center gap-2">
+      {/* Loading indicator */}
+      {(bannersLoading ||
+        categoriesLoading ||
+        productsLoading ||
+        brandsLoading) && (
+        <div className="fixed bottom-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-lg text-sm flex items-center gap-2 z-50">
           <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
           Loading content...
         </div>
       )}
     </div>
   );
-};
-
-export default HomePage;
+}

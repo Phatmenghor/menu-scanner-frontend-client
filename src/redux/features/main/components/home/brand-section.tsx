@@ -1,12 +1,13 @@
 import React from "react";
-import { useAppSelector } from "@/redux/store";
-import { selectAllBrands } from "@/redux/features/master-data/store/selectors/brand-selector";
-import { BrandGridSkeleton } from "@/components/skeletons/BrandSkeleton";
-import { Card, CardContent } from "@/components/ui/card";
+import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
+import { BrandGridSkeleton } from "@/components/shared/skeletons/brand-card-skeleton";
+import { BrandResponseModel } from "@/redux/features/master-data/store/models/response/brand-response";
 
 interface BrandsSectionProps {
+  brands: BrandResponseModel[];
   loading: boolean;
   error: string | null;
   limit?: number;
@@ -14,12 +15,12 @@ interface BrandsSectionProps {
 }
 
 export const BrandsSection = ({
+  brands,
   loading,
   error,
   limit = 12,
   title = "Shop by Brand",
 }: BrandsSectionProps) => {
-  const brands = useAppSelector(selectAllBrands);
   const displayBrands = brands?.slice(0, limit) || [];
 
   if (loading) {
@@ -50,36 +51,44 @@ export const BrandsSection = ({
     <div className="mb-12">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">{title}</h2>
-        <Link to="/brands">
-          <Button variant="outline">View All</Button>
-        </Link>
+        {brands.length > limit && (
+          <Link href="/brands">
+            <Button variant="outline">View All</Button>
+          </Link>
+        )}
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
         {displayBrands.map((brand) => (
-          <Card
-            key={brand.id}
-            className="overflow-hidden hover:shadow-lg transition-all cursor-pointer group"
-          >
-            <CardContent className="p-6 flex flex-col items-center justify-center">
-              <div className="w-32 h-32 flex items-center justify-center mb-4 overflow-hidden rounded-full bg-muted group-hover:bg-muted/70 transition-colors">
-                {brand.imageUrl || brand.image ? (
-                  <img
-                    src={brand.imageUrl || brand.image}
-                    alt={brand.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-4xl font-bold text-muted-foreground">
-                    {brand.name.charAt(0)}
-                  </span>
+          <Link key={brand.id} href={`/brands/${brand.id}`}>
+            <Card className="overflow-hidden hover:shadow-lg transition-all cursor-pointer group">
+              <CardContent className="p-6 flex flex-col items-center justify-center">
+                <div className="w-32 h-32 flex items-center justify-center mb-4 overflow-hidden rounded-full bg-muted group-hover:bg-muted/70 transition-colors">
+                  {brand.imageUrl ? (
+                    <Image
+                      src={brand.imageUrl}
+                      alt={brand.name}
+                      width={128}
+                      height={128}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-4xl font-bold text-muted-foreground">
+                      {brand.name.charAt(0)}
+                    </span>
+                  )}
+                </div>
+                <h3 className="font-semibold text-center line-clamp-1 mb-1">
+                  {brand.name}
+                </h3>
+                {brand.activeProducts > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {brand.activeProducts} products
+                  </p>
                 )}
-              </div>
-              <h3 className="font-semibold text-center line-clamp-1">
-                {brand.name}
-              </h3>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
     </div>
