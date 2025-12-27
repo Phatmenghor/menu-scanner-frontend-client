@@ -13,6 +13,7 @@ import exchangeRateReducer from "../features/master-data/store/slice/exchange-ra
 import deliveryOptionsReducer from "../features/master-data/store/slice/delivery-options-slice";
 
 import productReducer from "../features/business/store/slice/product-slice";
+import homeReducer from "../features/main/store/slice/home-slice";
 
 /**
  * Root reducer configuration
@@ -27,4 +28,5 @@ export const reducers = {
   exchangeRate: exchangeRateReducer,
   deliveryOptions: deliveryOptionsReducer,
   products: productReducer,
+  home: homeReducer,
 };
