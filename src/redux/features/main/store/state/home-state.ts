@@ -1,21 +1,28 @@
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import {
   selectHomeState,
+  selectHomeBanners,
+  selectHomeCategories,
+  selectHomeProducts,
+  selectHomeBrands,
   selectBannersLoading,
-  selectPromotionsLoading,
+  selectCategoriesLoading,
   selectProductsLoading,
   selectBrandsLoading,
   selectBannersError,
-  selectPromotionsError,
+  selectCategoriesError,
   selectProductsError,
   selectBrandsError,
   selectBannersLoaded,
-  selectPromotionsLoaded,
+  selectCategoriesLoaded,
   selectProductsLoaded,
   selectBrandsLoaded,
   selectInitialLoadComplete,
+  selectLastFetchTimestamp,
   selectAnyLoading,
   selectAllLoaded,
+  selectIsDataStale,
+  selectHasAnyData,
 } from "../selectors/home-selector";
 
 export const useHomeState = () => {
@@ -24,54 +31,72 @@ export const useHomeState = () => {
   // State
   const homeState = useAppSelector(selectHomeState);
 
+  // Data from home slice
+  const banners = useAppSelector(selectHomeBanners);
+  const categories = useAppSelector(selectHomeCategories);
+  const products = useAppSelector(selectHomeProducts);
+  const brands = useAppSelector(selectHomeBrands);
+
   // Loading states
   const bannersLoading = useAppSelector(selectBannersLoading);
-  const promotionsLoading = useAppSelector(selectPromotionsLoading);
+  const categoriesLoading = useAppSelector(selectCategoriesLoading);
   const productsLoading = useAppSelector(selectProductsLoading);
   const brandsLoading = useAppSelector(selectBrandsLoading);
 
   // Error states
   const bannersError = useAppSelector(selectBannersError);
-  const promotionsError = useAppSelector(selectPromotionsError);
+  const categoriesError = useAppSelector(selectCategoriesError);
   const productsError = useAppSelector(selectProductsError);
   const brandsError = useAppSelector(selectBrandsError);
 
   // Loaded flags
   const bannersLoaded = useAppSelector(selectBannersLoaded);
-  const promotionsLoaded = useAppSelector(selectPromotionsLoaded);
+  const categoriesLoaded = useAppSelector(selectCategoriesLoaded);
   const productsLoaded = useAppSelector(selectProductsLoaded);
   const brandsLoaded = useAppSelector(selectBrandsLoaded);
 
   // Overall state
   const initialLoadComplete = useAppSelector(selectInitialLoadComplete);
+  const lastFetchTimestamp = useAppSelector(selectLastFetchTimestamp);
   const anyLoading = useAppSelector(selectAnyLoading);
   const allLoaded = useAppSelector(selectAllLoaded);
+  const isDataStale = useAppSelector(selectIsDataStale);
+  const hasAnyData = useAppSelector(selectHasAnyData);
 
   return {
     homeState,
     dispatch,
 
+    // Data
+    banners,
+    categories,
+    products,
+    brands,
+
     // Loading states
     bannersLoading,
-    promotionsLoading,
+    categoriesLoading,
     productsLoading,
     brandsLoading,
     anyLoading,
 
     // Error states
     bannersError,
-    promotionsError,
+    categoriesError,
     productsError,
     brandsError,
 
     // Loaded flags
     bannersLoaded,
-    promotionsLoaded,
+    categoriesLoaded,
     productsLoaded,
     brandsLoaded,
     allLoaded,
 
     // Overall
     initialLoadComplete,
+    lastFetchTimestamp,
+    isDataStale,
+    hasAnyData,
   };
 };
