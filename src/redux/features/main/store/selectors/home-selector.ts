@@ -33,11 +33,8 @@ export const selectBrandsSection = (state: RootState) =>
 export const selectFeaturedPagination = (state: RootState) =>
   state.home.featuredPagination;
 
-// Scroll
-export const selectScrollPosition = (state: RootState) =>
-  state.home.scrollState.position;
-export const selectShouldRestoreScroll = (state: RootState) =>
-  state.home.shouldRestoreScroll;
+// Simple scroll - just the number
+export const selectScrollY = (state: RootState) => state.home.scrollY;
 
 // Computed
 export const selectAllSectionsLoaded = createSelector(

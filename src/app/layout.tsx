@@ -8,7 +8,6 @@ import PageProgressBar from "@/components/shared/progress/global-n-progress";
 import { LocaleProvider } from "@/context/locale-provider";
 
 import { headers } from "next/headers";
-import { ScrollReset } from "@/components/shared/common/scroll-reset";
 import { ScrollToTop } from "@/components/shared/common/scroll-to-top";
 
 const geistSans = localFont({
@@ -55,7 +54,6 @@ export default async function RootLayout({
         <LocaleProvider initialLocale={locale} initialMessages={messages}>
           <ClientProviders>
             <PageProgressBar />
-            <ScrollReset />
             {children}
             <ScrollToTop />
           </ClientProviders>

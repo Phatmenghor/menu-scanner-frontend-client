@@ -16,24 +16,42 @@ interface ProductCardProps {
   className?: string;
 }
 
+// Global cache to track loaded images across all product cards
+const imageLoadedCache = new Set<string>();
+
 export function ProductCard({ product, className }: ProductCardProps) {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [quantity, setQuantity] = useState(0);
   const [isFavorite, setIsFavorite] = useState(product.isFavorited || false);
-  const [imageLoaded, setImageLoaded] = useState(false);
 
-  const handleAddToCart = async () => {
+  // Get image URL
+  const imageUrl =
+    product.mainImageUrl ||
+    `https://picsum.photos/300/300?random=${product.id}`;
+
+  // Check if this image was already loaded before (from cache)
+  const [imageLoaded, setImageLoaded] = useState(
+    imageLoadedCache.has(imageUrl)
+  );
+
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsAddingToCart(true);
     await new Promise((resolve) => setTimeout(resolve, 600));
     setIsAddingToCart(false);
     setQuantity(1);
   };
 
-  const handleIncrement = () => {
+  const handleIncrement = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setQuantity((prev) => prev + 1);
   };
 
-  const handleDecrement = () => {
+  const handleDecrement = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (quantity > 1) {
       setQuantity((prev) => prev - 1);
     } else if (quantity === 1) {
@@ -41,8 +59,16 @@ export function ProductCard({ product, className }: ProductCardProps) {
     }
   };
 
-  const handleToggleFavorite = () => {
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsFavorite(!isFavorite);
+  };
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+    // Add to cache so it won't show skeleton next time
+    imageLoadedCache.add(imageUrl);
   };
 
   const isOutOfStock = product.status === "OUT_OF_STOCK";
@@ -64,17 +90,17 @@ export function ProductCard({ product, className }: ProductCardProps) {
           )}
 
           <Image
-            src={
-              product.mainImageUrl ||
-              `https://picsum.photos/300/300?random=${product.id}`
-            }
+            src={imageUrl}
             alt={product.name}
             fill
+            priority={imageLoadedCache.has(imageUrl)} // Priority load for cached images
+            loading={imageLoadedCache.has(imageUrl) ? undefined : "lazy"}
             className={cn(
               "object-cover transition-all duration-500 group-hover:scale-105",
               imageLoaded ? "opacity-100" : "opacity-0"
             )}
-            onLoad={() => setImageLoaded(true)}
+            onLoad={handleImageLoad}
+            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
           />
 
           <div className="absolute top-2 left-2 right-2 flex justify-between items-start z-10 pointer-events-none">
@@ -142,7 +168,10 @@ export function ProductCard({ product, className }: ProductCardProps) {
             </div>
 
             {isInCart ? (
-              <div className="flex items-center gap-2 w-full">
+              <div
+                className="flex items-center gap-2 w-full"
+                onClick={(e) => e.preventDefault()}
+              >
                 <CustomButton
                   size="icon"
                   variant="outline"
@@ -153,7 +182,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
                   <Minus className="h-3 w-3" />
                 </CustomButton>
 
-                <div className="flex-1 text-center h-8 px-2 bg-primary/10 text-primary font-semibold text-sm rounded border border-primary/20">
+                <div className="flex-1 text-center h-8 px-2 bg-primary/10 text-primary font-semibold text-sm rounded border border-primary/20 flex items-center justify-center">
                   {quantity}
                 </div>
 

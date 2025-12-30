@@ -1,6 +1,6 @@
 /**
  * home-slice.ts
- * Complete Redux State Management with Pagination
+ * Simplified - only store scroll for home page
  */
 
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
@@ -16,11 +16,6 @@ import {
   fetchHomeFeaturedProducts,
   fetchHomeBrands,
 } from "../thunks/home-thunks";
-
-interface ScrollState {
-  position: number;
-  savedAt: number;
-}
 
 interface SectionState {
   loading: boolean;
@@ -58,10 +53,8 @@ interface HomePageState {
   initialLoadComplete: boolean;
   lastFetchTimestamp: number | null;
 
-  // Scroll tracking
-  scrollState: ScrollState;
-  shouldRestoreScroll: boolean;
-  lastDetailPage: string | null;
+  // Simple scroll position - just one number
+  scrollY: number;
 }
 
 const initialSectionState: SectionState = {
@@ -90,32 +83,16 @@ const initialState: HomePageState = {
   },
   initialLoadComplete: false,
   lastFetchTimestamp: null,
-  scrollState: { position: 0, savedAt: 0 },
-  shouldRestoreScroll: false,
-  lastDetailPage: null,
+  scrollY: 0, // Simple!
 };
 
 const homeSlice = createSlice({
   name: "home",
   initialState,
   reducers: {
-    saveScrollPosition: (state, action: PayloadAction<number>) => {
-      state.scrollState = {
-        position: action.payload,
-        savedAt: Date.now(),
-      };
-    },
-
-    enableScrollRestoration: (state) => {
-      state.shouldRestoreScroll = true;
-    },
-
-    disableScrollRestoration: (state) => {
-      state.shouldRestoreScroll = false;
-    },
-
-    setLastDetailPage: (state, action: PayloadAction<string | null>) => {
-      state.lastDetailPage = action.payload;
+    // Simple action - just save the number
+    setScrollY: (state, action: PayloadAction<number>) => {
+      state.scrollY = action.payload;
     },
 
     setInitialLoadComplete: (state) => {
@@ -153,6 +130,7 @@ const homeSlice = createSlice({
       };
       state.initialLoadComplete = false;
       state.lastFetchTimestamp = null;
+      state.scrollY = 0; // Reset scroll too
     },
 
     resetHomeState: () => initialState,
@@ -215,15 +193,10 @@ const homeSlice = createSlice({
       })
       .addCase(fetchHomeFeaturedProducts.fulfilled, (state, action) => {
         const newProducts = action.payload.content || [];
-
-        // Append new products to existing ones
         state.featuredProducts = [...state.featuredProducts, ...newProducts];
-
-        // Update pagination
         state.featuredPagination.currentPage = action.payload.pageNo || 1;
         state.featuredPagination.totalPages = action.payload.totalPages || 1;
         state.featuredPagination.hasMore = !action.payload.last;
-
         state.sections.featuredProducts.loading = false;
         state.sections.featuredProducts.loaded = true;
       })
@@ -251,10 +224,7 @@ const homeSlice = createSlice({
 });
 
 export const {
-  saveScrollPosition,
-  enableScrollRestoration,
-  disableScrollRestoration,
-  setLastDetailPage,
+  setScrollY,
   setInitialLoadComplete,
   resetFeaturedPagination,
   forceRefresh,

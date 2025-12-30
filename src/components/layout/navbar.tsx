@@ -3,13 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Menu, Search, ShoppingCart, X, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CustomAvatar } from "@/components/shared/avator/custom-avator";
-import { LanguageSwitcher } from "@/components/shared/swapper/language-switcher";
 import { Badge } from "@/components/ui/badge";
-import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,12 +16,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { CustomButton } from "../shared/button/custom-button";
 
 const navigationLinks = [
   { name: "Home", href: "/" },
-  { name: "Promotion", href: "/promotions" },
-  { name: "Category", href: "/categories" },
-  { name: "Brand", href: "/brands" },
+  { name: "Products", href: "/products" },
+  { name: "Promotions", href: "/products?hasPromotion=true" },
+  { name: "Categories", href: "/categories" },
+  { name: "Brands", href: "/brands" },
 ];
 
 export function Navbar() {
@@ -30,9 +31,8 @@ export function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
 
-  // Mock data - replace with actual data from your store/redux
   const cartItemCount = 3;
-  const isLoggedIn = false; // Change based on auth state
+  const isLoggedIn = false;
   const userProfile = {
     fullName: "John Doe",
     email: "john@example.com",
@@ -42,20 +42,18 @@ export function Navbar() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+      router.push(`/products?q=${encodeURIComponent(searchQuery)}`);
       setSearchQuery("");
+      setIsMobileMenuOpen(false);
     }
   };
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
       <div className="container mx-auto px-4">
-        {/* Main Navbar */}
-        <div className="flex h-20 items-center justify-between gap-4">
-          {/* Left Section: Logo & Navigation */}
+        <div className="flex h-16 items-center justify-between gap-4">
           <div className="flex items-center gap-8">
-            {/* Mobile Menu Button */}
-            <Button
+            <CustomButton
               variant="ghost"
               size="icon"
               className="lg:hidden"
@@ -66,11 +64,10 @@ export function Navbar() {
               ) : (
                 <Menu className="h-5 w-5" />
               )}
-            </Button>
+            </CustomButton>
 
-            {/* Logo */}
             <Link href="/" className="flex items-center gap-2 group">
-              <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg group-hover:shadow-primary/20 transition-all duration-300">
+              <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
                 <Image
                   src="/assets/favicon.ico"
                   alt="Logo"
@@ -82,21 +79,20 @@ export function Navbar() {
               </div>
               <div className="hidden md:flex flex-col">
                 <span className="text-foreground font-bold text-sm leading-tight">
-                  Menu Scanner
+                  E-Commerce
                 </span>
                 <span className="text-muted-foreground text-xs font-medium">
-                  E-Commerce
+                  Shop Online
                 </span>
               </div>
             </Link>
 
-            {/* Desktop Navigation Links */}
             <div className="hidden lg:flex items-center gap-1">
               {navigationLinks.map((link) => (
                 <Link key={link.name} href={link.href}>
                   <Button
                     variant="ghost"
-                    className="text-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200"
+                    className="text-foreground hover:text-primary hover:bg-primary/10"
                   >
                     {link.name}
                   </Button>
@@ -105,7 +101,6 @@ export function Navbar() {
             </div>
           </div>
 
-          {/* Center Section: Search Bar (Hidden on mobile) */}
           <form
             onSubmit={handleSearch}
             className="hidden md:flex flex-1 max-w-xl"
@@ -115,20 +110,18 @@ export function Navbar() {
               <Input
                 type="search"
                 placeholder="Search products..."
-                className="pl-10 w-full bg-muted/50 border-border hover:border-primary/50 focus:border-primary focus:ring-primary/20 transition-colors"
+                className="pl-10 w-full bg-muted/50"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
           </form>
 
-          {/* Right Section: Cart, Profile, Language */}
           <div className="flex items-center gap-2">
-            {/* Shopping Cart */}
-            <Button
+            <CustomButton
               variant="ghost"
               size="icon"
-              className="relative hover:bg-primary/10 hover:text-primary transition-colors"
+              className="relative"
               onClick={() => router.push("/cart")}
             >
               <ShoppingCart className="h-5 w-5" />
@@ -140,9 +133,8 @@ export function Navbar() {
                   {cartItemCount}
                 </Badge>
               )}
-            </Button>
+            </CustomButton>
 
-            {/* User Profile / Login */}
             {isLoggedIn ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -185,37 +177,32 @@ export function Navbar() {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={() => {
-                      // Handle logout
-                      router.push("/login");
-                    }}
+                    className="text-destructive"
+                    onClick={() => router.push("/login")}
                   >
                     Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button
+              <CustomButton
                 variant="ghost"
                 size="icon"
                 onClick={() => router.push("/login")}
-                className="hover:bg-primary/10 hover:text-primary transition-colors"
               >
                 <User className="h-5 w-5" />
-              </Button>
+              </CustomButton>
             )}
           </div>
         </div>
 
-        {/* Mobile Search Bar */}
         <form onSubmit={handleSearch} className="md:hidden pb-4">
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
               type="search"
               placeholder="Search products..."
-              className="pl-10 w-full bg-muted/50 border-border focus:border-primary focus:ring-primary/20"
+              className="pl-10 w-full"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -223,7 +210,6 @@ export function Navbar() {
         </form>
       </div>
 
-      {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="lg:hidden border-t bg-background">
           <div className="container mx-auto px-4 py-4 space-y-2">
@@ -233,19 +219,11 @@ export function Navbar() {
                 href={link.href}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start text-foreground hover:text-primary hover:bg-primary/10"
-                >
+                <Button variant="ghost" className="w-full justify-start">
                   {link.name}
                 </Button>
               </Link>
             ))}
-
-            {/* Mobile Language Switcher */}
-            <div className="pt-2 sm:hidden">
-              <LanguageSwitcher className="w-full" />
-            </div>
           </div>
         </div>
       )}

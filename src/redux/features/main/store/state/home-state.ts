@@ -15,8 +15,7 @@ import {
   selectFeaturedProductsSection,
   selectBrandsSection,
   selectFeaturedPagination,
-  selectScrollPosition,
-  selectShouldRestoreScroll,
+  selectScrollY,
   selectAllSectionsLoaded,
 } from "../selectors/home-selector";
 
@@ -36,8 +35,7 @@ export const useHomeState = () => {
     featuredProductsSection: useAppSelector(selectFeaturedProductsSection),
     brandsSection: useAppSelector(selectBrandsSection),
     featuredPagination: useAppSelector(selectFeaturedPagination),
-    scrollPosition: useAppSelector(selectScrollPosition),
-    shouldRestoreScroll: useAppSelector(selectShouldRestoreScroll),
+    scrollY: useAppSelector(selectScrollY), // Simple!
     allSectionsLoaded: useAppSelector(selectAllSectionsLoaded),
   };
 };

@@ -1,18 +1,16 @@
 "use client";
 
-import React, { useEffect, useRef, useCallback } from "react";
+import React, { useEffect, useCallback } from "react";
 
 import {
   fetchHomeBanners,
   fetchHomeCategories,
   fetchHomePromotionProducts,
   fetchHomeFeaturedProducts,
-  fetchHomeBrands,
 } from "@/redux/features/main/store/thunks/home-thunks";
 
 import {
-  saveScrollPosition,
-  enableScrollRestoration,
+  setScrollY,
   setInitialLoadComplete,
 } from "@/redux/features/main/store/slice/home-slice";
 
@@ -22,29 +20,22 @@ import { BannerSection } from "@/redux/features/main/components/home/banner-sect
 import { CategoriesSection } from "@/redux/features/main/components/home/categories-section";
 import { PromotionsSection } from "@/redux/features/main/components/home/promotions-section";
 import { ProductsSection } from "@/redux/features/main/components/home/products-section";
-import { BrandsSection } from "@/redux/features/main/components/home/brand-section";
 
 export default function HomePage() {
-  const containerRef = useRef<HTMLDivElement>(null);
-
   const {
     dispatch,
     banners,
     categories,
     promotionProducts,
     featuredProducts,
-    brands,
     bannersSection,
     categoriesSection,
     promotionProductsSection,
     featuredProductsSection,
-    brandsSection,
     featuredPagination,
-    shouldRestoreScroll,
-    scrollPosition,
+    scrollY, // Simple!
   } = useHomeState();
 
-  // Determine if this is initial loading (no products yet + loading)
   const isInitialFeaturedLoading =
     featuredProductsSection.loading &&
     featuredProducts.length === 0 &&
@@ -81,12 +72,39 @@ export default function HomePage() {
     dispatch,
     bannersSection.loaded,
     categoriesSection.loaded,
-    brandsSection.loaded,
     promotionProductsSection.loaded,
     featuredProductsSection.loaded,
   ]);
 
-  // Load more featured products (pagination)
+  // Restore scroll on mount (if coming back)
+  useEffect(() => {
+    if (scrollY > 0) {
+      setTimeout(() => {
+        window.scrollTo(0, scrollY);
+      }, 0);
+    }
+  }, []); // Run once on mount
+
+  // Save scroll on scroll (debounced)
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
+    const handleScroll = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        dispatch(setScrollY(window.scrollY));
+      }, 150);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [dispatch]);
+
+  // Load more featured products
   const handleLoadMoreFeatured = useCallback(() => {
     if (featuredPagination.hasMore && !featuredProductsSection.loading) {
       const nextPage = featuredPagination.currentPage + 1;
@@ -99,42 +117,15 @@ export default function HomePage() {
     featuredProductsSection.loading,
   ]);
 
-  // Restore scroll
-  useEffect(() => {
-    if (shouldRestoreScroll && containerRef.current) {
-      requestAnimationFrame(() => {
-        window.scrollTo({
-          top: scrollPosition,
-          left: 0,
-          behavior: "smooth",
-        });
-        dispatch(enableScrollRestoration());
-      });
-    }
-  }, [shouldRestoreScroll, scrollPosition, dispatch]);
-
-  // Save scroll
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (containerRef.current) {
-        dispatch(saveScrollPosition(window.scrollY));
-      }
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [dispatch]);
-
   return (
-    <div ref={containerRef} className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       <div className="py-8 px-4 max-w-7xl mx-auto">
-        {/* 1. Banner Section */}
         <BannerSection
           banners={banners}
           loading={bannersSection.loading}
           error={bannersSection.error}
         />
 
-        {/* 2. Categories Section */}
         <CategoriesSection
           categories={categories}
           loading={categoriesSection.loading}
@@ -142,7 +133,6 @@ export default function HomePage() {
           title="Shop by Category"
         />
 
-        {/* 3. Promotions Section */}
         <PromotionsSection
           products={promotionProducts}
           loading={promotionProductsSection.loading}
@@ -150,7 +140,6 @@ export default function HomePage() {
           title="Hot Deals & Promotions"
         />
 
-        {/* 4. Featured Products - Infinite Scroll with Pagination Skeletons */}
         <ProductsSection
           products={featuredProducts}
           loading={featuredProductsSection.loading}
