@@ -37,7 +37,7 @@ export const BannerSection = ({
 
     const intervalId = setInterval(() => {
       carouselApi.scrollNext();
-    }, 4000); // 4 seconds delay
+    }, 1000); // 4 seconds delay
 
     return () => clearInterval(intervalId);
   }, [carouselApi, banners.length, isHovered]);
