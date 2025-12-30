@@ -9,41 +9,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/utils/common/currency-format";
 import { CustomButton } from "../button/custom-button";
+import { ProductDetailResponseModel } from "@/redux/features/business/store/models/response/product-response";
 
 interface ProductCardProps {
-  product: {
-    id: string;
-    name: string;
-    mainImageUrl: string;
-    displayPrice: number;
-    displayOriginPrice?: number;
-    hasPromotion?: boolean;
-    displayPromotionValue?: number;
-    displayPromotionType?: string;
-    status: string;
-    isBestSeller?: boolean;
-  };
+  product: ProductDetailResponseModel;
   className?: string;
 }
 
 export function ProductCard({ product, className }: ProductCardProps) {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [quantity, setQuantity] = useState(0);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(product.isFavorited || false);
   const [imageLoaded, setImageLoaded] = useState(false);
-
-  const hasDiscount =
-    product.hasPromotion &&
-    product.displayOriginPrice &&
-    product.displayOriginPrice > product.displayPrice;
-
-  const discountPercentage = hasDiscount
-    ? Math.round(
-        ((product.displayOriginPrice! - product.displayPrice) /
-          product.displayOriginPrice!) *
-          100
-      )
-    : 0;
 
   const handleAddToCart = async () => {
     setIsAddingToCart(true);
@@ -70,6 +47,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
   const isOutOfStock = product.status === "OUT_OF_STOCK";
   const isInCart = quantity > 0;
+  const hasDiscount = product.hasPromotion;
 
   return (
     <Link href={`/products/${product.id}`}>
@@ -100,17 +78,19 @@ export function ProductCard({ product, className }: ProductCardProps) {
           />
 
           <div className="absolute top-2 left-2 right-2 flex justify-between items-start z-10 pointer-events-none">
-            {product.isBestSeller && (
-              <Badge className="bg-gray-900 hover:bg-gray-900 text-xs px-2 py-0.5 shadow-md pointer-events-auto">
-                BEST
+            {product.status === "NEW" && (
+              <Badge className="bg-blue-600 hover:bg-blue-600 text-xs px-2 py-0.5 shadow-md pointer-events-auto">
+                NEW
               </Badge>
             )}
-            {hasDiscount && (
+            {hasDiscount && product.displayPromotionValue > 0 && (
               <Badge
                 variant="destructive"
                 className="text-xs font-bold px-2 py-0.5 shadow-md ml-auto pointer-events-auto"
               >
-                -{discountPercentage}%
+                {product.displayPromotionType === "PERCENTAGE"
+                  ? `-${product.displayPromotionValue}%`
+                  : `-${formatCurrency(product.displayPromotionValue)}`}
               </Badge>
             )}
           </div>
@@ -153,11 +133,12 @@ export function ProductCard({ product, className }: ProductCardProps) {
               <span className="text-lg font-bold text-primary">
                 {formatCurrency(product.displayPrice)}
               </span>
-              {hasDiscount && (
-                <span className="text-xs text-muted-foreground line-through">
-                  {formatCurrency(product.displayOriginPrice!)}
-                </span>
-              )}
+              {hasDiscount &&
+                product.displayOriginPrice > product.displayPrice && (
+                  <span className="text-xs text-muted-foreground line-through">
+                    {formatCurrency(product.displayOriginPrice)}
+                  </span>
+                )}
             </div>
 
             {isInCart ? (
@@ -172,7 +153,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
                   <Minus className="h-3 w-3" />
                 </CustomButton>
 
-                <div className="flex-1 text-center py-1.5 px-2 bg-primary/10 text-primary font-semibold text-sm rounded border border-primary/20">
+                <div className="flex-1 text-center h-8 px-2 bg-primary/10 text-primary font-semibold text-sm rounded border border-primary/20">
                   {quantity}
                 </div>
 

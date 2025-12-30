@@ -14,6 +14,7 @@ import deliveryOptionsReducer from "../features/master-data/store/slice/delivery
 
 import productReducer from "../features/business/store/slice/product-slice";
 import homeReducer from "../features/main/store/slice/home-slice";
+import publicProductReducer from "../features/main/store/slice/public-product-slice";
 
 /**
  * Root reducer configuration
@@ -29,4 +30,5 @@ export const reducers = {
   deliveryOptions: deliveryOptionsReducer,
   products: productReducer,
   home: homeReducer,
+  publicProducts: publicProductReducer,
 };

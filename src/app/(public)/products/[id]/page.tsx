@@ -3,68 +3,74 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
-import { useAppDispatch, useAppSelector } from "@/redux/store";
 import {
-  fetchProductByIdService,
-  fetchAllProductService,
-} from "@/redux/features/business/store/thunks/product-thunks";
-import {
-  selectSelectedProduct,
-  selectIsFetchingDetail,
-} from "@/redux/features/business/store/selectors/product-selector";
+  fetchPublicProductById,
+  fetchPublicProducts,
+} from "@/redux/features/main/store/thunks/public-product-thunks";
+import { clearSelectedProduct } from "@/redux/features/main/store/slice/public-product-slice";
+import { usePublicProductState } from "@/redux/features/main/store/state/public-product-state";
 import { ProductCard } from "@/components/shared/card/product-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Heart, ShoppingCart, Share2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Heart,
+  ShoppingCart,
+  Share2,
+  Plus,
+  Minus,
+} from "lucide-react";
 import { formatCurrency } from "@/utils/common/currency-format";
 import { ProductDetailResponseModel } from "@/redux/features/business/store/models/response/product-response";
+import { CustomButton } from "@/components/shared/button/custom-button";
 
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const dispatch = useAppDispatch();
+
+  const { dispatch, selectedProduct, loading } = usePublicProductState();
 
   const productId = params.id as string;
-  const product = useAppSelector(selectSelectedProduct);
-  const isLoading = useAppSelector(selectIsFetchingDetail);
+  const product = selectedProduct;
+  const isLoading = loading.detail;
 
   const [similarProducts, setSimilarProducts] = useState<
     ProductDetailResponseModel[]
   >([]);
   const [selectedImage, setSelectedImage] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
-  // Fetch product details
   useEffect(() => {
     if (productId) {
-      dispatch(fetchProductByIdService(productId));
+      dispatch(clearSelectedProduct());
+      dispatch(fetchPublicProductById(productId));
     }
   }, [productId, dispatch]);
 
-  // Set main image
   useEffect(() => {
     if (product?.mainImageUrl) {
       setSelectedImage(product.mainImageUrl);
+      setImageLoaded(false);
     }
   }, [product]);
 
-  // Fetch similar products
   useEffect(() => {
     if (product) {
       const loadSimilarProducts = async () => {
         try {
           const response = await dispatch(
-            fetchAllProductService({
+            fetchPublicProducts({
               pageNo: 1,
-              pageSize: 4,
+              pageSize: 5,
               categoryId: product.categoryId || undefined,
+              status: "ACTIVE",
             })
           ).unwrap();
 
-          // Filter out current product
           const similar =
-            response.content?.filter((p: any) => p.id !== productId) || [];
+            response.content?.filter((p) => p.id !== productId) || [];
           setSimilarProducts(similar.slice(0, 4));
         } catch (error) {
           console.error("Error loading similar products:", error);
@@ -88,48 +94,47 @@ export default function ProductDetailPage() {
     );
   }
 
-  const hasDiscount =
-    product.hasPromotion && product.displayOriginPrice > product.displayPrice;
-  const discountPercentage = hasDiscount
-    ? Math.round(
-        ((product.displayOriginPrice - product.displayPrice) /
-          product.displayOriginPrice) *
-          100
-      )
-    : 0;
+  const hasDiscount = product.hasPromotion;
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        {/* Back Button */}
-        <Button variant="ghost" onClick={() => router.back()} className="mb-6">
+        <CustomButton
+          variant="ghost"
+          onClick={() => router.back()}
+          className="mb-6"
+        >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
-        </Button>
+        </CustomButton>
 
-        {/* Product Details */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-          {/* Images */}
           <div className="space-y-4">
-            {/* Main Image */}
-            <div className="relative aspect-square rounded-lg overflow-hidden border">
+            <div className="relative aspect-square rounded-lg overflow-hidden border bg-muted/30">
+              {!imageLoaded && (
+                <Skeleton className="absolute inset-0 w-full h-full" />
+              )}
               <Image
                 src={selectedImage || "https://picsum.photos/800/800"}
                 alt={product.name}
                 fill
-                className="object-cover"
+                className={`object-cover transition-opacity duration-500 ${
+                  imageLoaded ? "opacity-100" : "opacity-0"
+                }`}
+                onLoad={() => setImageLoaded(true)}
               />
-              {hasDiscount && (
+              {hasDiscount && product.displayPromotionValue > 0 && (
                 <Badge
                   variant="destructive"
                   className="absolute top-4 right-4 text-lg font-bold px-3 py-1"
                 >
-                  -{discountPercentage}%
+                  {product.displayPromotionType === "PERCENTAGE"
+                    ? `-${product.displayPromotionValue}%`
+                    : `-${formatCurrency(product.displayPromotionValue)}`}
                 </Badge>
               )}
             </div>
 
-            {/* Thumbnail Images */}
             {product.images && product.images.length > 0 && (
               <div className="grid grid-cols-4 gap-2">
                 <button
@@ -169,7 +174,6 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          {/* Product Info */}
           <div className="space-y-6">
             <div>
               <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
@@ -181,17 +185,17 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            {/* Price */}
             <div className="space-y-2">
               <div className="flex items-baseline gap-3">
                 <span className="text-3xl font-bold text-primary">
                   {formatCurrency(product.displayPrice)}
                 </span>
-                {hasDiscount && (
-                  <span className="text-xl text-muted-foreground line-through">
-                    {formatCurrency(product.displayOriginPrice)}
-                  </span>
-                )}
+                {hasDiscount &&
+                  product.displayOriginPrice > product.displayPrice && (
+                    <span className="text-xl text-muted-foreground line-through">
+                      {formatCurrency(product.displayOriginPrice)}
+                    </span>
+                  )}
               </div>
               {product.status === "OUT_OF_STOCK" && (
                 <Badge variant="destructive">Out of Stock</Badge>
@@ -203,7 +207,6 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Description */}
             <div>
               <h3 className="font-semibold mb-2">Description</h3>
               <p className="text-muted-foreground leading-relaxed">
@@ -211,7 +214,6 @@ export default function ProductDetailPage() {
               </p>
             </div>
 
-            {/* Sizes */}
             {product.hasSizes && product.sizes && product.sizes.length > 0 && (
               <div>
                 <h3 className="font-semibold mb-3">Available Sizes</h3>
@@ -236,55 +238,52 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Quantity */}
             <div>
               <h3 className="font-semibold mb-2">Quantity</h3>
               <div className="flex items-center gap-3">
-                <Button
+                <CustomButton
                   variant="outline"
                   size="icon"
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
                 >
-                  -
-                </Button>
+                  <Minus className="h-4 w-4" />
+                </CustomButton>
                 <span className="w-12 text-center font-semibold">
                   {quantity}
                 </span>
-                <Button
+                <CustomButton
                   variant="outline"
                   size="icon"
                   onClick={() => setQuantity(quantity + 1)}
                 >
-                  +
-                </Button>
+                  <Plus className="h-4 w-4" />
+                </CustomButton>
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex gap-3">
-              <Button
+              <CustomButton
                 size="lg"
                 className="flex-1"
                 disabled={product.status === "OUT_OF_STOCK"}
               >
                 <ShoppingCart className="h-5 w-5 mr-2" />
                 Add to Cart
-              </Button>
-              <Button size="lg" variant="outline">
+              </CustomButton>
+              <CustomButton size="lg" variant="outline">
                 <Heart className="h-5 w-5" />
-              </Button>
-              <Button size="lg" variant="outline">
+              </CustomButton>
+              <CustomButton size="lg" variant="outline">
                 <Share2 className="h-5 w-5" />
-              </Button>
+              </CustomButton>
             </div>
           </div>
         </div>
 
-        {/* Similar Products */}
         {similarProducts.length > 0 && (
           <div>
             <h2 className="text-2xl font-bold mb-6">Similar Products</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
               {similarProducts.map((similar) => (
                 <ProductCard key={similar.id} product={similar} />
               ))}
