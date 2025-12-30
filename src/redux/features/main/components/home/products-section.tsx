@@ -1,9 +1,13 @@
 import React from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/shared/card/product-card";
 import { ProductGridSkeleton } from "@/components/shared/skeletons/product-card-skeleton";
 import { ProductDetailResponseModel } from "@/redux/features/business/store/models/response/product-response";
+import { Sparkles } from "lucide-react";
+import {
+  GridWrapper,
+  SectionHeader,
+  SectionWrapper,
+} from "@/components/shared/common/section-header";
 
 interface ProductsSectionProps {
   products: ProductDetailResponseModel[];
@@ -11,7 +15,9 @@ interface ProductsSectionProps {
   error: string | null;
   limit?: number;
   title?: string;
+  subtitle?: string;
   seeAllLink?: string;
+  showIcon?: boolean;
 }
 
 export const ProductsSection = ({
@@ -20,50 +26,38 @@ export const ProductsSection = ({
   error,
   limit = 8,
   title = "Featured Products",
+  subtitle,
   seeAllLink = "/products",
+  showIcon = false,
 }: ProductsSectionProps) => {
   const displayProducts = products?.slice(0, limit) || [];
 
   if (loading) {
     return (
-      <div className="mb-12">
-        <h2 className="text-2xl font-bold mb-6">{title}</h2>
+      <SectionWrapper>
+        <SectionHeader title={title} subtitle={subtitle} />
         <ProductGridSkeleton count={limit} />
-      </div>
+      </SectionWrapper>
     );
   }
 
-  if (error) {
-    return (
-      <div className="mb-12">
-        <h2 className="text-2xl font-bold mb-6">{title}</h2>
-        <div className="p-8 bg-destructive/10 rounded-xl text-center">
-          <p className="text-destructive">Failed to load products</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!displayProducts || displayProducts.length === 0) {
+  if (error || !displayProducts || displayProducts.length === 0) {
     return null;
   }
 
   return (
-    <div className="mb-12">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">{title}</h2>
-        {products.length > limit && (
-          <Link href={seeAllLink}>
-            <Button variant="outline">View All</Button>
-          </Link>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <SectionWrapper>
+      <SectionHeader
+        title={title}
+        subtitle={subtitle}
+        icon={showIcon ? Sparkles : undefined}
+        viewAllLink={products.length > limit ? seeAllLink : undefined}
+      />
+      <GridWrapper cols={{ default: 1, sm: 2, lg: 4 }} gap={6}>
         {displayProducts.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
-      </div>
-    </div>
+      </GridWrapper>
+    </SectionWrapper>
   );
 };

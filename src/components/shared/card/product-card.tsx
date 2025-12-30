@@ -47,80 +47,94 @@ export function ProductCard({ product, className }: ProductCardProps) {
     e.stopPropagation();
 
     setIsAddingToCart(true);
-    // Add to cart logic here
     await new Promise((resolve) => setTimeout(resolve, 500));
     setIsAddingToCart(false);
-    // Show success toast
   };
 
   const handleToggleFavorite = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsFavorite(!isFavorite);
-    // Add to wishlist logic here
   };
 
   return (
     <Link href={`/products/${product.id}`}>
       <div
         className={cn(
-          "group relative bg-card rounded-lg border overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1 h-[320px] flex flex-col",
+          "group relative bg-card rounded-lg border overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1 flex flex-col",
           className
         )}
       >
-        {/* Image Container - 70% of height */}
-        <div className="relative h-[224px] overflow-hidden bg-muted/30 flex-shrink-0">
+        {/* Image Container */}
+        <div className="relative aspect-square overflow-hidden bg-muted/30">
           <Image
-            src={"https://picsum.photos/200/200?random=11224"}
+            src={
+              product.mainImageUrl ||
+              `https://picsum.photos/300/300?random=${product.id}`
+            }
             alt={product.name}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
 
-          {/* Best Seller Badge - Top Left */}
-          {product.isBestSeller && (
-            <Badge
-              variant="default"
-              className="absolute top-2 left-2 z-10 shadow-md bg-gray-900 hover:bg-gray-900 text-xs font-medium px-2 py-1"
-            >
-              BEST SELLERS
-            </Badge>
-          )}
-
-          {/* Promotion Badge - Top Right */}
-          {product.hasPromotion && discountPercentage > 0 && (
-            <Badge
-              variant="destructive"
-              className="absolute top-2 right-2 z-10 shadow-md text-xs font-bold px-2 py-1"
-            >
-              -{discountPercentage}%
-            </Badge>
-          )}
+          {/* Badges */}
+          <div className="absolute top-2 left-2 right-2 flex justify-between items-start z-10">
+            {product.isBestSeller && (
+              <Badge className="bg-gray-900 hover:bg-gray-900 text-xs px-2 py-0.5 shadow-md">
+                BEST
+              </Badge>
+            )}
+            {product.hasPromotion && discountPercentage > 0 && (
+              <Badge
+                variant="destructive"
+                className="text-xs font-bold px-2 py-0.5 shadow-md ml-auto"
+              >
+                -{discountPercentage}%
+              </Badge>
+            )}
+          </div>
 
           {/* Out of Stock Overlay */}
           {product.status === "OUT_OF_STOCK" && (
             <div className="absolute inset-0 bg-black/50 z-10 flex items-center justify-center">
               <Badge
                 variant="secondary"
-                className="shadow-lg text-sm font-semibold px-4 py-1.5"
+                className="text-xs font-semibold px-3 py-1"
               >
                 Out of Stock
               </Badge>
             </div>
           )}
+
+          {/* Quick Actions - Show on Hover */}
+          <div className="absolute top-2 right-2 z-20 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              size="icon"
+              variant="secondary"
+              className={cn(
+                "h-8 w-8 rounded-full shadow-lg transition-colors",
+                isFavorite
+                  ? "bg-red-500 text-white hover:bg-red-600"
+                  : "bg-white hover:bg-red-50 hover:text-red-500"
+              )}
+              onClick={handleToggleFavorite}
+            >
+              <Heart className={cn("h-4 w-4", isFavorite && "fill-current")} />
+            </Button>
+          </div>
         </div>
 
-        {/* Product Info - 30% of height */}
+        {/* Product Info */}
         <div className="p-3 flex flex-col flex-1">
-          {/* Product Name - 2 lines max */}
-          <h3 className="font-medium text-sm line-clamp-2 h-10 group-hover:text-primary transition-colors leading-5 mb-1">
+          {/* Product Name */}
+          <h3 className="font-medium text-sm line-clamp-2 mb-2 group-hover:text-primary transition-colors min-h-[40px]">
             {product.name}
           </h3>
 
-          {/* Price Section and Action Buttons */}
+          {/* Price and Cart */}
           <div className="flex items-center justify-between mt-auto">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-base font-bold text-primary">
+            <div className="flex flex-col">
+              <span className="text-lg font-bold text-primary">
                 {formatCurrency(product.displayPrice)}
               </span>
               {hasDiscount && (
@@ -130,33 +144,15 @@ export function ProductCard({ product, className }: ProductCardProps) {
               )}
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-1.5">
-              <Button
-                size="icon"
-                variant="outline"
-                className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-primary hover:text-white hover:border-primary transition-colors"
-                onClick={handleAddToCart}
-                disabled={isAddingToCart || product.status === "OUT_OF_STOCK"}
-              >
-                <ShoppingCart className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="outline"
-                className={cn(
-                  "h-9 w-9 flex items-center justify-center rounded-md transition-colors",
-                  isFavorite
-                    ? "bg-red-500 text-white border-red-500 hover:bg-red-600 hover:border-red-600"
-                    : "hover:bg-red-50 hover:text-red-500 hover:border-red-500"
-                )}
-                onClick={handleToggleFavorite}
-              >
-                <Heart
-                  className={cn("h-4 w-4", isFavorite && "fill-current")}
-                />
-              </Button>
-            </div>
+            <Button
+              size="icon"
+              variant="default"
+              className="h-9 w-9 rounded-full shadow-md"
+              onClick={handleAddToCart}
+              disabled={isAddingToCart || product.status === "OUT_OF_STOCK"}
+            >
+              <ShoppingCart className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>

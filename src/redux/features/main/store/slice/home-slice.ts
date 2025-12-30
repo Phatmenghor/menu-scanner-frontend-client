@@ -1,11 +1,6 @@
 /**
- * Home Page Slice - Complete Redux State Management
- *
- * Features:
- * - Data persistence without page refresh
- * - Scroll position tracking and restoration
- * - Smart loading prevention when data exists
- * - Maintain state when navigating away and back
+ * home-slice.ts
+ * Simplified - only track loading, loaded, error
  */
 
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
@@ -13,114 +8,88 @@ import { BannerResponseModel } from "@/redux/features/master-data/store/models/r
 import { CategoriesResponseModel } from "@/redux/features/master-data/store/models/response/categories-response";
 import { ProductDetailResponseModel } from "@/redux/features/business/store/models/response/product-response";
 import { BrandResponseModel } from "@/redux/features/master-data/store/models/response/brand-response";
-import { fetchAllBannerService } from "@/redux/features/master-data/store/thunks/banner-thunks";
-import { fetchAllProductService } from "@/redux/features/business/store/thunks/product-thunks";
-import { fetchAllBrandService } from "@/redux/features/master-data/store/thunks/brand-thunks";
-import { fetchAllCategoriesService } from "@/redux/features/master-data/store/thunks/categories-thunks";
 
-// ========== INTERFACES ==========
+import {
+  fetchHomeBanners,
+  fetchHomeCategories,
+  fetchHomePromotionProducts,
+  fetchHomeFeaturedProducts,
+  fetchHomeNewArrivals,
+  fetchHomeBrands,
+} from "../thunks/home-thunks";
 
-/**
- * Scroll position state
- */
 interface ScrollState {
   position: number;
   savedAt: number;
 }
 
-/**
- * Main home page state interface
- */
+interface SectionState {
+  loading: boolean;
+  loaded: boolean;
+  error: string | null;
+}
+
 interface HomePageState {
-  // ========== DATA STORAGE ==========
+  // ========== CACHED DATA ==========
   banners: BannerResponseModel[];
   categories: CategoriesResponseModel[];
-  products: ProductDetailResponseModel[];
+  promotionProducts: ProductDetailResponseModel[];
+  featuredProducts: ProductDetailResponseModel[];
+  newArrivals: ProductDetailResponseModel[];
   brands: BrandResponseModel[];
 
-  // ========== LOADING STATES ==========
-  bannersLoading: boolean;
-  categoriesLoading: boolean;
-  productsLoading: boolean;
-  brandsLoading: boolean;
-
-  // ========== ERROR STATES ==========
-  bannersError: string | null;
-  categoriesError: string | null;
-  productsError: string | null;
-  brandsError: string | null;
-
-  // ========== LOADED FLAGS - KEY FOR NO REFRESH ==========
-  /**
-   * These flags are CRITICAL for data persistence
-   * When a section is loaded, its flag is set to true
-   * On component mount, we check these flags before fetching
-   * This prevents unnecessary API calls
-   */
-  bannersLoaded: boolean;
-  categoriesLoaded: boolean;
-  productsLoaded: boolean;
-  brandsLoaded: boolean;
+  // ========== SECTION STATES ==========
+  sections: {
+    banners: SectionState;
+    categories: SectionState;
+    promotionProducts: SectionState;
+    featuredProducts: SectionState;
+    newArrivals: SectionState;
+    brands: SectionState;
+  };
 
   // ========== PAGE STATE ==========
   initialLoadComplete: boolean;
   lastFetchTimestamp: number | null;
 
-  // ========== SCROLL POSITION TRACKING ==========
-  /**
-   * Tracks scroll position for restoration when returning from detail page
-   */
+  // ========== SCROLL TRACKING ==========
   scrollState: ScrollState;
   shouldRestoreScroll: boolean;
   lastDetailPage: string | null;
 }
 
-// ========== INITIAL STATE ==========
+const initialSectionState: SectionState = {
+  loading: false,
+  loaded: false,
+  error: null,
+};
+
 const initialState: HomePageState = {
-  // Empty data arrays
   banners: [],
   categories: [],
-  products: [],
+  promotionProducts: [],
+  featuredProducts: [],
+  newArrivals: [],
   brands: [],
-
-  // Loading states - all false initially
-  bannersLoading: false,
-  categoriesLoading: false,
-  productsLoading: false,
-  brandsLoading: false,
-
-  // Error states - all null initially
-  bannersError: null,
-  categoriesError: null,
-  productsError: null,
-  brandsError: null,
-
-  // Loaded flags - all false initially (CRITICAL for persistence)
-  bannersLoaded: false,
-  categoriesLoaded: false,
-  productsLoaded: false,
-  brandsLoaded: false,
-
-  // Overall state
+  sections: {
+    banners: { ...initialSectionState },
+    categories: { ...initialSectionState },
+    promotionProducts: { ...initialSectionState },
+    featuredProducts: { ...initialSectionState },
+    newArrivals: { ...initialSectionState },
+    brands: { ...initialSectionState },
+  },
   initialLoadComplete: false,
   lastFetchTimestamp: null,
-
-  // Scroll tracking
   scrollState: { position: 0, savedAt: 0 },
   shouldRestoreScroll: false,
   lastDetailPage: null,
 };
 
-// ========== SLICE DEFINITION ==========
 const homeSlice = createSlice({
   name: "home",
   initialState,
   reducers: {
-    // ========== SCROLL POSITION MANAGEMENT ==========
-    /**
-     * Save scroll position before navigating away
-     * Called before user navigates to detail page
-     */
     saveScrollPosition: (state, action: PayloadAction<number>) => {
       state.scrollState = {
         position: action.payload,
@@ -128,192 +97,156 @@ const homeSlice = createSlice({
       };
     },
 
-    /**
-     * Enable scroll restoration
-     * Tells component to restore scroll position
-     */
     enableScrollRestoration: (state) => {
       state.shouldRestoreScroll = true;
     },
 
-    /**
-     * Disable scroll restoration
-     * Called after scroll is restored
-     */
     disableScrollRestoration: (state) => {
       state.shouldRestoreScroll = false;
     },
 
-    /**
-     * Track which detail page user came from
-     * Used to identify navigation path
-     */
     setLastDetailPage: (state, action: PayloadAction<string | null>) => {
       state.lastDetailPage = action.payload;
     },
 
-    // ========== STATE MANAGEMENT ==========
-    /**
-     * Mark initial load as complete
-     * Called after first batch of data loads
-     */
     setInitialLoadComplete: (state) => {
       state.initialLoadComplete = true;
       state.lastFetchTimestamp = Date.now();
     },
 
-    /**
-     * Force refresh - clear all data and refetch
-     * Resets all loaded flags to force new API calls
-     */
     forceRefresh: (state) => {
       state.banners = [];
       state.categories = [];
-      state.products = [];
+      state.promotionProducts = [];
+      state.featuredProducts = [];
+      state.newArrivals = [];
       state.brands = [];
-      state.bannersLoaded = false;
-      state.categoriesLoaded = false;
-      state.productsLoaded = false;
-      state.brandsLoaded = false;
+      state.sections = {
+        banners: { ...initialSectionState },
+        categories: { ...initialSectionState },
+        promotionProducts: { ...initialSectionState },
+        featuredProducts: { ...initialSectionState },
+        newArrivals: { ...initialSectionState },
+        brands: { ...initialSectionState },
+      };
       state.initialLoadComplete = false;
       state.lastFetchTimestamp = null;
-      state.bannersError = null;
-      state.categoriesError = null;
-      state.productsError = null;
-      state.brandsError = null;
     },
 
-    /**
-     * Reset to initial state
-     */
     resetHomeState: () => initialState,
-
-    /**
-     * Clear specific section data
-     */
-    clearSection: (
-      state,
-      action: PayloadAction<"banners" | "categories" | "products" | "brands">
-    ) => {
-      const section = action.payload;
-      state[section] = [];
-      state[`${section}Loaded`] = false;
-      state[`${section}Error`] = null;
-    },
   },
 
-  // ========== EXTRA REDUCERS FOR ASYNC THUNKS ==========
   extraReducers: (builder) => {
     // ==================== BANNERS ====================
-    /**
-     * Handle banner fetching lifecycle
-     */
     builder
-      // Pending: Request started
-      .addCase(fetchAllBannerService.pending, (state) => {
-        // Only show loading if data doesn't exist
-        // This prevents re-rendering when returning with cached data
-        if (!state.bannersLoaded) {
-          state.bannersLoading = true;
-        }
-        state.bannersError = null;
+      .addCase(fetchHomeBanners.pending, (state) => {
+        state.sections.banners.loading = true;
+        state.sections.banners.error = null;
       })
-      // Fulfilled: Request succeeded
-      .addCase(fetchAllBannerService.fulfilled, (state, action) => {
-        state.bannersLoading = false;
-        state.bannersLoaded = true; // ⭐ CRITICAL: Mark as loaded
-        state.bannersError = null;
+      .addCase(fetchHomeBanners.fulfilled, (state, action) => {
         state.banners = action.payload.content || [];
+        state.sections.banners.loading = false;
+        state.sections.banners.loaded = true;
+        state.sections.banners.error = null;
       })
-      // Rejected: Request failed
-      .addCase(fetchAllBannerService.rejected, (state, action) => {
-        state.bannersLoading = false;
-        state.bannersError = action.payload as string;
-        // Keep loaded flag as false if error occurs
-        state.bannersLoaded = false;
+      .addCase(fetchHomeBanners.rejected, (state, action) => {
+        state.sections.banners.loading = false;
+        state.sections.banners.loaded = false;
+        state.sections.banners.error = action.payload as string;
       });
 
     // ==================== CATEGORIES ====================
-    /**
-     * Handle category fetching lifecycle
-     */
     builder
-      // Pending: Request started
-      .addCase(fetchAllCategoriesService.pending, (state) => {
-        if (!state.categoriesLoaded) {
-          state.categoriesLoading = true;
-        }
-        state.categoriesError = null;
+      .addCase(fetchHomeCategories.pending, (state) => {
+        state.sections.categories.loading = true;
+        state.sections.categories.error = null;
       })
-      // Fulfilled: Request succeeded
-      .addCase(fetchAllCategoriesService.fulfilled, (state, action) => {
-        state.categoriesLoading = false;
-        state.categoriesLoaded = true; // ⭐ CRITICAL: Mark as loaded
-        state.categoriesError = null;
+      .addCase(fetchHomeCategories.fulfilled, (state, action) => {
         state.categories = action.payload.content || [];
+        state.sections.categories.loading = false;
+        state.sections.categories.loaded = true;
+        state.sections.categories.error = null;
       })
-      // Rejected: Request failed
-      .addCase(fetchAllCategoriesService.rejected, (state, action) => {
-        state.categoriesLoading = false;
-        state.categoriesError = action.payload as string;
-        state.categoriesLoaded = false;
+      .addCase(fetchHomeCategories.rejected, (state, action) => {
+        state.sections.categories.loading = false;
+        state.sections.categories.loaded = false;
+        state.sections.categories.error = action.payload as string;
       });
 
-    // ==================== PRODUCTS ====================
-    /**
-     * Handle product fetching lifecycle
-     */
+    // ==================== PROMOTION PRODUCTS ====================
     builder
-      // Pending: Request started
-      .addCase(fetchAllProductService.pending, (state) => {
-        if (!state.productsLoaded) {
-          state.productsLoading = true;
-        }
-        state.productsError = null;
+      .addCase(fetchHomePromotionProducts.pending, (state) => {
+        state.sections.promotionProducts.loading = true;
+        state.sections.promotionProducts.error = null;
       })
-      // Fulfilled: Request succeeded
-      .addCase(fetchAllProductService.fulfilled, (state, action) => {
-        state.productsLoading = false;
-        state.productsLoaded = true; // ⭐ CRITICAL: Mark as loaded
-        state.productsError = null;
-        state.products = action.payload.content || [];
+      .addCase(fetchHomePromotionProducts.fulfilled, (state, action) => {
+        state.promotionProducts = action.payload.content || [];
+        state.sections.promotionProducts.loading = false;
+        state.sections.promotionProducts.loaded = true;
+        state.sections.promotionProducts.error = null;
       })
-      // Rejected: Request failed
-      .addCase(fetchAllProductService.rejected, (state, action) => {
-        state.productsLoading = false;
-        state.productsError = action.payload as string;
-        state.productsLoaded = false;
+      .addCase(fetchHomePromotionProducts.rejected, (state, action) => {
+        state.sections.promotionProducts.loading = false;
+        state.sections.promotionProducts.loaded = false;
+        state.sections.promotionProducts.error = action.payload as string;
+      });
+
+    // ==================== FEATURED PRODUCTS ====================
+    builder
+      .addCase(fetchHomeFeaturedProducts.pending, (state) => {
+        state.sections.featuredProducts.loading = true;
+        state.sections.featuredProducts.error = null;
+      })
+      .addCase(fetchHomeFeaturedProducts.fulfilled, (state, action) => {
+        state.featuredProducts = action.payload.content || [];
+        state.sections.featuredProducts.loading = false;
+        state.sections.featuredProducts.loaded = true;
+        state.sections.featuredProducts.error = null;
+      })
+      .addCase(fetchHomeFeaturedProducts.rejected, (state, action) => {
+        state.sections.featuredProducts.loading = false;
+        state.sections.featuredProducts.loaded = false;
+        state.sections.featuredProducts.error = action.payload as string;
+      });
+
+    // ==================== NEW ARRIVALS ====================
+    builder
+      .addCase(fetchHomeNewArrivals.pending, (state) => {
+        state.sections.newArrivals.loading = true;
+        state.sections.newArrivals.error = null;
+      })
+      .addCase(fetchHomeNewArrivals.fulfilled, (state, action) => {
+        state.newArrivals = action.payload.content || [];
+        state.sections.newArrivals.loading = false;
+        state.sections.newArrivals.loaded = true;
+        state.sections.newArrivals.error = null;
+      })
+      .addCase(fetchHomeNewArrivals.rejected, (state, action) => {
+        state.sections.newArrivals.loading = false;
+        state.sections.newArrivals.loaded = false;
+        state.sections.newArrivals.error = action.payload as string;
       });
 
     // ==================== BRANDS ====================
-    /**
-     * Handle brand fetching lifecycle
-     */
     builder
-      // Pending: Request started
-      .addCase(fetchAllBrandService.pending, (state) => {
-        if (!state.brandsLoaded) {
-          state.brandsLoading = true;
-        }
-        state.brandsError = null;
+      .addCase(fetchHomeBrands.pending, (state) => {
+        state.sections.brands.loading = true;
+        state.sections.brands.error = null;
       })
-      // Fulfilled: Request succeeded
-      .addCase(fetchAllBrandService.fulfilled, (state, action) => {
-        state.brandsLoading = false;
-        state.brandsLoaded = true; // ⭐ CRITICAL: Mark as loaded
-        state.brandsError = null;
+      .addCase(fetchHomeBrands.fulfilled, (state, action) => {
         state.brands = action.payload.content || [];
+        state.sections.brands.loading = false;
+        state.sections.brands.loaded = true;
+        state.sections.brands.error = null;
       })
-      // Rejected: Request failed
-      .addCase(fetchAllBrandService.rejected, (state, action) => {
-        state.brandsLoading = false;
-        state.brandsError = action.payload as string;
-        state.brandsLoaded = false;
+      .addCase(fetchHomeBrands.rejected, (state, action) => {
+        state.sections.brands.loading = false;
+        state.sections.brands.loaded = false;
+        state.sections.brands.error = action.payload as string;
       });
   },
 });
 
-// ========== EXPORT ACTIONS ==========
 export const {
   saveScrollPosition,
   enableScrollRestoration,
@@ -322,8 +255,6 @@ export const {
   setInitialLoadComplete,
   forceRefresh,
   resetHomeState,
-  clearSection,
 } = homeSlice.actions;
 
-// ========== EXPORT REDUCER ==========
 export default homeSlice.reducer;

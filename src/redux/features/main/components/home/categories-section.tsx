@@ -1,9 +1,12 @@
 import React from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { CategoryCard } from "@/components/shared/card/category-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CategoriesResponseModel } from "@/redux/features/master-data/store/models/response/categories-response";
+import {
+  GridWrapper,
+  SectionHeader,
+  SectionWrapper,
+} from "@/components/shared/common/section-header";
 
 interface CategoriesSectionProps {
   categories: CategoriesResponseModel[];
@@ -14,8 +17,8 @@ interface CategoriesSectionProps {
 }
 
 const CategorySkeleton = () => (
-  <div className="h-[200px] flex flex-col rounded-lg border overflow-hidden">
-    <Skeleton className="h-[140px] w-full" />
+  <div className="h-[180px] flex flex-col rounded-xl border overflow-hidden bg-muted/30">
+    <Skeleton className="h-[120px] w-full" />
     <div className="p-3 flex-1 flex items-center justify-center">
       <Skeleton className="h-4 w-24" />
     </div>
@@ -33,48 +36,33 @@ export const CategoriesSection = ({
 
   if (loading) {
     return (
-      <div className="mb-12">
-        <h2 className="text-2xl font-bold mb-6">{title}</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+      <SectionWrapper>
+        <SectionHeader title={title} subtitle="Browse products by category" />
+        <GridWrapper cols={{ default: 2, sm: 3, md: 4, lg: 4 }} gap={4}>
           {Array.from({ length: limit }).map((_, index) => (
             <CategorySkeleton key={index} />
           ))}
-        </div>
-      </div>
+        </GridWrapper>
+      </SectionWrapper>
     );
   }
 
-  if (error) {
-    return (
-      <div className="mb-12">
-        <h2 className="text-2xl font-bold mb-6">{title}</h2>
-        <div className="p-8 bg-destructive/10 rounded-xl text-center">
-          <p className="text-destructive">Failed to load categories</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!displayCategories || displayCategories.length === 0) {
+  if (error || !displayCategories || displayCategories.length === 0) {
     return null;
   }
 
   return (
-    <div className="mb-12">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">{title}</h2>
-        {categories.length > limit && (
-          <Link href="/categories">
-            <Button variant="outline">View All</Button>
-          </Link>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+    <SectionWrapper>
+      <SectionHeader
+        title={title}
+        subtitle="Browse products by category"
+        viewAllLink={categories.length > limit ? "/categories" : undefined}
+      />
+      <GridWrapper cols={{ default: 2, sm: 3, md: 4, lg: 4 }} gap={4}>
         {displayCategories.map((category) => (
           <CategoryCard key={category.id} category={category} />
         ))}
-      </div>
-    </div>
+      </GridWrapper>
+    </SectionWrapper>
   );
 };

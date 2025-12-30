@@ -1,10 +1,14 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BrandGridSkeleton } from "@/components/shared/skeletons/brand-card-skeleton";
 import { BrandResponseModel } from "@/redux/features/master-data/store/models/response/brand-response";
+import {
+  GridWrapper,
+  SectionHeader,
+  SectionWrapper,
+} from "@/components/shared/common/section-header";
 
 interface BrandsSectionProps {
   brands: BrandResponseModel[];
@@ -25,72 +29,60 @@ export const BrandsSection = ({
 
   if (loading) {
     return (
-      <div className="mb-12">
-        <h2 className="text-2xl font-bold mb-6">{title}</h2>
+      <SectionWrapper>
+        <SectionHeader
+          title={title}
+          subtitle="Explore products from top brands"
+        />
         <BrandGridSkeleton count={limit} />
-      </div>
+      </SectionWrapper>
     );
   }
 
-  if (error) {
-    return (
-      <div className="mb-12">
-        <h2 className="text-2xl font-bold mb-6">{title}</h2>
-        <div className="p-8 bg-destructive/10 rounded-xl text-center">
-          <p className="text-destructive">Failed to load brands</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!displayBrands || displayBrands.length === 0) {
+  if (error || !displayBrands || displayBrands.length === 0) {
     return null;
   }
 
   return (
-    <div className="mb-12">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">{title}</h2>
-        {brands.length > limit && (
-          <Link href="/brands">
-            <Button variant="outline">View All</Button>
-          </Link>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+    <SectionWrapper>
+      <SectionHeader
+        title={title}
+        subtitle="Explore products from top brands"
+        viewAllLink={brands.length > limit ? "/brands" : undefined}
+      />
+      <GridWrapper cols={{ default: 3, sm: 4, md: 5, lg: 6 }} gap={4}>
         {displayBrands.map((brand) => (
           <Link key={brand.id} href={`/products?brandId=${brand.id}`}>
-            <Card className="overflow-hidden hover:shadow-lg transition-all cursor-pointer group">
-              <CardContent className="p-6 flex flex-col items-center justify-center">
-                <div className="w-32 h-32 flex items-center justify-center mb-4 overflow-hidden rounded-full bg-muted group-hover:bg-muted/70 transition-colors">
+            <Card className="overflow-hidden hover:shadow-lg hover:border-primary/50 transition-all duration-300 cursor-pointer group h-full">
+              <CardContent className="p-4 flex flex-col items-center justify-center h-full">
+                <div className="w-20 h-20 md:w-24 md:h-24 flex items-center justify-center mb-3 overflow-hidden rounded-full bg-muted group-hover:bg-primary/5 transition-colors">
                   {brand.imageUrl ? (
                     <Image
                       src={brand.imageUrl}
                       alt={brand.name}
-                      width={128}
-                      height={128}
+                      width={96}
+                      height={96}
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span className="text-4xl font-bold text-muted-foreground">
+                    <span className="text-2xl md:text-3xl font-bold text-muted-foreground group-hover:text-primary transition-colors">
                       {brand.name.charAt(0)}
                     </span>
                   )}
                 </div>
-                <h3 className="font-semibold text-center line-clamp-1 mb-1">
+                <h3 className="font-semibold text-center text-xs md:text-sm line-clamp-1 mb-1 group-hover:text-primary transition-colors">
                   {brand.name}
                 </h3>
                 {brand.activeProducts > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {brand.activeProducts} products
+                  <p className="text-xs text-muted-foreground text-center">
+                    {brand.activeProducts} items
                   </p>
                 )}
               </CardContent>
             </Card>
           </Link>
         ))}
-      </div>
-    </div>
+      </GridWrapper>
+    </SectionWrapper>
   );
 };
