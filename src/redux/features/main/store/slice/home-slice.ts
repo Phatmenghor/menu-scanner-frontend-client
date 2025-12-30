@@ -1,6 +1,6 @@
 /**
  * home-slice.ts
- * Simplified - only track loading, loaded, error
+ * Complete Redux State Management with Pagination
  */
 
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
@@ -14,7 +14,6 @@ import {
   fetchHomeCategories,
   fetchHomePromotionProducts,
   fetchHomeFeaturedProducts,
-  fetchHomeNewArrivals,
   fetchHomeBrands,
 } from "../thunks/home-thunks";
 
@@ -29,30 +28,37 @@ interface SectionState {
   error: string | null;
 }
 
+interface PaginationState {
+  currentPage: number;
+  hasMore: boolean;
+  totalPages: number;
+}
+
 interface HomePageState {
-  // ========== CACHED DATA ==========
+  // Data
   banners: BannerResponseModel[];
   categories: CategoriesResponseModel[];
   promotionProducts: ProductDetailResponseModel[];
   featuredProducts: ProductDetailResponseModel[];
-  newArrivals: ProductDetailResponseModel[];
   brands: BrandResponseModel[];
 
-  // ========== SECTION STATES ==========
+  // Section states
   sections: {
     banners: SectionState;
     categories: SectionState;
     promotionProducts: SectionState;
     featuredProducts: SectionState;
-    newArrivals: SectionState;
     brands: SectionState;
   };
 
-  // ========== PAGE STATE ==========
+  // Pagination for featured products
+  featuredPagination: PaginationState;
+
+  // Page state
   initialLoadComplete: boolean;
   lastFetchTimestamp: number | null;
 
-  // ========== SCROLL TRACKING ==========
+  // Scroll tracking
   scrollState: ScrollState;
   shouldRestoreScroll: boolean;
   lastDetailPage: string | null;
@@ -69,15 +75,18 @@ const initialState: HomePageState = {
   categories: [],
   promotionProducts: [],
   featuredProducts: [],
-  newArrivals: [],
   brands: [],
   sections: {
     banners: { ...initialSectionState },
     categories: { ...initialSectionState },
     promotionProducts: { ...initialSectionState },
     featuredProducts: { ...initialSectionState },
-    newArrivals: { ...initialSectionState },
     brands: { ...initialSectionState },
+  },
+  featuredPagination: {
+    currentPage: 1,
+    hasMore: true,
+    totalPages: 1,
   },
   initialLoadComplete: false,
   lastFetchTimestamp: null,
@@ -114,20 +123,33 @@ const homeSlice = createSlice({
       state.lastFetchTimestamp = Date.now();
     },
 
+    resetFeaturedPagination: (state) => {
+      state.featuredPagination = {
+        currentPage: 1,
+        hasMore: true,
+        totalPages: 1,
+      };
+      state.featuredProducts = [];
+      state.sections.featuredProducts.loaded = false;
+    },
+
     forceRefresh: (state) => {
       state.banners = [];
       state.categories = [];
       state.promotionProducts = [];
       state.featuredProducts = [];
-      state.newArrivals = [];
       state.brands = [];
       state.sections = {
         banners: { ...initialSectionState },
         categories: { ...initialSectionState },
         promotionProducts: { ...initialSectionState },
         featuredProducts: { ...initialSectionState },
-        newArrivals: { ...initialSectionState },
         brands: { ...initialSectionState },
+      };
+      state.featuredPagination = {
+        currentPage: 1,
+        hasMore: true,
+        totalPages: 1,
       };
       state.initialLoadComplete = false;
       state.lastFetchTimestamp = null;
@@ -137,7 +159,7 @@ const homeSlice = createSlice({
   },
 
   extraReducers: (builder) => {
-    // ==================== BANNERS ====================
+    // Banners
     builder
       .addCase(fetchHomeBanners.pending, (state) => {
         state.sections.banners.loading = true;
@@ -147,15 +169,13 @@ const homeSlice = createSlice({
         state.banners = action.payload.content || [];
         state.sections.banners.loading = false;
         state.sections.banners.loaded = true;
-        state.sections.banners.error = null;
       })
       .addCase(fetchHomeBanners.rejected, (state, action) => {
         state.sections.banners.loading = false;
-        state.sections.banners.loaded = false;
         state.sections.banners.error = action.payload as string;
       });
 
-    // ==================== CATEGORIES ====================
+    // Categories
     builder
       .addCase(fetchHomeCategories.pending, (state) => {
         state.sections.categories.loading = true;
@@ -165,15 +185,13 @@ const homeSlice = createSlice({
         state.categories = action.payload.content || [];
         state.sections.categories.loading = false;
         state.sections.categories.loaded = true;
-        state.sections.categories.error = null;
       })
       .addCase(fetchHomeCategories.rejected, (state, action) => {
         state.sections.categories.loading = false;
-        state.sections.categories.loaded = false;
         state.sections.categories.error = action.payload as string;
       });
 
-    // ==================== PROMOTION PRODUCTS ====================
+    // Promotion Products
     builder
       .addCase(fetchHomePromotionProducts.pending, (state) => {
         state.sections.promotionProducts.loading = true;
@@ -183,51 +201,38 @@ const homeSlice = createSlice({
         state.promotionProducts = action.payload.content || [];
         state.sections.promotionProducts.loading = false;
         state.sections.promotionProducts.loaded = true;
-        state.sections.promotionProducts.error = null;
       })
       .addCase(fetchHomePromotionProducts.rejected, (state, action) => {
         state.sections.promotionProducts.loading = false;
-        state.sections.promotionProducts.loaded = false;
         state.sections.promotionProducts.error = action.payload as string;
       });
 
-    // ==================== FEATURED PRODUCTS ====================
+    // Featured Products (Paginated)
     builder
       .addCase(fetchHomeFeaturedProducts.pending, (state) => {
         state.sections.featuredProducts.loading = true;
         state.sections.featuredProducts.error = null;
       })
       .addCase(fetchHomeFeaturedProducts.fulfilled, (state, action) => {
-        state.featuredProducts = action.payload.content || [];
+        const newProducts = action.payload.content || [];
+
+        // Append new products to existing ones
+        state.featuredProducts = [...state.featuredProducts, ...newProducts];
+
+        // Update pagination
+        state.featuredPagination.currentPage = action.payload.pageNo || 1;
+        state.featuredPagination.totalPages = action.payload.totalPages || 1;
+        state.featuredPagination.hasMore = !action.payload.last;
+
         state.sections.featuredProducts.loading = false;
         state.sections.featuredProducts.loaded = true;
-        state.sections.featuredProducts.error = null;
       })
       .addCase(fetchHomeFeaturedProducts.rejected, (state, action) => {
         state.sections.featuredProducts.loading = false;
-        state.sections.featuredProducts.loaded = false;
         state.sections.featuredProducts.error = action.payload as string;
       });
 
-    // ==================== NEW ARRIVALS ====================
-    builder
-      .addCase(fetchHomeNewArrivals.pending, (state) => {
-        state.sections.newArrivals.loading = true;
-        state.sections.newArrivals.error = null;
-      })
-      .addCase(fetchHomeNewArrivals.fulfilled, (state, action) => {
-        state.newArrivals = action.payload.content || [];
-        state.sections.newArrivals.loading = false;
-        state.sections.newArrivals.loaded = true;
-        state.sections.newArrivals.error = null;
-      })
-      .addCase(fetchHomeNewArrivals.rejected, (state, action) => {
-        state.sections.newArrivals.loading = false;
-        state.sections.newArrivals.loaded = false;
-        state.sections.newArrivals.error = action.payload as string;
-      });
-
-    // ==================== BRANDS ====================
+    // Brands
     builder
       .addCase(fetchHomeBrands.pending, (state) => {
         state.sections.brands.loading = true;
@@ -237,11 +242,9 @@ const homeSlice = createSlice({
         state.brands = action.payload.content || [];
         state.sections.brands.loading = false;
         state.sections.brands.loaded = true;
-        state.sections.brands.error = null;
       })
       .addCase(fetchHomeBrands.rejected, (state, action) => {
         state.sections.brands.loading = false;
-        state.sections.brands.loaded = false;
         state.sections.brands.error = action.payload as string;
       });
   },
@@ -253,6 +256,7 @@ export const {
   disableScrollRestoration,
   setLastDetailPage,
   setInitialLoadComplete,
+  resetFeaturedPagination,
   forceRefresh,
   resetHomeState,
 } = homeSlice.actions;

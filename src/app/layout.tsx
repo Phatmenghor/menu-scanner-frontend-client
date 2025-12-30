@@ -1,4 +1,3 @@
-// src/app/layout.tsx
 import type { Metadata } from "next";
 import { ClientProviders } from "@/context/client-provider";
 import { getMessages } from "next-intl/server";
@@ -7,7 +6,10 @@ import { locales, defaultLocale, type Locale } from "@/i18n/request";
 import "../styles/globals.css";
 import PageProgressBar from "@/components/shared/progress/global-n-progress";
 import { LocaleProvider } from "@/context/locale-provider";
+
 import { headers } from "next/headers";
+import { ScrollReset } from "@/components/shared/common/scroll-reset";
+import { ScrollToTop } from "@/components/shared/common/scroll-to-top";
 
 const geistSans = localFont({
   src: "../../public/fonts/GeistVF.woff",
@@ -31,7 +33,6 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Get locale from header set by middleware
   const headersList = headers();
   const localeHeader = headersList.get("x-locale");
   const locale = (
@@ -40,7 +41,6 @@ export default async function RootLayout({
       : defaultLocale
   ) as Locale;
 
-  // Get messages for the locale
   const messages = await getMessages({ locale });
 
   return (
@@ -55,7 +55,9 @@ export default async function RootLayout({
         <LocaleProvider initialLocale={locale} initialMessages={messages}>
           <ClientProviders>
             <PageProgressBar />
+            <ScrollReset />
             {children}
+            <ScrollToTop />
           </ClientProviders>
         </LocaleProvider>
       </body>

@@ -8,8 +8,6 @@ interface SectionHeaderProps {
   title: string;
   subtitle?: string;
   icon?: LucideIcon;
-  viewAllLink?: string;
-  viewAllText?: string;
   className?: string;
 }
 
@@ -17,33 +15,16 @@ export const SectionHeader = ({
   title,
   subtitle,
   icon: Icon,
-  viewAllLink,
-  viewAllText = "View All",
   className,
 }: SectionHeaderProps) => {
   return (
-    <div
-      className={cn(
-        "flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6",
-        className
-      )}
-    >
-      <div>
-        <h2 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
-          {Icon && <Icon className="h-6 w-6 md:h-7 md:w-7 text-primary" />}
-          {title}
-        </h2>
-        {subtitle && (
-          <p className="text-muted-foreground text-sm mt-1">{subtitle}</p>
-        )}
-      </div>
-      {viewAllLink && (
-        <Link href={viewAllLink}>
-          <Button variant="outline" className="gap-2 group">
-            {viewAllText}
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-          </Button>
-        </Link>
+    <div className={cn("mb-6", className)}>
+      <h2 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
+        {Icon && <Icon className="h-6 w-6 md:h-7 md:w-7 text-primary" />}
+        {title}
+      </h2>
+      {subtitle && (
+        <p className="text-muted-foreground text-sm mt-1">{subtitle}</p>
       )}
     </div>
   );
@@ -61,37 +42,29 @@ export const SectionWrapper = ({
   return <section className={cn("mb-12", className)}>{children}</section>;
 };
 
-interface GridWrapperProps {
-  children: React.ReactNode;
-  cols?: {
-    default?: number;
-    sm?: number;
-    md?: number;
-    lg?: number;
-    xl?: number;
-  };
-  gap?: number;
+interface ViewAllButtonProps {
+  href: string;
+  text?: string;
   className?: string;
 }
 
-export const GridWrapper = ({
-  children,
-  cols = { default: 1, sm: 2, md: 3, lg: 4 },
-  gap = 6,
+export const ViewAllButton = ({
+  href,
+  text = "View All Products",
   className,
-}: GridWrapperProps) => {
-  const gridCols = cn(
-    "grid",
-    cols.default === 1 && "grid-cols-1",
-    cols.default === 2 && "grid-cols-2",
-    cols.default === 3 && "grid-cols-3",
-    cols.sm && `sm:grid-cols-${cols.sm}`,
-    cols.md && `md:grid-cols-${cols.md}`,
-    cols.lg && `lg:grid-cols-${cols.lg}`,
-    cols.xl && `xl:grid-cols-${cols.xl}`,
-    `gap-${gap}`,
-    className
+}: ViewAllButtonProps) => {
+  return (
+    <div className={cn("flex justify-center mt-8", className)}>
+      <Link href={href}>
+        <Button
+          size="lg"
+          variant="outline"
+          className="gap-2 group border-2 hover:border-primary hover:bg-primary hover:text-primary-foreground transition-all px-8"
+        >
+          {text}
+          <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+        </Button>
+      </Link>
+    </div>
   );
-
-  return <div className={gridCols}>{children}</div>;
 };

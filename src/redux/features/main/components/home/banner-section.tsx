@@ -11,7 +11,6 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import Autoplay from "embla-carousel-autoplay";
 import { cn } from "@/lib/utils";
 
 interface BannerSectionProps {
@@ -27,15 +26,21 @@ export const BannerSection = ({
 }: BannerSectionProps) => {
   const [current, setCurrent] = React.useState(0);
   const [carouselApi, setCarouselApi] = React.useState<any>();
-
-  const autoplayPlugin = React.useRef(
-    Autoplay({
-      delay: 1000,
-      stopOnInteraction: true,
-      stopOnMouseEnter: true,
-      stopOnFocusIn: true,
-    })
+  const [loadedImages, setLoadedImages] = React.useState<Set<number>>(
+    new Set()
   );
+  const [isHovered, setIsHovered] = React.useState(false);
+
+  // Custom auto-scroll implementation
+  React.useEffect(() => {
+    if (!carouselApi || banners.length <= 1 || isHovered) return;
+
+    const intervalId = setInterval(() => {
+      carouselApi.scrollNext();
+    }, 4000); // 4 seconds delay
+
+    return () => clearInterval(intervalId);
+  }, [carouselApi, banners.length, isHovered]);
 
   React.useEffect(() => {
     if (!carouselApi) return;
@@ -53,6 +58,10 @@ export const BannerSection = ({
     };
   }, [carouselApi]);
 
+  const handleImageLoad = (index: number) => {
+    setLoadedImages((prev) => new Set(prev).add(index));
+  };
+
   if (loading) {
     return (
       <div className="w-full mb-8">
@@ -67,10 +76,13 @@ export const BannerSection = ({
 
   return (
     <div className="w-full mb-8">
-      <div className="relative">
+      <div
+        className="relative"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
         <Carousel
           setApi={setCarouselApi}
-          plugins={[autoplayPlugin.current]}
           className="w-full"
           opts={{
             loop: true,
@@ -81,7 +93,10 @@ export const BannerSection = ({
             {banners.map((banner, index) => (
               <CarouselItem key={banner.id}>
                 <div className="relative w-full h-[200px] sm:h-[280px] md:h-[320px] lg:h-[360px] rounded-2xl overflow-hidden group">
-                  {/* Image */}
+                  {!loadedImages.has(index) && (
+                    <div className="absolute inset-0 bg-muted animate-pulse" />
+                  )}
+
                   <Image
                     src={
                       banner.imageUrl ||
@@ -89,14 +104,16 @@ export const BannerSection = ({
                     }
                     alt={banner.businessName || "Banner"}
                     fill
-                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                    className={cn(
+                      "object-cover transition-all duration-500 group-hover:scale-105",
+                      loadedImages.has(index) ? "opacity-100" : "opacity-0"
+                    )}
+                    onLoad={() => handleImageLoad(index)}
                     priority={index === 0}
                   />
 
-                  {/* Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
-                  {/* Content */}
                   <div className="absolute inset-0 flex items-end pb-12">
                     <div className="p-4 sm:p-6 md:p-8 w-full">
                       <div className="max-w-2xl">
@@ -107,7 +124,6 @@ export const BannerSection = ({
                     </div>
                   </div>
 
-                  {/* Link Overlay */}
                   {banner.linkUrl && (
                     <a
                       href={banner.linkUrl}
@@ -125,7 +141,6 @@ export const BannerSection = ({
             ))}
           </CarouselContent>
 
-          {/* Navigation Arrows */}
           {banners.length > 1 && (
             <>
               <CarouselPrevious className="left-2 sm:left-4 bg-white/90 hover:bg-white border-none shadow-lg" />
@@ -134,7 +149,6 @@ export const BannerSection = ({
           )}
         </Carousel>
 
-        {/* Dots Indicator - Fixed Position Outside Carousel */}
         {banners.length > 1 && (
           <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center gap-2 pointer-events-none">
             {banners.map((_, idx) => (

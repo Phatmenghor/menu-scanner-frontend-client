@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useCallback } from "react";
 
 import {
   fetchHomeBanners,
   fetchHomeCategories,
   fetchHomePromotionProducts,
   fetchHomeFeaturedProducts,
-  fetchHomeNewArrivals,
   fetchHomeBrands,
 } from "@/redux/features/main/store/thunks/home-thunks";
 
@@ -34,46 +33,41 @@ export default function HomePage() {
     categories,
     promotionProducts,
     featuredProducts,
-    newArrivals,
     brands,
     bannersSection,
     categoriesSection,
     promotionProductsSection,
     featuredProductsSection,
-    newArrivalsSection,
     brandsSection,
+    featuredPagination,
     shouldRestoreScroll,
     scrollPosition,
   } = useHomeState();
 
-  // ========== LOAD DATA ==========
+  // Determine if this is initial loading (no products yet + loading)
+  const isInitialFeaturedLoading =
+    featuredProductsSection.loading &&
+    featuredProducts.length === 0 &&
+    !featuredProductsSection.loaded;
+
+  // Initial data load
   useEffect(() => {
     const loadData = async () => {
       const promises = [];
 
-      // ✅ Fire all requests immediately
       if (!bannersSection.loaded) {
         promises.push(dispatch(fetchHomeBanners()));
       }
-
       if (!categoriesSection.loaded) {
         promises.push(dispatch(fetchHomeCategories()));
       }
-
       if (!promotionProductsSection.loaded) {
         promises.push(dispatch(fetchHomePromotionProducts()));
       }
-
       if (!featuredProductsSection.loaded) {
-        promises.push(dispatch(fetchHomeFeaturedProducts()));
-      }
-
-      if (!newArrivalsSection.loaded) {
-        promises.push(dispatch(fetchHomeNewArrivals()));
-      }
-
-      if (!brandsSection.loaded) {
-        promises.push(dispatch(fetchHomeBrands()));
+        promises.push(
+          dispatch(fetchHomeFeaturedProducts({ pageNo: 1, pageSize: 15 }))
+        );
       }
 
       if (promises.length > 0) {
@@ -87,13 +81,25 @@ export default function HomePage() {
     dispatch,
     bannersSection.loaded,
     categoriesSection.loaded,
+    brandsSection.loaded,
     promotionProductsSection.loaded,
     featuredProductsSection.loaded,
-    newArrivalsSection.loaded,
-    brandsSection.loaded,
   ]);
 
-  // ========== RESTORE SCROLL ==========
+  // Load more featured products (pagination)
+  const handleLoadMoreFeatured = useCallback(() => {
+    if (featuredPagination.hasMore && !featuredProductsSection.loading) {
+      const nextPage = featuredPagination.currentPage + 1;
+      dispatch(fetchHomeFeaturedProducts({ pageNo: nextPage, pageSize: 30 }));
+    }
+  }, [
+    dispatch,
+    featuredPagination.hasMore,
+    featuredPagination.currentPage,
+    featuredProductsSection.loading,
+  ]);
+
+  // Restore scroll
   useEffect(() => {
     if (shouldRestoreScroll && containerRef.current) {
       requestAnimationFrame(() => {
@@ -107,7 +113,7 @@ export default function HomePage() {
     }
   }, [shouldRestoreScroll, scrollPosition, dispatch]);
 
-  // ========== SAVE SCROLL ==========
+  // Save scroll
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (containerRef.current) {
@@ -121,66 +127,40 @@ export default function HomePage() {
   return (
     <div ref={containerRef} className="min-h-screen bg-background">
       <div className="py-8 px-4 max-w-7xl mx-auto">
-        {/* ✅ Show only if loaded successfully AND has data */}
-        {bannersSection.loaded && banners.length > 0 && (
-          <BannerSection
-            banners={banners}
-            loading={bannersSection.loading}
-            error={bannersSection.error}
-          />
-        )}
+        {/* 1. Banner Section */}
+        <BannerSection
+          banners={banners}
+          loading={bannersSection.loading}
+          error={bannersSection.error}
+        />
 
-        {categoriesSection.loaded && categories.length > 0 && (
-          <CategoriesSection
-            categories={categories}
-            loading={categoriesSection.loading}
-            error={categoriesSection.error}
-            limit={8}
-            title="Shop by Category"
-          />
-        )}
+        {/* 2. Categories Section */}
+        <CategoriesSection
+          categories={categories}
+          loading={categoriesSection.loading}
+          error={categoriesSection.error}
+          title="Shop by Category"
+        />
 
-        {promotionProductsSection.loaded && promotionProducts.length > 0 && (
-          <PromotionsSection
-            products={promotionProducts}
-            loading={promotionProductsSection.loading}
-            error={promotionProductsSection.error}
-            limit={6}
-            title="🔥 Hot Deals & Promotions"
-          />
-        )}
+        {/* 3. Promotions Section */}
+        <PromotionsSection
+          products={promotionProducts}
+          loading={promotionProductsSection.loading}
+          error={promotionProductsSection.error}
+          title="Hot Deals & Promotions"
+        />
 
-        {featuredProductsSection.loaded && featuredProducts.length > 0 && (
-          <ProductsSection
-            products={featuredProducts}
-            loading={featuredProductsSection.loading}
-            error={featuredProductsSection.error}
-            limit={8}
-            title="Featured Products"
-            seeAllLink="/products?status=ACTIVE"
-          />
-        )}
-
-        {brandsSection.loaded && brands.length > 0 && (
-          <BrandsSection
-            brands={brands}
-            loading={brandsSection.loading}
-            error={brandsSection.error}
-            limit={12}
-            title="Shop by Brand"
-          />
-        )}
-
-        {newArrivalsSection.loaded && newArrivals.length > 0 && (
-          <ProductsSection
-            products={newArrivals}
-            loading={newArrivalsSection.loading}
-            error={newArrivalsSection.error}
-            limit={4}
-            title="🆕 New Arrivals"
-            seeAllLink="/products?status=NEW"
-          />
-        )}
+        {/* 4. Featured Products - Infinite Scroll with Pagination Skeletons */}
+        <ProductsSection
+          products={featuredProducts}
+          loading={featuredProductsSection.loading}
+          error={featuredProductsSection.error}
+          title="Featured Products"
+          subtitle="Handpicked products just for you"
+          hasMore={featuredPagination.hasMore}
+          onLoadMore={handleLoadMoreFeatured}
+          isInitialLoading={isInitialFeaturedLoading}
+        />
       </div>
     </div>
   );
