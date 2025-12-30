@@ -4,7 +4,6 @@ import { ProductGridSkeleton } from "@/components/shared/skeletons/product-card-
 import { ProductDetailResponseModel } from "@/redux/features/business/store/models/response/product-response";
 import { Sparkles } from "lucide-react";
 import {
-  GridWrapper,
   SectionHeader,
   SectionWrapper,
 } from "@/components/shared/common/section-header";
@@ -53,11 +52,12 @@ export const ProductsSection = ({
         icon={showIcon ? Sparkles : undefined}
         viewAllLink={products.length > limit ? seeAllLink : undefined}
       />
-      <GridWrapper cols={{ default: 1, sm: 2, lg: 4 }} gap={6}>
+      {/* Responsive Grid: 2 cols mobile, 3 cols tablet, 4-6 cols desktop */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
         {displayProducts.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
-      </GridWrapper>
+      </div>
     </SectionWrapper>
   );
 };

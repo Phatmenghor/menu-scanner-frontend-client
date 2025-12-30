@@ -3,7 +3,6 @@ import { CategoryCard } from "@/components/shared/card/category-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CategoriesResponseModel } from "@/redux/features/master-data/store/models/response/categories-response";
 import {
-  GridWrapper,
   SectionHeader,
   SectionWrapper,
 } from "@/components/shared/common/section-header";
@@ -17,11 +16,8 @@ interface CategoriesSectionProps {
 }
 
 const CategorySkeleton = () => (
-  <div className="h-[180px] flex flex-col rounded-xl border overflow-hidden bg-muted/30">
-    <Skeleton className="h-[120px] w-full" />
-    <div className="p-3 flex-1 flex items-center justify-center">
-      <Skeleton className="h-4 w-24" />
-    </div>
+  <div className="h-[140px] flex flex-col rounded-xl border overflow-hidden bg-muted/30">
+    <Skeleton className="h-full w-full" />
   </div>
 );
 
@@ -38,11 +34,11 @@ export const CategoriesSection = ({
     return (
       <SectionWrapper>
         <SectionHeader title={title} subtitle="Browse products by category" />
-        <GridWrapper cols={{ default: 2, sm: 3, md: 4, lg: 4 }} gap={4}>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
           {Array.from({ length: limit }).map((_, index) => (
             <CategorySkeleton key={index} />
           ))}
-        </GridWrapper>
+        </div>
       </SectionWrapper>
     );
   }
@@ -58,11 +54,11 @@ export const CategoriesSection = ({
         subtitle="Browse products by category"
         viewAllLink={categories.length > limit ? "/categories" : undefined}
       />
-      <GridWrapper cols={{ default: 2, sm: 3, md: 4, lg: 4 }} gap={4}>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
         {displayCategories.map((category) => (
           <CategoryCard key={category.id} category={category} />
         ))}
-      </GridWrapper>
+      </div>
     </SectionWrapper>
   );
 };

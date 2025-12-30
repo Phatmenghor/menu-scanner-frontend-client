@@ -30,9 +30,10 @@ export const BannerSection = ({
 
   const autoplayPlugin = React.useRef(
     Autoplay({
-      delay: 4000,
+      delay: 1000,
       stopOnInteraction: true,
       stopOnMouseEnter: true,
+      stopOnFocusIn: true,
     })
   );
 
@@ -41,9 +42,15 @@ export const BannerSection = ({
 
     setCurrent(carouselApi.selectedScrollSnap());
 
-    carouselApi.on("select", () => {
+    const onSelect = () => {
       setCurrent(carouselApi.selectedScrollSnap());
-    });
+    };
+
+    carouselApi.on("select", onSelect);
+
+    return () => {
+      carouselApi.off("select", onSelect);
+    };
   }, [carouselApi]);
 
   if (loading) {
@@ -90,7 +97,7 @@ export const BannerSection = ({
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
                   {/* Content */}
-                  <div className="absolute inset-0 flex items-end">
+                  <div className="absolute inset-0 flex items-end pb-12">
                     <div className="p-4 sm:p-6 md:p-8 w-full">
                       <div className="max-w-2xl">
                         <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white drop-shadow-lg">
@@ -113,28 +120,6 @@ export const BannerSection = ({
                       </span>
                     </a>
                   )}
-
-                  {/* Dots Indicator - Inside Image at Bottom */}
-                  {banners.length > 1 && (
-                    <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center gap-2">
-                      {banners.map((_, idx) => (
-                        <button
-                          key={idx}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            carouselApi?.scrollTo(idx);
-                          }}
-                          className={cn(
-                            "h-2 rounded-full transition-all duration-300",
-                            current === idx
-                              ? "w-8 bg-primary"
-                              : "w-2 bg-white/50 hover:bg-white/80"
-                          )}
-                          aria-label={`Go to slide ${idx + 1}`}
-                        />
-                      ))}
-                    </div>
-                  )}
                 </div>
               </CarouselItem>
             ))}
@@ -148,6 +133,29 @@ export const BannerSection = ({
             </>
           )}
         </Carousel>
+
+        {/* Dots Indicator - Fixed Position Outside Carousel */}
+        {banners.length > 1 && (
+          <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center gap-2 pointer-events-none">
+            {banners.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  carouselApi?.scrollTo(idx);
+                }}
+                className={cn(
+                  "h-2 rounded-full transition-all duration-300 pointer-events-auto",
+                  current === idx
+                    ? "w-8 bg-primary"
+                    : "w-2 bg-white/50 hover:bg-white/80"
+                )}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
