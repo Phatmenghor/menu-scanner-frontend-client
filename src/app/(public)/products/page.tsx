@@ -60,13 +60,11 @@ export default function ProductsPage() {
       const result = await dispatch(
         fetchPublicProducts({
           pageNo,
-          pageSize: 30,
+          pageSize: 20,
           ...(search && { search }),
           ...(hasPromotion && { hasPromotion: true }),
           ...(categoryId && { categoryId }),
           ...(brandId && { brandId }),
-          ...(status && { status }),
-          ...(sortBy && { sortBy }),
         })
       ).unwrap();
 

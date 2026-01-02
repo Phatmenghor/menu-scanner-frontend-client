@@ -20,6 +20,8 @@ import { BannerSection } from "@/redux/features/main/components/home/banner-sect
 import { CategoriesSection } from "@/redux/features/main/components/home/categories-section";
 import { PromotionsSection } from "@/redux/features/main/components/home/promotions-section";
 import { ProductsSection } from "@/redux/features/main/components/home/products-section";
+import { Status } from "@/constants/status/status";
+import { AppDefault } from "@/constants/app-resource/default/default";
 
 export default function HomePage() {
   const {
@@ -47,11 +49,13 @@ export default function HomePage() {
       const promises = [];
 
       if (!bannersSection.loaded) {
-        promises.push(dispatch(fetchHomeBanners()));
+        promises.push(dispatch(fetchHomeBanners({})));
       }
+
       if (!categoriesSection.loaded) {
         promises.push(dispatch(fetchHomeCategories()));
       }
+
       if (!promotionProductsSection.loaded) {
         promises.push(dispatch(fetchHomePromotionProducts()));
       }

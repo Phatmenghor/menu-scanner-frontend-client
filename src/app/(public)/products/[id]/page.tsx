@@ -70,7 +70,7 @@ export default function ProductDetailPage() {
           ).unwrap();
 
           const similar =
-            response.content?.filter((p) => p.id !== productId) || [];
+            response.content?.filter((p: any) => p.id !== productId) || [];
           setSimilarProducts(similar.slice(0, 4));
         } catch (error) {
           console.error("Error loading similar products:", error);

@@ -1,37 +1,27 @@
-import { axiosClient } from "@/utils/axios";
+import { axiosClient, axiosClientWithAuth } from "@/utils/axios";
 import { createApiThunk } from "@/utils/axios/api-wrapper";
 import {
   AllProductResponseModel,
   ProductDetailResponseModel,
 } from "@/redux/features/business/store/models/response/product-response";
+import {
+  AllProductRequest,
+  ProductImageRequest,
+} from "@/redux/features/business/store/models/request/product-request";
+import { AppDefault } from "@/constants/app-resource/default/default";
+import { Status } from "@/constants/status/status";
 
-export interface PublicProductListParams {
-  pageNo?: number;
-  pageSize?: number;
-  categoryId?: string;
-  brandId?: string;
-  hasPromotion?: boolean;
-  status?: string;
-  search?: string;
-  sortBy?: string;
-}
-
-export const fetchPublicProducts = createApiThunk<
-  AllProductResponseModel,
-  PublicProductListParams
->("publicProducts/fetchList", async (params) => {
-  const response = await axiosClient.post("/api/v1/public/products/all", {
-    pageNo: params.pageNo || 1,
-    pageSize: params.pageSize || 30,
-    ...(params.categoryId && { categoryId: params.categoryId }),
-    ...(params.brandId && { brandId: params.brandId }),
-    ...(params.hasPromotion && { hasPromotion: params.hasPromotion }),
-    ...(params.status && { status: params.status }),
-    ...(params.search && { search: params.search }),
-    ...(params.sortBy && { sortBy: params.sortBy }),
-  });
-  return response.data.data;
-});
+export const fetchPublicProducts = createApiThunk<any, AllProductRequest>(
+  "publicProducts/fetchList",
+  async (params) => {
+    const response = await axiosClient.post("/api/v1/public/products/all", {
+      businessId: AppDefault.BUSINESS_ID,
+      status: Status.ACTIVE,
+      ...params,
+    });
+    return response.data.data;
+  }
+);
 
 export const fetchPublicProductById = createApiThunk<
   ProductDetailResponseModel,
@@ -46,7 +36,7 @@ export const fetchPublicProductById = createApiThunk<
 export const fetchPublicCategories = createApiThunk<any, void>(
   "publicProducts/fetchCategories",
   async () => {
-    const response = await axiosClient.post("/api/v1/categories/all", {
+    const response = await axiosClientWithAuth.post("/api/v1/categories/all", {
       pageSize: 100,
     });
     return response.data.data.content;
@@ -56,7 +46,7 @@ export const fetchPublicCategories = createApiThunk<any, void>(
 export const fetchPublicBrands = createApiThunk<any, void>(
   "publicProducts/fetchBrands",
   async () => {
-    const response = await axiosClient.post("/api/v1/brands/all", {
+    const response = await axiosClientWithAuth.post("/api/v1/brands/all", {
       pageSize: 100,
     });
     return response.data.data.content;

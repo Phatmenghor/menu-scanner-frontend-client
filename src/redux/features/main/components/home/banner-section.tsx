@@ -91,7 +91,7 @@ export const BannerSection = ({
         >
           <CarouselContent>
             {banners.map((banner, index) => (
-              <CarouselItem key={banner.id}>
+              <CarouselItem key={banner.id + "-" + index}>
                 <div className="relative w-full h-[200px] sm:h-[280px] md:h-[320px] lg:h-[360px] rounded-2xl overflow-hidden group">
                   {!loadedImages.has(index) && (
                     <div className="absolute inset-0 bg-muted animate-pulse" />

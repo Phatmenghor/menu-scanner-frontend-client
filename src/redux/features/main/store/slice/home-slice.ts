@@ -144,7 +144,7 @@ const homeSlice = createSlice({
         state.sections.banners.error = null;
       })
       .addCase(fetchHomeBanners.fulfilled, (state, action) => {
-        state.banners = action.payload.content || [];
+        state.banners = action.payload || [];
         state.sections.banners.loading = false;
         state.sections.banners.loaded = true;
       })
