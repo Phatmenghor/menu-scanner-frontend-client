@@ -29,3 +29,7 @@ export const selectPublicProductListError = (state: RootState) =>
 
 export const selectPublicProductDetailError = (state: RootState) =>
   state.publicProducts.error.detail;
+
+// Add scroll selector
+export const selectPublicProductScrollY = (state: RootState) =>
+  state.publicProducts.scrollY;

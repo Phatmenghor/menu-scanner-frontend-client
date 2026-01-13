@@ -1,4 +1,4 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { ProductDetailResponseModel } from "@/redux/features/business/store/models/response/product-response";
 import {
   fetchPublicProducts,
@@ -29,6 +29,8 @@ interface PublicProductState {
     detail: string | null;
     filters: string | null;
   };
+  // Simple scroll position - just one number
+  scrollY: number;
 }
 
 const initialState: PublicProductState = {
@@ -53,19 +55,29 @@ const initialState: PublicProductState = {
     detail: null,
     filters: null,
   },
+  scrollY: 0, // Simple!
 };
 
 const publicProductSlice = createSlice({
   name: "publicProducts",
   initialState,
   reducers: {
+    // Simple action - just save the number
+    setScrollY: (state, action: PayloadAction<number>) => {
+      state.scrollY = action.payload;
+    },
+
     clearProducts: (state) => {
       state.products = [];
       state.pagination = initialState.pagination;
+      state.scrollY = 0; // Reset scroll too
     },
+
     clearSelectedProduct: (state) => {
       state.selectedProduct = null;
     },
+
+    resetPublicProductState: () => initialState,
   },
   extraReducers: (builder) => {
     builder
@@ -74,8 +86,11 @@ const publicProductSlice = createSlice({
         state.error.list = null;
       })
       .addCase(fetchPublicProducts.fulfilled, (state, action) => {
+        // Append new products instead of replacing (like home featured products)
+        const newProducts = action.payload.content || [];
+        state.products = [...state.products, ...newProducts];
+
         state.loading.list = false;
-        state.products = action.payload.content;
         state.pagination = {
           currentPage: action.payload.pageNo,
           pageSize: action.payload.pageSize,
@@ -129,7 +144,11 @@ const publicProductSlice = createSlice({
   },
 });
 
-export const { clearProducts, clearSelectedProduct } =
-  publicProductSlice.actions;
+export const {
+  setScrollY,
+  clearProducts,
+  clearSelectedProduct,
+  resetPublicProductState,
+} = publicProductSlice.actions;
 
 export default publicProductSlice.reducer;

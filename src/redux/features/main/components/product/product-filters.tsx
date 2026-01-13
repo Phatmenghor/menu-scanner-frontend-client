@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { X, SlidersHorizontal } from "lucide-react";
+import { X, SlidersHorizontal, Tag, Package } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -19,6 +19,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ProductFiltersProps {
   categories?: Array<{ id: string; name: string }>;
@@ -74,13 +76,16 @@ export function ProductFilters({
   const FilterContent = () => (
     <div className="space-y-6">
       {/* Category Filter */}
-      <div>
-        <label className="text-sm font-medium mb-2 block">Category</label>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Package className="h-4 w-4 text-muted-foreground" />
+          <label className="text-sm font-medium">Category</label>
+        </div>
         <Select
-          value={selectedCategory}
+          value={selectedCategory || "all"}
           onValueChange={(value) => updateFilters("categoryId", value)}
         >
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>
           <SelectContent>
@@ -94,14 +99,19 @@ export function ProductFilters({
         </Select>
       </div>
 
+      <Separator />
+
       {/* Brand Filter */}
-      <div>
-        <label className="text-sm font-medium mb-2 block">Brand</label>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Tag className="h-4 w-4 text-muted-foreground" />
+          <label className="text-sm font-medium">Brand</label>
+        </div>
         <Select
-          value={selectedBrand}
+          value={selectedBrand || "all"}
           onValueChange={(value) => updateFilters("brandId", value)}
         >
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="All Brands" />
           </SelectTrigger>
           <SelectContent>
@@ -115,111 +125,177 @@ export function ProductFilters({
         </Select>
       </div>
 
-      {/* Status Filter */}
-      <div>
-        <label className="text-sm font-medium mb-2 block">Availability</label>
-        <Select
-          value={selectedStatus}
-          onValueChange={(value) => updateFilters("status", value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="All Products" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Products</SelectItem>
-            <SelectItem value="ACTIVE">In Stock</SelectItem>
-            <SelectItem value="OUT_OF_STOCK">Out of Stock</SelectItem>
-          </SelectContent>
-        </Select>
+      <Separator />
+
+      {/* Availability */}
+      <div className="space-y-3">
+        <label className="text-sm font-medium">Availability</label>
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant={selectedStatus === "ACTIVE" ? "default" : "outline"}
+            size="sm"
+            className="w-full"
+            onClick={() =>
+              updateFilters(
+                "status",
+                selectedStatus === "ACTIVE" ? "" : "ACTIVE"
+              )
+            }
+          >
+            In Stock
+          </Button>
+          <Button
+            variant={selectedStatus === "OUT_OF_STOCK" ? "default" : "outline"}
+            size="sm"
+            className="w-full"
+            onClick={() =>
+              updateFilters(
+                "status",
+                selectedStatus === "OUT_OF_STOCK" ? "" : "OUT_OF_STOCK"
+              )
+            }
+          >
+            Out of Stock
+          </Button>
+        </div>
       </div>
 
+      <Separator />
+
       {/* Promotion Filter */}
-      <div>
-        <label className="text-sm font-medium mb-2 block">Special Offers</label>
+      <div className="space-y-3">
+        <label className="text-sm font-medium">Special Offers</label>
         <Button
           variant={hasPromotion ? "default" : "outline"}
-          className="w-full"
+          size="sm"
+          className="w-full justify-start"
           onClick={() =>
             updateFilters("hasPromotion", hasPromotion ? "" : "true")
           }
         >
+          <span className="mr-2">🏷️</span>
           {hasPromotion ? "✓ " : ""}On Sale Only
         </Button>
       </div>
 
+      <Separator />
+
       {/* Sort */}
-      <div>
-        <label className="text-sm font-medium mb-2 block">Sort By</label>
+      <div className="space-y-3">
+        <label className="text-sm font-medium">Sort By</label>
         <Select
           value={sortBy}
           onValueChange={(value) => updateFilters("sortBy", value)}
         >
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="newest">Newest First</SelectItem>
-            <SelectItem value="price-asc">Price: Low to High</SelectItem>
-            <SelectItem value="price-desc">Price: High to Low</SelectItem>
-            <SelectItem value="popular">Most Popular</SelectItem>
+            <SelectItem value="newest">⭐ Newest First</SelectItem>
+            <SelectItem value="price-asc">💰 Price: Low to High</SelectItem>
+            <SelectItem value="price-desc">💎 Price: High to Low</SelectItem>
+            <SelectItem value="popular">🔥 Most Popular</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {/* Clear Filters */}
       {activeFiltersCount > 0 && (
-        <Button variant="outline" className="w-full" onClick={clearAllFilters}>
-          <X className="h-4 w-4 mr-2" />
-          Clear All Filters
-        </Button>
+        <>
+          <Separator />
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={clearAllFilters}
+          >
+            <X className="h-4 w-4 mr-2" />
+            Clear All Filters
+          </Button>
+        </>
       )}
     </div>
   );
 
   return (
-    <div className="space-y-4">
-      {/* Desktop Filters */}
-      <div className="hidden lg:block">
-        <div className="bg-card border rounded-lg p-6 sticky top-24">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="font-semibold text-lg">Filters</h3>
+    <>
+      {/* Desktop Filters - Sticky Sidebar with Own Scroll */}
+      <div className="hidden lg:block sticky top-24 h-[calc(100vh-7rem)]">
+        <div className="bg-card border rounded-lg shadow-sm h-full flex flex-col">
+          {/* Fixed Header */}
+          <div className="flex items-center justify-between p-6 border-b border-border/50 flex-shrink-0">
+            <h3 className="font-semibold text-lg flex items-center gap-2">
+              <SlidersHorizontal className="h-5 w-5" />
+              Filters
+            </h3>
             {activeFiltersCount > 0 && (
-              <Badge variant="secondary">{activeFiltersCount}</Badge>
+              <Badge variant="default" className="rounded-full">
+                {activeFiltersCount}
+              </Badge>
             )}
           </div>
-          <FilterContent />
+
+          {/* Scrollable Filter Content */}
+          <ScrollArea className="flex-1">
+            <div className="p-6">
+              <FilterContent />
+            </div>
+          </ScrollArea>
         </div>
       </div>
 
       {/* Mobile Filter Button */}
       <div className="lg:hidden">
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            {totalResults} products found
-          </p>
+        <div className="flex items-center justify-between gap-4 bg-card border rounded-lg p-4 shadow-sm">
+          <div className="flex-1">
+            <p className="text-sm font-medium">
+              {totalResults.toLocaleString()} Products
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {activeFiltersCount > 0
+                ? `${activeFiltersCount} filter${
+                    activeFiltersCount > 1 ? "s" : ""
+                  } applied`
+                : "No filters applied"}
+            </p>
+          </div>
+
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button variant="default" size="sm" className="gap-2 relative">
                 <SlidersHorizontal className="h-4 w-4" />
                 Filters
                 {activeFiltersCount > 0 && (
-                  <Badge variant="secondary" className="ml-1">
+                  <Badge
+                    variant="secondary"
+                    className="ml-1 rounded-full h-5 w-5 p-0 flex items-center justify-center text-xs"
+                  >
                     {activeFiltersCount}
                   </Badge>
                 )}
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-80">
-              <SheetHeader>
-                <SheetTitle>Filters</SheetTitle>
+            <SheetContent
+              side="left"
+              className="w-80 sm:w-96 p-0 flex flex-col"
+            >
+              <SheetHeader className="p-6 border-b border-border/50 flex-shrink-0">
+                <SheetTitle className="flex items-center gap-2">
+                  <SlidersHorizontal className="h-5 w-5" />
+                  Filter Products
+                </SheetTitle>
               </SheetHeader>
-              <div className="mt-6">
-                <FilterContent />
-              </div>
+
+              {/* Scrollable Filter Content for Mobile */}
+              <ScrollArea className="flex-1">
+                <div className="p-6">
+                  <FilterContent />
+                </div>
+              </ScrollArea>
             </SheetContent>
           </Sheet>
         </div>
       </div>
-    </div>
+    </>
   );
 }

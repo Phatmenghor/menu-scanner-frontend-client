@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Menu, Search, ShoppingCart, X, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CustomButton } from "../shared/button/custom-button";
+import { useDebounce } from "@/utils/debounce/debounce";
 
 const navigationLinks = [
   { name: "Home", href: "/" },
@@ -30,6 +31,11 @@ export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Debounce search query
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
   const cartItemCount = 3;
   const isLoggedIn = false;
@@ -39,11 +45,49 @@ export function Navbar() {
     profileImageUrl: "",
   };
 
-  const handleSearch = (e: React.FormEvent) => {
+  // Initialize search query from URL on mount
+  useEffect(() => {
+    const urlSearchQuery = searchParams.get("q");
+    if (urlSearchQuery) {
+      setSearchQuery(urlSearchQuery);
+    }
+  }, [searchParams]);
+
+  // Handle debounced search - update URL when debounced value changes
+  useEffect(() => {
+    // Get current search params
+    const params = new URLSearchParams(searchParams.toString());
+
+    // Determine which route to search on
+    let searchRoute = pathname;
+
+    // If on home page, redirect to products
+    if (pathname === "/") {
+      searchRoute = "/products";
+    }
+
+    if (debouncedSearchQuery.trim()) {
+      // Add or update search query
+      params.set("q", debouncedSearchQuery.trim());
+      router.push(`${searchRoute}?${params.toString()}`);
+    } else {
+      // Remove search query if empty
+      params.delete("q");
+      const newUrl = params.toString()
+        ? `${searchRoute}?${params.toString()}`
+        : searchRoute;
+      router.push(newUrl);
+    }
+  }, [debouncedSearchQuery]); // Only trigger when debounced value changes
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Optional: Force immediate search on Enter key
     if (searchQuery.trim()) {
-      router.push(`/products?q=${encodeURIComponent(searchQuery)}`);
-      setSearchQuery("");
+      const params = new URLSearchParams(searchParams.toString());
+      let searchRoute = pathname === "/" ? "/products" : pathname;
+      params.set("q", searchQuery.trim());
+      router.push(`${searchRoute}?${params.toString()}`);
       setIsMobileMenuOpen(false);
     }
   };
@@ -102,14 +146,22 @@ export function Navbar() {
           </div>
 
           <form
-            onSubmit={handleSearch}
+            onSubmit={handleSearchSubmit}
             className="hidden md:flex flex-1 max-w-xl"
           >
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
                 type="search"
-                placeholder="Search products..."
+                placeholder={
+                  pathname === "/products"
+                    ? "Search products..."
+                    : pathname === "/categories"
+                    ? "Search categories..."
+                    : pathname === "/brands"
+                    ? "Search brands..."
+                    : "Search..."
+                }
                 className="pl-10 w-full bg-muted/50"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -196,12 +248,20 @@ export function Navbar() {
           </div>
         </div>
 
-        <form onSubmit={handleSearch} className="md:hidden pb-4">
+        <form onSubmit={handleSearchSubmit} className="md:hidden pb-4">
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
               type="search"
-              placeholder="Search products..."
+              placeholder={
+                pathname === "/products"
+                  ? "Search products..."
+                  : pathname === "/categories"
+                  ? "Search categories..."
+                  : pathname === "/brands"
+                  ? "Search brands..."
+                  : "Search..."
+              }
               className="pl-10 w-full"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
