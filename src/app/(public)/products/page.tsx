@@ -10,6 +10,7 @@ import {
 import {
   clearProducts,
   setScrollY,
+  setLoadedFilters,
 } from "@/redux/features/main/store/slice/public-product-slice";
 import { usePublicProductState } from "@/redux/features/main/store/state/public-product-state";
 import { ProductCard } from "@/components/shared/card/product-card";
@@ -20,7 +21,6 @@ import { ProductFilters } from "@/redux/features/main/components/product/product
 export default function ProductsPage() {
   const searchParams = useSearchParams();
   const observerRef = useRef<HTMLDivElement>(null);
-  const isInitialMount = useRef(true);
 
   const {
     dispatch,
@@ -30,6 +30,7 @@ export default function ProductsPage() {
     categories,
     brands,
     scrollY,
+    loadedFilters, // Get from Redux
   } = usePublicProductState();
 
   const [page, setPage] = useState(1);
@@ -41,6 +42,16 @@ export default function ProductsPage() {
   const brandId = searchParams.get("brandId");
   const status = searchParams.get("status");
   const sortBy = searchParams.get("sortBy");
+
+  // Create a filter key from URL params
+  const currentFilters = JSON.stringify({
+    search,
+    hasPromotion,
+    categoryId,
+    brandId,
+    status,
+    sortBy,
+  });
 
   // Fetch categories and brands once
   useEffect(() => {
@@ -64,17 +75,20 @@ export default function ProductsPage() {
     return () => window.removeEventListener("resize", updateSkeletonCount);
   }, []);
 
-  // Restore scroll ONLY on initial mount (coming back from product detail)
+  // Restore scroll position when coming back from detail
   useEffect(() => {
-    if (isInitialMount.current && scrollY > 0) {
+    if (
+      scrollY > 0 &&
+      products.length > 0 &&
+      currentFilters === loadedFilters
+    ) {
       setTimeout(() => {
         window.scrollTo(0, scrollY);
       }, 100);
     }
-    isInitialMount.current = false;
-  }, [scrollY]);
+  }, []); // Only on mount
 
-  // Save scroll position on page scroll (for navigation to product detail)
+  // Save scroll position on page scroll
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
 
@@ -111,25 +125,34 @@ export default function ProductsPage() {
     [dispatch, search, hasPromotion, categoryId, brandId, status, sortBy]
   );
 
-  // Reset and load products when filters change + SCROLL TO TOP
+  // Smart loading based on Redux loadedFilters
   useEffect(() => {
-    dispatch(clearProducts());
-    setPage(1);
+    const hasProducts = products.length > 0;
+    const filtersMatch = loadedFilters === currentFilters;
 
-    // Scroll page to top when filters change
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    // Case 1: Have products with matching filters -> Do nothing (coming back from detail)
+    if (hasProducts && filtersMatch) {
+      console.log(
+        "✅ Products exist with matching filters - keeping existing products"
+      );
+      return;
+    }
 
-    loadProducts(1);
-  }, [
-    search,
-    hasPromotion,
-    categoryId,
-    brandId,
-    status,
-    sortBy,
-    loadProducts,
-    dispatch,
-  ]);
+    // Case 2: Filters changed OR no products -> Load/Reload
+    if (!filtersMatch || !hasProducts) {
+      if (!filtersMatch && hasProducts) {
+        console.log("🔄 Filters changed - clearing and reloading");
+        dispatch(clearProducts());
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        console.log("📦 Loading products for current filters");
+      }
+
+      setPage(1);
+      dispatch(setLoadedFilters(currentFilters)); // Save current filters
+      loadProducts(1);
+    }
+  }, [currentFilters, loadedFilters, products.length, loadProducts, dispatch]);
 
   const handleLoadMore = useCallback(() => {
     if (pagination.hasMore && !loading.list) {
@@ -162,16 +185,18 @@ export default function ProductsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex gap-6 lg:gap-8">
-        {/* Desktop Sidebar Filters - Sticky with Own Scroll */}
+        {/* Desktop Sidebar Filters */}
         <aside className="hidden lg:block w-64 flex-shrink-0">
-          <ProductFilters
-            categories={categories}
-            brands={brands}
-            totalResults={pagination.totalElements}
-          />
+          <div className="sticky top-24 h-[calc(100vh-7rem)]">
+            <ProductFilters
+              categories={categories}
+              brands={brands}
+              totalResults={pagination.totalElements}
+            />
+          </div>
         </aside>
 
-        {/* Main Product List - Scrolls with Page */}
+        {/* Main Product List */}
         <div className="flex-1 min-w-0">
           {/* Mobile Filters */}
           <div className="lg:hidden mb-6">
@@ -199,26 +224,22 @@ export default function ProductsPage() {
                   <ProductCard key={product.id} product={product} />
                 ))}
 
-                {/* Pagination Loading Skeletons */}
                 {isPaginationLoading &&
                   Array.from({ length: skeletonCount }).map((_, index) => (
                     <ProductCardSkeleton key={`loading-${index}`} />
                   ))}
               </div>
 
-              {/* Loading Spinner */}
               {isPaginationLoading && (
                 <div className="flex items-center justify-center mt-6 py-4">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               )}
 
-              {/* Intersection Observer Target */}
               {pagination.hasMore && !loading.list && (
                 <div ref={observerRef} className="h-20" />
               )}
 
-              {/* End of Results */}
               {!pagination.hasMore && products.length > 0 && (
                 <div className="flex flex-col items-center justify-center mt-10 py-8">
                   <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">

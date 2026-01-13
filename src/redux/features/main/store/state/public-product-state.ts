@@ -10,7 +10,8 @@ import {
   selectPublicFiltersLoading,
   selectPublicProductListError,
   selectPublicProductDetailError,
-  selectPublicProductScrollY, // Add this
+  selectPublicProductScrollY,
+  selectPublicProductLoadedFilters, // Add this
 } from "../selectors/public-product-selectors";
 
 export const usePublicProductState = () => {
@@ -32,6 +33,7 @@ export const usePublicProductState = () => {
       list: useAppSelector(selectPublicProductListError),
       detail: useAppSelector(selectPublicProductDetailError),
     },
-    scrollY: useAppSelector(selectPublicProductScrollY), // Add this
+    scrollY: useAppSelector(selectPublicProductScrollY),
+    loadedFilters: useAppSelector(selectPublicProductLoadedFilters), // Add this
   };
 };

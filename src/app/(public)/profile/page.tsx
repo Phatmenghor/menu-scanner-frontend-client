@@ -165,10 +165,7 @@ export default function UserProfilePage() {
       clearToken();
       removeUserInfo();
 
-      // Redirect to login
-      setTimeout(() => {
-        router.replace(ROUTES.AUTH.LOGIN);
-      }, 100);
+      router.refresh();
     } catch (error: any) {
       showToast.error(error || "Failed to delete account");
     }

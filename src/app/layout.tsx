@@ -6,9 +6,9 @@ import { locales, defaultLocale, type Locale } from "@/i18n/request";
 import "../styles/globals.css";
 import PageProgressBar from "@/components/shared/progress/global-n-progress";
 import { LocaleProvider } from "@/context/locale-provider";
-
 import { headers } from "next/headers";
 import { ScrollToTop } from "@/components/shared/common/scroll-to-top";
+import { AuthProvider } from "@/context/auth-provider";
 
 const geistSans = localFont({
   src: "../../public/fonts/GeistVF.woff",
@@ -53,9 +53,11 @@ export default async function RootLayout({
       <body className="antialiased">
         <LocaleProvider initialLocale={locale} initialMessages={messages}>
           <ClientProviders>
-            <PageProgressBar />
-            {children}
-            <ScrollToTop />
+            <AuthProvider>
+              <PageProgressBar />
+              {children}
+              <ScrollToTop />
+            </AuthProvider>
           </ClientProviders>
         </LocaleProvider>
       </body>

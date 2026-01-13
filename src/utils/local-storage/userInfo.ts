@@ -1,25 +1,31 @@
-import { UserAuthResponseModel } from "@/redux/features/auth/store/models/response/auth-resposne";
-import { setCookie, getCookie, deleteCookie } from "cookies-next";
+// utils/local-storage/userInfo.ts
+import { getCookie, setCookie, deleteCookie } from "cookies-next";
 
-const USER_INFO_COOKIE_KEY = "auth-user-info";
+export function storeUserInfo(userInfo: any): void {
+  if (typeof window === "undefined") {
+    return;
+  }
 
-export function storeUserInfo(user: UserAuthResponseModel | undefined): void {
-  if (typeof window === "undefined" || !user) return;
-
-  setCookie(USER_INFO_COOKIE_KEY, JSON.stringify(user), {
-    maxAge: 365 * 24 * 60 * 60, // 1 year
+  setCookie("user-info", JSON.stringify(userInfo), {
+    maxAge: 365 * 24 * 60 * 60,
   });
 }
 
-export function getUserInfo(): UserAuthResponseModel | null {
-  const cookieValue = getCookie(USER_INFO_COOKIE_KEY);
-  try {
-    return cookieValue ? JSON.parse(cookieValue as string) : null;
-  } catch {
-    return null;
+export function getUserInfo() {
+  const userInfo = getCookie("user-info");
+
+  if (userInfo) {
+    try {
+      return JSON.parse(userInfo as string);
+    } catch (error) {
+      console.error("Failed to parse user info:", error);
+      return null;
+    }
   }
+
+  return null;
 }
 
-export function clearUserInfo(): void {
-  deleteCookie(USER_INFO_COOKIE_KEY);
+export function removeUserInfo(): void {
+  deleteCookie("user-info");
 }

@@ -29,8 +29,8 @@ interface PublicProductState {
     detail: string | null;
     filters: string | null;
   };
-  // Simple scroll position - just one number
   scrollY: number;
+  loadedFilters: string; // Track what filters the products were loaded with
 }
 
 const initialState: PublicProductState = {
@@ -55,22 +55,27 @@ const initialState: PublicProductState = {
     detail: null,
     filters: null,
   },
-  scrollY: 0, // Simple!
+  scrollY: 0,
+  loadedFilters: "", // Initialize empty
 };
 
 const publicProductSlice = createSlice({
   name: "publicProducts",
   initialState,
   reducers: {
-    // Simple action - just save the number
     setScrollY: (state, action: PayloadAction<number>) => {
       state.scrollY = action.payload;
+    },
+
+    setLoadedFilters: (state, action: PayloadAction<string>) => {
+      state.loadedFilters = action.payload;
     },
 
     clearProducts: (state) => {
       state.products = [];
       state.pagination = initialState.pagination;
-      state.scrollY = 0; // Reset scroll too
+      state.scrollY = 0;
+      state.loadedFilters = ""; // Clear loaded filters too
     },
 
     clearSelectedProduct: (state) => {
@@ -86,7 +91,6 @@ const publicProductSlice = createSlice({
         state.error.list = null;
       })
       .addCase(fetchPublicProducts.fulfilled, (state, action) => {
-        // Append new products instead of replacing (like home featured products)
         const newProducts = action.payload.content || [];
         state.products = [...state.products, ...newProducts];
 
@@ -146,6 +150,7 @@ const publicProductSlice = createSlice({
 
 export const {
   setScrollY,
+  setLoadedFilters, // Export new action
   clearProducts,
   clearSelectedProduct,
   resetPublicProductState,

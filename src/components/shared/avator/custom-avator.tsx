@@ -9,8 +9,9 @@ interface CustomerAvatarProps {
   name?: string;
   size?: "sm" | "md" | "lg" | "xl";
   className?: string;
-  variant?: "avatar" | "banner"; // New prop
-  bannerHeight?: "sm" | "md" | "lg" | "xl"; // New prop for banner heights
+  variant?: "avatar" | "banner";
+  bannerHeight?: "sm" | "md" | "lg" | "xl";
+  enableImagePreview?: boolean; // New prop to control hover preview
 }
 
 export const CustomAvatar: React.FC<CustomerAvatarProps> = ({
@@ -20,6 +21,7 @@ export const CustomAvatar: React.FC<CustomerAvatarProps> = ({
   className = "",
   variant = "avatar",
   bannerHeight = "md",
+  enableImagePreview = true, // Default to true for backward compatibility
 }) => {
   const [showPreview, setShowPreview] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
@@ -45,9 +47,9 @@ export const CustomAvatar: React.FC<CustomerAvatarProps> = ({
 
   const fallbackText = name?.charAt(0)?.toUpperCase() || "B";
 
-  // Image preview handlers
+  // Image preview handlers - only active if enableImagePreview is true
   const handleMouseEnter = () => {
-    if (!imageUrl) return;
+    if (!imageUrl || !enableImagePreview) return;
 
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current);
@@ -65,7 +67,7 @@ export const CustomAvatar: React.FC<CustomerAvatarProps> = ({
   };
 
   const handleMouseLeave = () => {
-    if (justOpenedRef.current) return;
+    if (justOpenedRef.current || !enableImagePreview) return;
 
     if (openTimeoutRef.current) {
       clearTimeout(openTimeoutRef.current);
@@ -84,37 +86,46 @@ export const CustomAvatar: React.FC<CustomerAvatarProps> = ({
 
   // Render banner variant
   if (variant === "banner") {
+    const content = (
+      <div
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className="inline-block w-full"
+      >
+        <div
+          className={`${
+            bannerSizes[bannerHeight]
+          } w-full max-w-xs rounded-lg overflow-hidden border-2 border-border bg-muted ${
+            imageUrl && enableImagePreview
+              ? "cursor-pointer hover:border-primary/50"
+              : ""
+          } transition-all ${className}`}
+        >
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={name || "Banner"}
+              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-primary/10 dark:bg-primary/20">
+              <span className="text-xs text-muted-foreground font-medium">
+                {name || "No image"}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+
+    // If preview is disabled, just return the content without Dialog wrapper
+    if (!enableImagePreview) {
+      return content;
+    }
+
     return (
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogTrigger asChild>
-          <div
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            className="inline-block w-full"
-          >
-            <div
-              className={`${
-                bannerSizes[bannerHeight]
-              } w-full max-w-xs rounded-lg overflow-hidden border-2 border-border bg-muted ${
-                imageUrl ? "cursor-pointer hover:border-primary/50" : ""
-              } transition-all ${className}`}
-            >
-              {imageUrl ? (
-                <img
-                  src={imageUrl}
-                  alt={name || "Banner"}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-primary/10 dark:bg-primary/20">
-                  <span className="text-xs text-muted-foreground font-medium">
-                    {name || "No image"}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        </DialogTrigger>
+        <DialogTrigger asChild>{content}</DialogTrigger>
 
         {imageUrl && (
           <DialogContent
@@ -160,28 +171,35 @@ export const CustomAvatar: React.FC<CustomerAvatarProps> = ({
   }
 
   // Render avatar variant (original)
+  const avatarContent = (
+    <div
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className="inline-block"
+    >
+      <Avatar
+        className={`${
+          avatarSizes[size].avatar
+        } border-2 border-background dark:border-card shadow-sm group-hover:border-primary/30 transition-all ${
+          imageUrl && enableImagePreview ? "cursor-pointer hover:scale-110" : ""
+        } ${className}`}
+      >
+        <AvatarImage src={imageUrl || ""} alt={name || "User"} />
+        <AvatarFallback className="bg-primary/10 dark:bg-primary/20 text-primary font-semibold">
+          {fallbackText}
+        </AvatarFallback>
+      </Avatar>
+    </div>
+  );
+
+  // If preview is disabled, just return the avatar without Dialog wrapper
+  if (!enableImagePreview) {
+    return avatarContent;
+  }
+
   return (
     <Dialog open={showPreview} onOpenChange={setShowPreview}>
-      <DialogTrigger asChild>
-        <div
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          className="inline-block"
-        >
-          <Avatar
-            className={`${
-              avatarSizes[size].avatar
-            } border-2 border-background dark:border-card shadow-sm group-hover:border-primary/30 transition-all ${
-              imageUrl ? "cursor-pointer hover:scale-110" : ""
-            } ${className}`}
-          >
-            <AvatarImage src={imageUrl || ""} alt={name || "User"} />
-            <AvatarFallback className="bg-primary/10 dark:bg-primary/20 text-primary font-semibold">
-              {fallbackText}
-            </AvatarFallback>
-          </Avatar>
-        </div>
-      </DialogTrigger>
+      <DialogTrigger asChild>{avatarContent}</DialogTrigger>
 
       {imageUrl && (
         <DialogContent
