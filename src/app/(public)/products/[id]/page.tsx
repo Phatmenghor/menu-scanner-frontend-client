@@ -20,10 +20,27 @@ import {
   Share2,
   Plus,
   Minus,
+  ChevronLeft,
+  ChevronRight,
+  Check,
 } from "lucide-react";
 import { formatCurrency } from "@/utils/common/currency-format";
 import { ProductDetailResponseModel } from "@/redux/features/business/store/models/response/product-response";
 import { CustomButton } from "@/components/shared/button/custom-button";
+import { cn } from "@/lib/utils";
+
+interface ProductSize {
+  id: string;
+  name: string;
+  price: number;
+  promotionType: string | null;
+  promotionValue: number | null;
+  promotionFromDate: string | null;
+  promotionToDate: string | null;
+  finalPrice: number;
+  hasPromotion: boolean;
+  createdAt: string;
+}
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -39,9 +56,23 @@ export default function ProductDetailPage() {
     ProductDetailResponseModel[]
   >([]);
   const [selectedImage, setSelectedImage] = useState<string>("");
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [selectedSize, setSelectedSize] = useState<ProductSize | null>(null);
 
+  // Get all images (main + additional)
+  const allImages = product
+    ? [
+        { id: "main", imageUrl: product.mainImageUrl, displayOrder: 0 },
+        ...(product.images || []).map((img, idx) => ({
+          ...img,
+          displayOrder: idx + 1,
+        })),
+      ]
+    : [];
+
+  // Initialize product and selected size
   useEffect(() => {
     if (productId) {
       dispatch(clearSelectedProduct());
@@ -49,13 +80,23 @@ export default function ProductDetailPage() {
     }
   }, [productId, dispatch]);
 
+  // Set initial image and size
   useEffect(() => {
-    if (product?.mainImageUrl) {
+    if (product) {
       setSelectedImage(product.mainImageUrl);
+      setCurrentImageIndex(0);
       setImageLoaded(false);
+
+      // If product has sizes, select the first one by default
+      if (product.hasSizes && product.sizes && product.sizes.length > 0) {
+        setSelectedSize(product.sizes[0]);
+      } else {
+        setSelectedSize(null);
+      }
     }
   }, [product]);
 
+  // Load similar products
   useEffect(() => {
     if (product) {
       const loadSimilarProducts = async () => {
@@ -81,6 +122,51 @@ export default function ProductDetailPage() {
     }
   }, [product, productId, dispatch]);
 
+  // Image navigation
+  const handlePrevImage = () => {
+    const newIndex =
+      currentImageIndex === 0 ? allImages.length - 1 : currentImageIndex - 1;
+    setCurrentImageIndex(newIndex);
+    setSelectedImage(allImages[newIndex].imageUrl);
+    setImageLoaded(false);
+  };
+
+  const handleNextImage = () => {
+    const newIndex =
+      currentImageIndex === allImages.length - 1 ? 0 : currentImageIndex + 1;
+    setCurrentImageIndex(newIndex);
+    setSelectedImage(allImages[newIndex].imageUrl);
+    setImageLoaded(false);
+  };
+
+  const handleSelectImage = (imageUrl: string, index: number) => {
+    setSelectedImage(imageUrl);
+    setCurrentImageIndex(index);
+    setImageLoaded(false);
+  };
+
+  // Get display price based on selected size or product
+  const getDisplayPrice = () => {
+    if (selectedSize) {
+      return selectedSize.finalPrice;
+    }
+    return product?.displayPrice || 0;
+  };
+
+  const getOriginalPrice = () => {
+    if (selectedSize && selectedSize.hasPromotion) {
+      return selectedSize.price;
+    }
+    if (product?.hasPromotion && product.displayOriginPrice) {
+      return product.displayOriginPrice;
+    }
+    return null;
+  };
+
+  const hasDiscount = selectedSize
+    ? selectedSize.hasPromotion
+    : product?.hasPromotion;
+
   if (isLoading) {
     return <ProductDetailSkeleton />;
   }
@@ -94,23 +180,25 @@ export default function ProductDetailPage() {
     );
   }
 
-  const hasDiscount = product.hasPromotion;
-
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Back Button */}
         <CustomButton
           variant="ghost"
           onClick={() => router.back()}
-          className="mb-6"
+          className="mb-6 hover:bg-accent"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          Back to Products
         </CustomButton>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        {/* Main Product Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-16">
+          {/* Image Gallery */}
           <div className="space-y-4">
-            <div className="relative aspect-square rounded-lg overflow-hidden border bg-muted/30">
+            {/* Main Image */}
+            <div className="relative aspect-square rounded-xl overflow-hidden border bg-muted/30 group">
               {!imageLoaded && (
                 <Skeleton className="absolute inset-0 w-full h-full" />
               )}
@@ -118,113 +206,154 @@ export default function ProductDetailPage() {
                 src={selectedImage || "https://picsum.photos/800/800"}
                 alt={product.name}
                 fill
-                className={`object-cover transition-opacity duration-500 ${
+                className={cn(
+                  "object-cover transition-opacity duration-500",
                   imageLoaded ? "opacity-100" : "opacity-0"
-                }`}
+                )}
                 onLoad={() => setImageLoaded(true)}
+                priority
               />
-              {hasDiscount && product.displayPromotionValue > 0 && (
+
+              {/* Discount Badge */}
+              {hasDiscount && (
                 <Badge
                   variant="destructive"
-                  className="absolute top-4 right-4 text-lg font-bold px-3 py-1"
+                  className="absolute top-4 right-4 text-base font-bold px-3 py-1.5 shadow-lg"
                 >
-                  {product.displayPromotionType === "PERCENTAGE"
+                  {selectedSize && selectedSize.hasPromotion
+                    ? `-${Math.round(
+                        ((selectedSize.price - selectedSize.finalPrice) /
+                          selectedSize.price) *
+                          100
+                      )}%`
+                    : product.displayPromotionType === "PERCENTAGE"
                     ? `-${product.displayPromotionValue}%`
-                    : `-${formatCurrency(product.displayPromotionValue)}`}
+                    : `-${formatCurrency(product.displayPromotionValue || 0)}`}
                 </Badge>
               )}
+
+              {/* Navigation Arrows */}
+              {allImages.length > 1 && (
+                <>
+                  <button
+                    onClick={handlePrevImage}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={handleNextImage}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </>
+              )}
+
+              {/* Image Counter */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium">
+                {currentImageIndex + 1} / {allImages.length}
+              </div>
             </div>
 
-            {product.images && product.images.length > 0 && (
-              <div className="grid grid-cols-4 gap-2">
-                <button
-                  onClick={() => setSelectedImage(product.mainImageUrl)}
-                  className={`relative aspect-square rounded border-2 overflow-hidden ${
-                    selectedImage === product.mainImageUrl
-                      ? "border-primary"
-                      : "border-border"
-                  }`}
+            {/* Thumbnail Row - Max 90% height */}
+            {allImages.length > 1 && (
+              <div className="relative">
+                <div
+                  className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
+                  style={{ maxHeight: "90%" }}
                 >
-                  <Image
-                    src={product.mainImageUrl}
-                    alt="Main"
-                    fill
-                    className="object-cover"
-                  />
-                </button>
-                {product.images.map((img) => (
-                  <button
-                    key={img.id}
-                    onClick={() => setSelectedImage(img.imageUrl)}
-                    className={`relative aspect-square rounded border-2 overflow-hidden ${
-                      selectedImage === img.imageUrl
-                        ? "border-primary"
-                        : "border-border"
-                    }`}
-                  >
-                    <Image
-                      src={img.imageUrl}
-                      alt={`Image ${img.displayOrder}`}
-                      fill
-                      className="object-cover"
-                    />
-                  </button>
-                ))}
+                  {allImages.map((img, index) => (
+                    <button
+                      key={img.id}
+                      onClick={() => handleSelectImage(img.imageUrl, index)}
+                      className={cn(
+                        "relative flex-shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden transition-all cursor-pointer hover:scale-105",
+                        selectedImage === img.imageUrl
+                          ? "border-primary ring-2 ring-primary/20"
+                          : "border-border hover:border-primary/50"
+                      )}
+                    >
+                      <Image
+                        src={img.imageUrl}
+                        alt={`Image ${index + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                      {selectedImage === img.imageUrl && (
+                        <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+                          <Check className="h-5 w-5 text-primary" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
 
+          {/* Product Info */}
           <div className="space-y-6">
+            {/* Title & Badges */}
             <div>
-              <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <h1 className="text-3xl lg:text-4xl font-bold mb-3">
+                {product.name}
+              </h1>
+              <div className="flex flex-wrap items-center gap-2">
                 {product.brandName && (
-                  <Badge variant="outline">{product.brandName}</Badge>
+                  <Badge variant="secondary">{product.brandName}</Badge>
                 )}
                 <Badge variant="outline">{product.categoryName}</Badge>
+                {product.status === "OUT_OF_STOCK" ? (
+                  <Badge variant="destructive">Out of Stock</Badge>
+                ) : (
+                  <Badge className="bg-green-500 hover:bg-green-600">
+                    In Stock
+                  </Badge>
+                )}
               </div>
             </div>
 
-            <div className="space-y-2">
+            {/* Price Display */}
+            <div className="bg-accent/50 rounded-lg p-4 border">
               <div className="flex items-baseline gap-3">
-                <span className="text-3xl font-bold text-primary">
-                  {formatCurrency(product.displayPrice)}
+                <span className="text-4xl font-bold text-primary">
+                  {formatCurrency(getDisplayPrice())}
                 </span>
-                {hasDiscount &&
-                  product.displayOriginPrice > product.displayPrice && (
-                    <span className="text-xl text-muted-foreground line-through">
-                      {formatCurrency(product.displayOriginPrice)}
-                    </span>
-                  )}
+                {getOriginalPrice() && (
+                  <span className="text-xl text-muted-foreground line-through">
+                    {formatCurrency(getOriginalPrice()!)}
+                  </span>
+                )}
               </div>
-              {product.status === "OUT_OF_STOCK" && (
-                <Badge variant="destructive">Out of Stock</Badge>
-              )}
-              {product.status === "ACTIVE" && (
-                <Badge variant="default" className="bg-green-500">
-                  In Stock
-                </Badge>
+              {hasDiscount && (
+                <p className="text-sm text-green-600 font-medium mt-1">
+                  You save{" "}
+                  {formatCurrency(
+                    (getOriginalPrice() || 0) - getDisplayPrice()
+                  )}
+                </p>
               )}
             </div>
 
-            <div>
-              <h3 className="font-semibold mb-2">Description</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                {product.description || "No description available"}
-              </p>
-            </div>
-
+            {/* Available Sizes - Only show if product has sizes */}
             {product.hasSizes && product.sizes && product.sizes.length > 0 && (
               <div>
-                <h3 className="font-semibold mb-3">Available Sizes</h3>
-                <div className="grid grid-cols-2 gap-2">
+                <h3 className="font-semibold mb-3 text-lg">Choose Size</h3>
+                <div className="flex flex-wrap gap-2">
                   {product.sizes.map((size) => (
-                    <div
+                    <button
                       key={size.id}
-                      className="border rounded-lg p-3 hover:border-primary transition-colors"
+                      onClick={() => setSelectedSize(size)}
+                      className={cn(
+                        "relative border-2 rounded-lg px-4 py-3 transition-all cursor-pointer hover:border-primary hover:shadow-md",
+                        selectedSize?.id === size.id
+                          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                          : "border-border"
+                      )}
                     >
-                      <div className="font-medium">{size.name}</div>
-                      <div className="text-primary font-semibold">
+                      <div className="font-semibold text-sm">{size.name}</div>
+                      <div className="text-primary font-bold text-base">
                         {formatCurrency(size.finalPrice)}
                       </div>
                       {size.hasPromotion && (
@@ -232,57 +361,103 @@ export default function ProductDetailPage() {
                           {formatCurrency(size.price)}
                         </div>
                       )}
-                    </div>
+                      {selectedSize?.id === size.id && (
+                        <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-1">
+                          <Check className="h-3 w-3" />
+                        </div>
+                      )}
+                    </button>
                   ))}
                 </div>
               </div>
             )}
 
+            {/* Description */}
             <div>
-              <h3 className="font-semibold mb-2">Quantity</h3>
-              <div className="flex items-center gap-3">
+              <h3 className="font-semibold mb-2 text-lg">Description</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                {product.description ||
+                  "No description available for this product."}
+              </p>
+            </div>
+
+            {/* Quantity Selector */}
+            <div>
+              <h3 className="font-semibold mb-3 text-lg">Quantity</h3>
+              <div className="flex items-center gap-4">
                 <CustomButton
                   variant="outline"
                   size="icon"
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="h-10 w-10"
                 >
                   <Minus className="h-4 w-4" />
                 </CustomButton>
-                <span className="w-12 text-center font-semibold">
+                <span className="w-16 text-center font-bold text-xl">
                   {quantity}
                 </span>
                 <CustomButton
                   variant="outline"
                   size="icon"
                   onClick={() => setQuantity(quantity + 1)}
+                  className="h-10 w-10"
                 >
                   <Plus className="h-4 w-4" />
                 </CustomButton>
               </div>
             </div>
 
-            <div className="flex gap-3">
+            {/* Action Buttons */}
+            <div className="space-y-3 pt-4">
               <CustomButton
                 size="lg"
-                className="flex-1"
+                className="w-full h-12 text-base font-semibold"
                 disabled={product.status === "OUT_OF_STOCK"}
               >
                 <ShoppingCart className="h-5 w-5 mr-2" />
-                Add to Cart
+                Add to Cart • {formatCurrency(getDisplayPrice() * quantity)}
               </CustomButton>
-              <CustomButton size="lg" variant="outline">
-                <Heart className="h-5 w-5" />
-              </CustomButton>
-              <CustomButton size="lg" variant="outline">
-                <Share2 className="h-5 w-5" />
-              </CustomButton>
+
+              <div className="grid grid-cols-2 gap-3">
+                <CustomButton size="lg" variant="outline" className="h-12">
+                  <Heart className="h-5 w-5 mr-2" />
+                  Wishlist
+                </CustomButton>
+                <CustomButton size="lg" variant="outline" className="h-12">
+                  <Share2 className="h-5 w-5 mr-2" />
+                  Share
+                </CustomButton>
+              </div>
+            </div>
+
+            {/* Additional Info */}
+            <div className="border-t pt-4 space-y-2 text-sm text-muted-foreground">
+              <div className="flex justify-between">
+                <span>SKU:</span>
+                <span className="font-medium">
+                  {product.id.slice(0, 8).toUpperCase()}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Views:</span>
+                <span className="font-medium">
+                  {product.viewCount.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Favorites:</span>
+                <span className="font-medium">
+                  {product.favoriteCount.toLocaleString()}
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
+        {/* Similar Products */}
         {similarProducts.length > 0 && (
           <div>
-            <h2 className="text-2xl font-bold mb-6">Similar Products</h2>
+            <h2 className="text-2xl font-bold mb-6">You May Also Like</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
               {similarProducts.map((similar) => (
                 <ProductCard key={similar.id} product={similar} />
@@ -297,21 +472,39 @@ export default function ProductDetailPage() {
 
 function ProductDetailSkeleton() {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Skeleton className="h-10 w-24 mb-6" />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <Skeleton className="h-10 w-32 mb-6" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+        {/* Image Skeleton */}
         <div className="space-y-4">
-          <Skeleton className="aspect-square w-full rounded-lg" />
-          <div className="grid grid-cols-4 gap-2">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="aspect-square rounded" />
+          <Skeleton className="aspect-square w-full rounded-xl" />
+          <div className="flex gap-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Skeleton
+                key={i}
+                className="w-20 h-20 rounded-lg flex-shrink-0"
+              />
             ))}
           </div>
         </div>
+
+        {/* Info Skeleton */}
         <div className="space-y-6">
-          <Skeleton className="h-10 w-3/4" />
-          <Skeleton className="h-6 w-1/2" />
-          <Skeleton className="h-24 w-full" />
+          <div>
+            <Skeleton className="h-10 w-3/4 mb-3" />
+            <div className="flex gap-2">
+              <Skeleton className="h-6 w-20" />
+              <Skeleton className="h-6 w-24" />
+            </div>
+          </div>
+          <Skeleton className="h-20 w-full rounded-lg" />
+          <Skeleton className="h-32 w-full" />
+          <div className="flex gap-2">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-20 w-24 rounded-lg" />
+            ))}
+          </div>
+          <Skeleton className="h-12 w-full" />
           <Skeleton className="h-12 w-full" />
         </div>
       </div>
