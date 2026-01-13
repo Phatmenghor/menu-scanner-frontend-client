@@ -138,9 +138,9 @@ export default function HomePage() {
         />
 
         <PromotionsSection
-          products={promotionProducts}
-          loading={promotionProductsSection.loading}
-          error={promotionProductsSection.error}
+          products={featuredProducts}
+          loading={featuredProductsSection.loading}
+          error={featuredProductsSection.error}
           title="Hot Deals & Promotions"
         />
 

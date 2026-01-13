@@ -63,9 +63,7 @@ export const CategoriesSection = ({
         ))}
       </div>
 
-      {categories.length > limit && (
-        <ViewAllButton href="/categories" text="View All Categories" />
-      )}
+      <ViewAllButton href="/categories" text="View All Categories" />
     </SectionWrapper>
   );
 };

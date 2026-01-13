@@ -4,7 +4,6 @@ import { ProductGridSkeleton } from "@/components/shared/skeletons/product-card-
 import { ProductDetailResponseModel } from "@/redux/features/business/store/models/response/product-response";
 import { Flame } from "lucide-react";
 import {
-  SectionHeader,
   SectionWrapper,
   ViewAllButton,
 } from "@/components/shared/common/section-header";

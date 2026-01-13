@@ -151,23 +151,62 @@ export const BannerSection = ({
 
         {banners.length > 1 && (
           <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center gap-2 pointer-events-none">
-            {banners.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  carouselApi?.scrollTo(idx);
-                }}
-                className={cn(
-                  "h-2 rounded-full transition-all duration-300 pointer-events-auto",
-                  current === idx
-                    ? "w-8 bg-primary"
-                    : "w-2 bg-white/50 hover:bg-white/80"
-                )}
-                aria-label={`Go to slide ${idx + 1}`}
-              />
-            ))}
+            {(() => {
+              const maxDots = 12;
+              const totalBanners = banners.length;
+
+              if (totalBanners <= maxDots) {
+                // Show all dots if less than or equal to max
+                return banners.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      carouselApi?.scrollTo(idx);
+                    }}
+                    className={cn(
+                      "h-2 rounded-full transition-all duration-300 pointer-events-auto",
+                      current === idx
+                        ? "w-8 bg-primary"
+                        : "w-2 bg-white/50 hover:bg-white/80"
+                    )}
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                ));
+              }
+
+              // Show subset of dots with current slide centered
+              const half = Math.floor(maxDots / 2);
+              let startIdx = Math.max(0, current - half);
+              let endIdx = Math.min(totalBanners, startIdx + maxDots);
+
+              // Adjust if we're at the end
+              if (endIdx - startIdx < maxDots) {
+                startIdx = Math.max(0, endIdx - maxDots);
+              }
+
+              return Array.from({ length: endIdx - startIdx }, (_, i) => {
+                const idx = startIdx + i;
+                return (
+                  <button
+                    key={idx}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      carouselApi?.scrollTo(idx);
+                    }}
+                    className={cn(
+                      "h-2 rounded-full transition-all duration-300 pointer-events-auto",
+                      current === idx
+                        ? "w-8 bg-primary"
+                        : "w-2 bg-white/50 hover:bg-white/80"
+                    )}
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                );
+              });
+            })()}
           </div>
         )}
       </div>
