@@ -25,6 +25,11 @@ export const ROUTES = {
     DELIVERY_OPTIONS: "/admin/delivery-options",
     PRODUCTS: "/admin/products",
   },
+
+  HR: {
+    WORK_SCHEDULE_TYPE: "/hr/work-schedule-type",
+    LEAVE_TYPE: "/hr/leave-type",
+  },
 } as const;
 
 /**
@@ -59,19 +64,11 @@ export const SIDEBAR_MENU: MenuItem[] = [
     items: [
       {
         title: "Work Schedules",
-        href: ROUTES.ADMIN.BANNER,
+        href: ROUTES.HR.WORK_SCHEDULE_TYPE,
       },
       {
         title: "Leave Type",
-        href: ROUTES.ADMIN.CATEGORIES,
-      },
-      {
-        title: "Leave Status",
-        href: ROUTES.ADMIN.BRAND,
-      },
-      {
-        title: "Exchange Rate",
-        href: ROUTES.ADMIN.EXCHANGE_RATE,
+        href: ROUTES.HR.LEAVE_TYPE,
       },
     ],
   },

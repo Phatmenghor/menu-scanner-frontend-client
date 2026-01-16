@@ -12,6 +12,8 @@ import categoriesReducer from "../features/master-data/store/slice/categories-sl
 import exchangeRateReducer from "../features/master-data/store/slice/exchange-rate-slice";
 import deliveryOptionsReducer from "../features/master-data/store/slice/delivery-options-slice";
 
+import workScheduleReducer from "../features/hr/store/slice/work-schedule-slice";
+
 import productReducer from "../features/business/store/slice/product-slice";
 import homeReducer from "../features/main/store/slice/home-slice";
 import publicProductReducer from "../features/main/store/slice/public-product-slice";
@@ -31,4 +33,5 @@ export const reducers = {
   products: productReducer,
   home: homeReducer,
   publicProducts: publicProductReducer,
+  workSchedule: workScheduleReducer,
 };
