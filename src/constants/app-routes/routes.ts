@@ -2,18 +2,9 @@ import {
   Home,
   Users,
   Database,
-  Pin,
-  Bell,
   LucideIcon,
   LucideBriefcaseBusiness,
 } from "lucide-react";
-import { BRAND } from "zod/v3";
-import { EXCHAGE_RATE_FILTER } from "../status/filter-status";
-
-/**
- * Clean Routes Configuration
- * No language prefixes - all routes are language-independent
- */
 
 export const ROUTES = {
   HOME: "/",
@@ -61,6 +52,30 @@ export const SIDEBAR_MENU: MenuItem[] = [
     href: ROUTES.ADMIN.USERS,
     icon: Users,
   },
+
+  {
+    title: "HR",
+    icon: Database,
+    items: [
+      {
+        title: "Work Schedules",
+        href: ROUTES.ADMIN.BANNER,
+      },
+      {
+        title: "Leave Type",
+        href: ROUTES.ADMIN.CATEGORIES,
+      },
+      {
+        title: "Leave Status",
+        href: ROUTES.ADMIN.BRAND,
+      },
+      {
+        title: "Exchange Rate",
+        href: ROUTES.ADMIN.EXCHANGE_RATE,
+      },
+    ],
+  },
+
   {
     title: "Master Data",
     icon: Database,
@@ -87,7 +102,6 @@ export const SIDEBAR_MENU: MenuItem[] = [
       },
     ],
   },
-
   {
     title: "Business",
     icon: LucideBriefcaseBusiness,

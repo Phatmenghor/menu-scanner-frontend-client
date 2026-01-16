@@ -56,9 +56,9 @@ const socialLinks = [
 ];
 
 const paymentMethods = [
-  { name: "Visa", src: "/assets/image/visa.png" },
-  { name: "Mastercard", src: "/assets/image/mastercard.png" },
-  { name: "PayPal", src: "/assets/image/paypal.png" },
+  // { name: "Visa", src: "/assets/image/visa.png" },
+  // { name: "Mastercard", src: "/assets/image/mastercard.png" },
+  // { name: "PayPal", src: "/assets/image/paypal.png" },
   { name: "ABA", src: "/assets/image/cpbank.png" },
 ];
 
