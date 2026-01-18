@@ -9,6 +9,8 @@ import { Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CategoriesResponseModel } from "@/redux/features/master-data/store/models/response/categories-response";
 import { useInfiniteScroll } from "@/components/shared/common/use-infinite-scroll";
+import { useScrollRestoration } from "@/hooks/use-scroll-restoration";
+import { useSkeletonCount, SkeletonPresets } from "@/hooks/use-skeleton-count";
 
 export default function CategoriesPage() {
   const dispatch = useAppDispatch();
@@ -20,6 +22,16 @@ export default function CategoriesPage() {
   const [initialLoad, setInitialLoad] = useState(true);
 
   const pageSize = 12;
+
+  // Use responsive skeleton count
+  const skeletonCount = useSkeletonCount(SkeletonPresets.categoryGrid);
+
+  // Scroll restoration
+  useScrollRestoration({
+    enabled: true,
+    restoreOnMount: true,
+    customKey: "categories",
+  });
 
   const loadCategories = useCallback(
     async (pageNo: number, append: boolean = false) => {
@@ -84,7 +96,7 @@ export default function CategoriesPage() {
         {/* Initial Loading */}
         {initialLoad && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {Array.from({ length: 12 }).map((_, i) => (
+            {Array.from({ length: skeletonCount }).map((_, i) => (
               <div
                 key={i}
                 className="h-[200px] flex flex-col rounded-lg border overflow-hidden"

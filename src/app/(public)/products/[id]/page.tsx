@@ -28,6 +28,7 @@ import { formatCurrency } from "@/utils/common/currency-format";
 import { ProductDetailResponseModel } from "@/redux/features/business/store/models/response/product-response";
 import { CustomButton } from "@/components/shared/button/custom-button";
 import { cn } from "@/lib/utils";
+import { useScrollToTop } from "@/hooks/use-scroll-restoration";
 
 interface ProductSize {
   id: string;
@@ -51,6 +52,9 @@ export default function ProductDetailPage() {
   const productId = params.id as string;
   const product = selectedProduct;
   const isLoading = loading.detail;
+
+  // Scroll to top on mount (detail page should always start at top)
+  useScrollToTop();
 
   const [similarProducts, setSimilarProducts] = useState<
     ProductDetailResponseModel[]

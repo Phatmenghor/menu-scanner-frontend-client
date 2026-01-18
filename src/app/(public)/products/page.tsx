@@ -9,7 +9,6 @@ import {
 } from "@/redux/features/main/store/thunks/public-product-thunks";
 import {
   clearProducts,
-  setScrollY,
   setLoadedFilters,
 } from "@/redux/features/main/store/slice/public-product-slice";
 import { usePublicProductState } from "@/redux/features/main/store/state/public-product-state";
@@ -17,6 +16,8 @@ import { ProductCard } from "@/components/shared/card/product-card";
 import { ProductCardSkeleton } from "@/components/shared/skeletons/product-card-skeleton";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { ProductFilters } from "@/redux/features/main/components/product/product-filters";
+import { useScrollRestoration } from "@/hooks/use-scroll-restoration";
+import { useSkeletonCount, SkeletonPresets } from "@/hooks/use-skeleton-count";
 
 export default function ProductsPage() {
   const searchParams = useSearchParams();
@@ -29,12 +30,21 @@ export default function ProductsPage() {
     loading,
     categories,
     brands,
-    scrollY,
-    loadedFilters, // Get from Redux
+    loadedFilters,
   } = usePublicProductState();
 
   const [page, setPage] = useState(1);
-  const [skeletonCount, setSkeletonCount] = useState(12);
+
+  // Use responsive skeleton count
+  const skeletonCount = useSkeletonCount(SkeletonPresets.productGrid);
+
+  // Scroll restoration
+  useScrollRestoration({
+    enabled: true,
+    restoreOnMount: true,
+    customKey: "products",
+    restoreDelay: 150,
+  });
 
   const search = searchParams.get("q");
   const hasPromotion = searchParams.get("hasPromotion") === "true";
@@ -57,54 +67,6 @@ export default function ProductsPage() {
   useEffect(() => {
     dispatch(fetchPublicCategories());
     dispatch(fetchPublicBrands());
-  }, [dispatch]);
-
-  // Update skeleton count based on screen size
-  useEffect(() => {
-    const updateSkeletonCount = () => {
-      const width = window.innerWidth;
-      if (width < 640) setSkeletonCount(4);
-      else if (width < 768) setSkeletonCount(6);
-      else if (width < 1024) setSkeletonCount(8);
-      else if (width < 1280) setSkeletonCount(10);
-      else setSkeletonCount(12);
-    };
-
-    updateSkeletonCount();
-    window.addEventListener("resize", updateSkeletonCount);
-    return () => window.removeEventListener("resize", updateSkeletonCount);
-  }, []);
-
-  // Restore scroll position when coming back from detail
-  useEffect(() => {
-    if (
-      scrollY > 0 &&
-      products.length > 0 &&
-      currentFilters === loadedFilters
-    ) {
-      setTimeout(() => {
-        window.scrollTo(0, scrollY);
-      }, 100);
-    }
-  }, []); // Only on mount
-
-  // Save scroll position on page scroll
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
-    const handleScroll = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        dispatch(setScrollY(window.scrollY));
-      }, 150);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      clearTimeout(timeoutId);
-      window.removeEventListener("scroll", handleScroll);
-    };
   }, [dispatch]);
 
   const loadProducts = useCallback(
