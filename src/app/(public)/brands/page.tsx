@@ -11,6 +11,8 @@ import { useInfiniteScroll } from "@/components/shared/common/use-infinite-scrol
 import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
+import { useScrollRestoration } from "@/hooks/use-scroll-restoration";
+import { useSkeletonCount, SkeletonPresets } from "@/hooks/use-skeleton-count";
 
 export default function BrandsPage() {
   const dispatch = useAppDispatch();
@@ -22,6 +24,16 @@ export default function BrandsPage() {
   const [initialLoad, setInitialLoad] = useState(true);
 
   const pageSize = 12;
+
+  // Use responsive skeleton count
+  const skeletonCount = useSkeletonCount(SkeletonPresets.categoryGrid);
+
+  // Scroll restoration
+  useScrollRestoration({
+    enabled: true,
+    restoreOnMount: true,
+    customKey: "brands",
+  });
 
   const loadBrands = useCallback(
     async (pageNo: number, append: boolean = false) => {
@@ -86,7 +98,7 @@ export default function BrandsPage() {
         {/* Initial Loading */}
         {initialLoad && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {Array.from({ length: 12 }).map((_, i) => (
+            {Array.from({ length: skeletonCount }).map((_, i) => (
               <Card key={i} className="overflow-hidden">
                 <CardContent className="p-6 flex flex-col items-center justify-center">
                   <Skeleton className="w-32 h-32 rounded-full mb-4" />

@@ -288,10 +288,22 @@ export function Footer() {
         <div className="border-t py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             {/* Copyright */}
-            <p className="text-sm text-muted-foreground text-center md:text-left">
-              © {new Date().getFullYear()} Menu Scanner E-Commerce. All rights
-              reserved.
-            </p>
+            <div className="flex flex-col items-center md:items-start gap-2">
+              <p className="text-sm text-muted-foreground text-center md:text-left">
+                © {new Date().getFullYear()}{" "}
+                <span className="font-semibold text-foreground">
+                  Menu Scanner E-Commerce
+                </span>
+                . All rights reserved.
+              </p>
+              <p className="text-xs text-muted-foreground text-center md:text-left">
+                Owned and operated by{" "}
+                <span className="font-medium text-foreground">
+                  Menu Scanner Group
+                </span>
+                . Registered in Cambodia.
+              </p>
+            </div>
 
             {/* Payment Methods */}
             <div className="flex items-center gap-2">
@@ -317,6 +329,48 @@ export function Footer() {
                   />
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Additional Owner Info */}
+          <div className="mt-4 pt-4 border-t">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-muted-foreground text-center md:text-left">
+              <div>
+                <span className="font-semibold text-foreground">
+                  Business License:
+                </span>{" "}
+                #MS-2024-KH-001
+              </div>
+              <div>
+                <span className="font-semibold text-foreground">Tax ID:</span>{" "}
+                K001-234567890
+              </div>
+              <div>
+                <span className="font-semibold text-foreground">
+                  Customer Service:
+                </span>{" "}
+                Available 24/7
+              </div>
+            </div>
+          </div>
+
+          {/* Trust Badges */}
+          <div className="mt-4 pt-4 border-t">
+            <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <span>Secure Shopping</span>
+              </div>
+              <span>•</span>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                <span>Verified Seller</span>
+              </div>
+              <span>•</span>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                <span>Money Back Guarantee</span>
+              </div>
             </div>
           </div>
         </div>

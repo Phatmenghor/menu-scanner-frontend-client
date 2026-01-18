@@ -17,6 +17,7 @@ import workScheduleReducer from "../features/hr/store/slice/work-schedule-slice"
 import productReducer from "../features/business/store/slice/product-slice";
 import homeReducer from "../features/main/store/slice/home-slice";
 import publicProductReducer from "../features/main/store/slice/public-product-slice";
+import scrollReducer from "../features/main/store/slice/scroll-slice";
 
 /**
  * Root reducer configuration
@@ -34,4 +35,5 @@ export const reducers = {
   home: homeReducer,
   publicProducts: publicProductReducer,
   workSchedule: workScheduleReducer,
+  scroll: scrollReducer,
 };

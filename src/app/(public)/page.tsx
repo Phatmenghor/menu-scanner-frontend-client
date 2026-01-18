@@ -9,10 +9,7 @@ import {
   fetchHomeFeaturedProducts,
 } from "@/redux/features/main/store/thunks/home-thunks";
 
-import {
-  setScrollY,
-  setInitialLoadComplete,
-} from "@/redux/features/main/store/slice/home-slice";
+import { setInitialLoadComplete } from "@/redux/features/main/store/slice/home-slice";
 
 import { useHomeState } from "@/redux/features/main/store/state/home-state";
 
@@ -20,8 +17,7 @@ import { BannerSection } from "@/redux/features/main/components/home/banner-sect
 import { CategoriesSection } from "@/redux/features/main/components/home/categories-section";
 import { PromotionsSection } from "@/redux/features/main/components/home/promotions-section";
 import { ProductsSection } from "@/redux/features/main/components/home/products-section";
-import { Status } from "@/constants/status/status";
-import { AppDefault } from "@/constants/app-resource/default/default";
+import { useScrollRestoration } from "@/hooks/use-scroll-restoration";
 
 export default function HomePage() {
   const {
@@ -35,8 +31,14 @@ export default function HomePage() {
     promotionProductsSection,
     featuredProductsSection,
     featuredPagination,
-    scrollY, // Simple!
   } = useHomeState();
+
+  // Scroll restoration
+  useScrollRestoration({
+    enabled: true,
+    restoreOnMount: true,
+    customKey: "home",
+  });
 
   const isInitialFeaturedLoading =
     featuredProductsSection.loading &&
@@ -79,34 +81,6 @@ export default function HomePage() {
     promotionProductsSection.loaded,
     featuredProductsSection.loaded,
   ]);
-
-  // Restore scroll on mount (if coming back)
-  useEffect(() => {
-    if (scrollY > 0) {
-      setTimeout(() => {
-        window.scrollTo(0, scrollY);
-      }, 0);
-    }
-  }, []); // Run once on mount
-
-  // Save scroll on scroll (debounced)
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
-    const handleScroll = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        dispatch(setScrollY(window.scrollY));
-      }, 150);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      clearTimeout(timeoutId);
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, [dispatch]);
 
   // Load more featured products
   const handleLoadMoreFeatured = useCallback(() => {
