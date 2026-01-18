@@ -17,6 +17,8 @@ import workScheduleReducer from "../features/hr/store/slice/work-schedule-slice"
 import productReducer from "../features/business/store/slice/product-slice";
 import homeReducer from "../features/main/store/slice/home-slice";
 import publicProductReducer from "../features/main/store/slice/public-product-slice";
+import publicBrandsReducer from "../features/main/store/slice/public-brands-slice";
+import publicCategoriesReducer from "../features/main/store/slice/public-categories-slice";
 import scrollReducer from "../features/main/store/slice/scroll-slice";
 
 /**
@@ -24,16 +26,27 @@ import scrollReducer from "../features/main/store/slice/scroll-slice";
  * Add new feature reducers here
  */
 export const reducers = {
+  // Auth
   auth: authReducer,
   users: usersReducer,
+
+  // Master Data (Admin)
   banner: bannerReducer,
   brand: brandReducer,
   categories: categoriesReducer,
   exchangeRate: exchangeRateReducer,
   deliveryOptions: deliveryOptionsReducer,
+
+  // Business
   products: productReducer,
+
+  // HR
+  workSchedule: workScheduleReducer,
+
+  // Main/Public
   home: homeReducer,
   publicProducts: publicProductReducer,
-  workSchedule: workScheduleReducer,
+  publicBrands: publicBrandsReducer,
+  publicCategories: publicCategoriesReducer,
   scroll: scrollReducer,
 };
