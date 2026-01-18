@@ -132,7 +132,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
                   placeholder="Enter your current password"
                   disabled={isProfileLoading}
                   required
-                  error={getFieldError(errors.currentPassword)}
+                  error={errors.currentPassword}
                   className="pr-10"
                 />
                 <Button
@@ -161,7 +161,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
                   placeholder="Enter your new password"
                   disabled={isProfileLoading}
                   required
-                  error={getFieldError(errors.newPassword)}
+                  error={errors.newPassword}
                   className="pr-10"
                 />
                 <Button
@@ -190,7 +190,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: Props) {
                   placeholder="Confirm your new password"
                   disabled={isProfileLoading}
                   required
-                  error={getFieldError(errors.confirmPassword)}
+                  error={errors.confirmPassword}
                   className="pr-10"
                 />
                 <Button

@@ -1,29 +1,29 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useAppDispatch } from "@/redux/store";
-import { fetchAllCategoriesService } from "@/redux/features/master-data/store/thunks/categories-thunks";
-import { CategoryCard } from "@/components/shared/card/category-card";
+import { useEffect, useCallback } from "react";
+import { usePublicCategoriesState } from "@/redux/features/main/store/state/public-categories-state";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CategoriesResponseModel } from "@/redux/features/master-data/store/models/response/categories-response";
+import { CategoryCard } from "@/components/shared/card/category-card";
 import { useInfiniteScroll } from "@/components/shared/common/use-infinite-scroll";
 import { useScrollRestoration } from "@/hooks/use-scroll-restoration";
 import { useSkeletonCount, SkeletonPresets } from "@/hooks/use-skeleton-count";
+import { EmptyState, EmptyStatePresets } from "@/components/shared/empty-state";
 
 export default function CategoriesPage() {
-  const dispatch = useAppDispatch();
-
-  const [categories, setCategories] = useState<CategoriesResponseModel[]>([]);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-  const [initialLoad, setInitialLoad] = useState(true);
+  const {
+    categories,
+    pagination,
+    loaded,
+    fetchCategories,
+    hasMore,
+    isInitialLoading,
+    isLoadingMore,
+    totalCategories,
+  } = usePublicCategoriesState();
 
   const pageSize = 12;
-
-  // Use responsive skeleton count
   const skeletonCount = useSkeletonCount(SkeletonPresets.categoryGrid);
 
   // Scroll restoration
@@ -33,53 +33,35 @@ export default function CategoriesPage() {
     customKey: "categories",
   });
 
-  const loadCategories = useCallback(
-    async (pageNo: number, append: boolean = false) => {
-      setIsLoading(true);
-      try {
-        const response = await dispatch(
-          fetchAllCategoriesService({
-            pageNo,
-            pageSize,
-            status: "ACTIVE",
-          })
-        ).unwrap();
-
-        if (append) {
-          setCategories((prev) => [...prev, ...(response.content || [])]);
-        } else {
-          setCategories(response.content || []);
-        }
-
-        setHasMore(response.hasNext || false);
-      } catch (error) {
-        console.error("Error loading categories:", error);
-      } finally {
-        setIsLoading(false);
-        setInitialLoad(false);
-      }
-    },
-    [dispatch, pageSize]
-  );
-
-  // Initial load
+  // Initial load - only if not already loaded (caching!)
   useEffect(() => {
-    loadCategories(1, false);
-  }, [loadCategories]);
+    if (!loaded) {
+      fetchCategories({ pageNo: 1, pageSize, status: "ACTIVE" });
+    }
+  }, [loaded, pageSize]);
 
   // Load more handler
   const handleLoadMore = useCallback(() => {
-    if (!isLoading && hasMore) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      loadCategories(nextPage, true);
+    if (!isLoadingMore && hasMore) {
+      fetchCategories({
+        pageNo: pagination.currentPage + 1,
+        pageSize,
+        status: "ACTIVE",
+        append: true,
+      });
     }
-  }, [isLoading, hasMore, page, loadCategories]);
+  }, [
+    isLoadingMore,
+    hasMore,
+    pagination.currentPage,
+    pageSize,
+    fetchCategories,
+  ]);
 
   const { observerTarget } = useInfiniteScroll({
     onLoadMore: handleLoadMore,
     hasMore,
-    isLoading,
+    isLoading: isLoadingMore,
   });
 
   return (
@@ -89,12 +71,14 @@ export default function CategoriesPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">All Categories</h1>
           <p className="text-muted-foreground">
-            Browse all {categories.length} categories
+            {totalCategories > 0
+              ? `Browse all ${totalCategories} categories`
+              : "Explore our categories"}
           </p>
         </div>
 
         {/* Initial Loading */}
-        {initialLoad && (
+        {isInitialLoading && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {Array.from({ length: skeletonCount }).map((_, i) => (
               <div
@@ -110,8 +94,13 @@ export default function CategoriesPage() {
           </div>
         )}
 
+        {/* Empty State */}
+        {!isInitialLoading && categories.length === 0 && (
+          <EmptyState {...EmptyStatePresets.noCategories} size="lg" />
+        )}
+
         {/* Categories Grid */}
-        {!initialLoad && categories.length > 0 && (
+        {!isInitialLoading && categories.length > 0 && (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {categories.map((category) => (
@@ -119,48 +108,30 @@ export default function CategoriesPage() {
               ))}
             </div>
 
-            {/* Infinite Scroll Observer */}
-            <div
-              ref={observerTarget}
-              className="h-20 flex items-center justify-center mt-8"
-            >
-              {isLoading && hasMore && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                  <span>Loading more categories...</span>
-                </div>
-              )}
-              {!hasMore && categories.length > 0 && (
-                <p className="text-muted-foreground">
-                  No more categories to load
-                </p>
-              )}
-            </div>
+            {/* Infinite Scroll Trigger */}
+            {hasMore && (
+              <div
+                ref={observerTarget}
+                className="flex justify-center items-center py-8"
+              >
+                {isLoadingMore && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span>Loading more categories...</span>
+                  </div>
+                )}
+              </div>
+            )}
 
-            {/* Manual Load More Button (fallback) */}
-            {hasMore && !isLoading && (
+            {/* Load More Button (fallback) */}
+            {!isLoadingMore && hasMore && (
               <div className="flex justify-center mt-8">
-                <Button
-                  onClick={handleLoadMore}
-                  variant="outline"
-                  size="lg"
-                  disabled={isLoading}
-                >
+                <Button onClick={handleLoadMore} variant="outline" size="lg">
                   Load More Categories
                 </Button>
               </div>
             )}
           </>
-        )}
-
-        {/* Empty State */}
-        {!initialLoad && categories.length === 0 && (
-          <div className="text-center py-16">
-            <h3 className="text-xl font-semibold mb-2">No categories found</h3>
-            <p className="text-muted-foreground">
-              Check back later for new categories
-            </p>
-          </div>
         )}
       </div>
     </div>
