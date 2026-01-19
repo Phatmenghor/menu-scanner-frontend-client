@@ -76,19 +76,6 @@ export const workScheduleTableColumns = ({
     },
 
     {
-      key: "name",
-      label: "Work Schedule Name",
-      minWidth: "10px",
-      maxWidth: "400px",
-      truncate: true,
-      render: (workSchedule) => (
-        <span className="text-xs text-muted-foreground">
-          {workSchedule?.name || "---"}
-        </span>
-      ),
-    },
-
-    {
       key: "scheduleTypeEnumName",
       label: "Schedule Type",
       minWidth: "10px",
