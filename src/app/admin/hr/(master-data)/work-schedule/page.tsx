@@ -10,7 +10,7 @@ import { DeleteConfirmationModal } from "@/components/shared/modal/delete-confir
 import { DataTableWithPagination } from "@/components/shared/common/data-table";
 import { showToast } from "@/components/shared/common/show-toast";
 import { usePagination } from "@/redux/store/use-pagination";
-import { useWorkScheduleTypeState } from "@/redux/features/hr/store/state/work-schedule-state";
+import { useWorkScheduleState } from "@/redux/features/hr/store/state/work-schedule-state";
 import { ModalMode } from "@/constants/status/status";
 import { WorkScheduleResponseModel } from "@/redux/features/hr/store/models/response/work-schedule-response";
 import {
@@ -41,7 +41,7 @@ export default function WorkSchedulePage() {
     operations,
     pagination,
     dispatch,
-  } = useWorkScheduleTypeState();
+  } = useWorkScheduleState();
 
   // Local UI state for modals only
   const [modalState, setModalState] = useState({
