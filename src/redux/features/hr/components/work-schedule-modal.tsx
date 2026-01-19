@@ -51,6 +51,8 @@ import {
 } from "@/components/ui/select";
 import { Controller } from "react-hook-form";
 import { fetchAllWorkSchedulesTypeService } from "../store/thunks/work-schedule-type-thunks";
+import { ComboboxSelectUser } from "@/components/shared/combobox/combobox_select_user";
+import { UserResponseModel } from "@/redux/features/auth/store/models/response/users-response";
 
 type Props = {
   mode: ModalMode;
@@ -79,6 +81,9 @@ export default function WorkScheduleModal({
     { value: string; label: string }[]
   >([]);
   const [loadingScheduleTypes, setLoadingScheduleTypes] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserResponseModel | null>(
+    null
+  );
 
   const {
     control,
@@ -93,7 +98,7 @@ export default function WorkScheduleModal({
     ) as any,
     defaultValues: {
       id: "",
-      userId: currentUser?.id || "",
+      userId: currentUser?.userId || "",
       businessId: AppDefault.BUSINESS_ID,
       name: "",
       scheduleTypeEnumName: "",
@@ -147,9 +152,14 @@ export default function WorkScheduleModal({
         if (fetchWorkScheduleByIdService.fulfilled.match(resultAction)) {
           const data = resultAction.payload;
 
+          // Set selected user from userInfo
+          if (data.userInfo) {
+            setSelectedUser(data.userInfo);
+          }
+
           reset({
             id: data.id,
-            userId: data.userInfo?.id || currentUser?.id || "",
+            userId: data.userInfo?.id || currentUser?.userId || "",
             businessId: data.businessId || AppDefault.BUSINESS_ID,
             name: data.name || "",
             scheduleTypeEnumName: data.scheduleTypeEnumName || "",
@@ -171,8 +181,9 @@ export default function WorkScheduleModal({
   // Reset form for create mode
   useEffect(() => {
     if (isOpen && isCreate) {
+      setSelectedUser(null);
       reset({
-        userId: currentUser?.id || "",
+        userId: currentUser?.userId || "",
         businessId: AppDefault.BUSINESS_ID,
         name: "",
         scheduleTypeEnumName: "",
@@ -244,6 +255,7 @@ export default function WorkScheduleModal({
 
   const handleClose = () => {
     reset();
+    setSelectedUser(null);
     dispatch(clearError());
     dispatch(clearSelectedWorkSchedule());
     onClose();
@@ -280,6 +292,19 @@ export default function WorkScheduleModal({
                   </p>
                 </div>
               )}
+
+              {/* User Selection Combobox */}
+              <ComboboxSelectUser
+                dataSelect={selectedUser}
+                onChangeSelected={(user) => {
+                  setSelectedUser(user);
+                  setValue("userId", user?.id || "", { shouldValidate: true });
+                }}
+                disabled={isSubmitting}
+                label="Select User"
+                required
+                error={errors.userId?.message}
+              />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <TextField
@@ -346,7 +371,7 @@ export default function WorkScheduleModal({
                 label="Work Days"
                 required
                 disabled={isSubmitting}
-                error={errors.workDays}
+                error={errors.workDays as any}
               />
 
               {/* Time Fields */}
