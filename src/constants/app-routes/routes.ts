@@ -27,8 +27,8 @@ export const ROUTES = {
   },
 
   HR: {
-    WORK_SCHEDULE_TYPE: "/hr/work-schedule-type",
-    LEAVE_TYPE: "/hr/leave-type",
+    WORK_SCHEDULE_TYPE: "/admin/hr/work-schedule-type",
+    LEAVE_TYPE: "/admin/hr/leave-type",
   },
 } as const;
 

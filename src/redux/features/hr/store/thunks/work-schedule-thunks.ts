@@ -5,6 +5,7 @@ import {
   CreateWorkScheduleRequest,
   UpdateWorkScheduleParams,
 } from "../models/request/work-schedule-request";
+import { AppDefault } from "@/constants/app-resource/default/default";
 
 export const fetchAllWorkSchedulesService = createApiThunk<
   any,
@@ -12,7 +13,10 @@ export const fetchAllWorkSchedulesService = createApiThunk<
 >("work-schedule-type/fetchAll", async (params) => {
   const response = await axiosClientWithAuth.post(
     "/api/v1/enums/work-schedule-type/all",
-    params
+    {
+      businessId: AppDefault.BUSINESS_ID,
+      ...params,
+    }
   );
   return response.data.data;
 });
@@ -30,10 +34,13 @@ export const fetchWorkScheduleByIdService = createApiThunk<any, string>(
 export const createWorkScheduleService = createApiThunk<
   any,
   CreateWorkScheduleRequest
->("work-schedule-type/create", async (userData) => {
+>("work-schedule-type/create", async (workScheduleData) => {
   const response = await axiosClientWithAuth.post(
     "/api/v1/enums/work-schedule-type",
-    userData
+    {
+      businessId: AppDefault.BUSINESS_ID,
+      ...workScheduleData,
+    }
   );
   return response.data.data;
 });

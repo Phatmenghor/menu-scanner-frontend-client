@@ -6,7 +6,6 @@ import { Plus } from "lucide-react";
 import { useDebounce } from "@/utils/debounce/debounce";
 import { ROUTES } from "@/constants/app-routes/routes";
 import { CardHeaderSection } from "@/components/layout/card-header-section";
-import { CustomSelect } from "@/components/shared/common/custom-select";
 import { DeleteConfirmationModal } from "@/components/shared/modal/delete-confirmation-modal";
 import { DataTableWithPagination } from "@/components/shared/common/data-table";
 import { showToast } from "@/components/shared/common/show-toast";
@@ -23,7 +22,11 @@ import {
   fetchAllWorkSchedulesService,
 } from "@/redux/features/hr/store/thunks/work-schedule-thunks";
 import { workScheduleTableColumns } from "@/redux/features/hr/table/work-schedule-table";
+import WorkScheduleModal from "@/redux/features/hr/components/work-schedule-modal";
+import { WorkScheduleDetailModal } from "@/redux/features/hr/components/work-schedule-detail-modal";
+
 export default function WorkSchedulePage() {
+  useAdminCleanup(resetState);
   const searchParams = useSearchParams();
 
   // Redux state
@@ -221,16 +224,16 @@ export default function WorkSchedulePage() {
       </div>
 
       {/* Modals Add/Edit */}
-      <UserBusinessModal
+      <WorkScheduleModal
         isOpen={modalState.isOpen}
         onClose={closeModal}
-        userId={modalState.id}
+        workScheduleId={modalState.id}
         mode={modalState.mode}
       />
 
       {/* Modals User Detail */}
-      <UserBusinessDetailModal
-        userId={detailModalState.id}
+      <WorkScheduleDetailModal
+        workScheduleId={detailModalState.id}
         isOpen={detailModalState.isOpen}
         onClose={closeDetailModal}
       />

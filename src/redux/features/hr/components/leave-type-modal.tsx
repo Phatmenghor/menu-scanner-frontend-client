@@ -15,42 +15,41 @@ import { FormBody } from "@/components/shared/form-field/form-body";
 import { FormFooter } from "@/components/shared/form-field/form-footer";
 import { ModalMode } from "@/constants/status/status";
 import {
-  selectError,
-  selectIsFetchingDetail,
-  selectOperations,
-  selectSelectedWorkSchedule,
-} from "../store/selectors/work-schedule-selectors";
-import {
-  createWorkScheduleSchema,
-  updateWorkScheduleSchema,
-  WorkScheduleFormData,
-} from "../store/models/schema/work-schedule.schema";
-import {
-  createWorkScheduleService,
-  fetchWorkScheduleByIdService,
-  updateWorkScheduleService,
-} from "../store/thunks/work-schedule-thunks";
-import {
   clearError,
   clearSelectedWorkSchedule,
 } from "../store/slice/work-schedule-slice";
 import { FormHeader } from "@/components/shared/form-field/form-header";
 import {
-  CreateWorkScheduleRequest,
-  UpdateWorkScheduleRequest,
-} from "../store/models/request/work-schedule-request";
+  selectError,
+  selectIsFetchingDetail,
+  selectOperations,
+} from "../store/selectors/leave-type-selectors";
+import {
+  createLeaveTypeSchema,
+  LeaveTypeFormData,
+  updateLeaveTypeSchema,
+} from "../store/models/schema/leave-type.schema";
+import {
+  createLeaveTypeService,
+  fetchLeaveTypeByIdService,
+  updateLeaveTypeService,
+} from "../store/thunks/leave-type-thunks";
+import {
+  CreateLeaveTypeRequest,
+  UpdateLeaveTypeRequest,
+} from "../store/models/request/leave-type-request";
 
 type Props = {
   mode: ModalMode;
-  workScheduleId?: string;
+  leaveTypeId?: string;
   onClose: () => void;
   isOpen: boolean;
 };
 
-export default function WorkScheduleModal({
+export default function LeaveTypeModal({
   isOpen,
   onClose,
-  workScheduleId,
+  leaveTypeId,
   mode,
 }: Props) {
   const isCreate = mode === ModalMode.CREATE_MODE;
@@ -69,9 +68,9 @@ export default function WorkScheduleModal({
     setValue,
     watch,
     formState: { errors, isDirty },
-  } = useForm<WorkScheduleFormData>({
+  } = useForm<LeaveTypeFormData>({
     resolver: zodResolver(
-      isCreate ? createWorkScheduleSchema : updateWorkScheduleSchema
+      isCreate ? createLeaveTypeSchema : updateLeaveTypeSchema
     ) as any,
     defaultValues: {
       id: "",
@@ -81,17 +80,17 @@ export default function WorkScheduleModal({
     mode: "onChange",
   });
 
-  // Fetch user data for edit mode
+  // Fetch leave type data for edit mode
   useEffect(() => {
-    const fetchWorkScheduleData = async () => {
-      if (!workScheduleId || !isOpen || isCreate) return;
+    const fetchLeaveTypeData = async () => {
+      if (!leaveTypeId || !isOpen || isCreate) return;
 
       try {
         const resultAction = await dispatch(
-          fetchWorkScheduleByIdService(workScheduleId)
+          fetchLeaveTypeByIdService(leaveTypeId)
         );
 
-        if (fetchWorkScheduleByIdService.fulfilled.match(resultAction)) {
+        if (fetchLeaveTypeByIdService.fulfilled.match(resultAction)) {
           const data = resultAction.payload;
 
           reset({
@@ -101,12 +100,12 @@ export default function WorkScheduleModal({
           });
         }
       } catch (error) {
-        console.error("Error fetching work schedule data:", error);
+        console.error("Error fetching leave type data:", error);
       }
     };
 
-    fetchWorkScheduleData();
-  }, [workScheduleId, isOpen, isCreate, reset, dispatch]);
+    fetchLeaveTypeData();
+  }, [leaveTypeId, isOpen, isCreate, reset, dispatch]);
 
   // Reset form for create mode
   useEffect(() => {
@@ -125,40 +124,38 @@ export default function WorkScheduleModal({
     }
   }, [isOpen, dispatch]);
 
-  const onSubmit = async (data: WorkScheduleFormData) => {
+  const onSubmit = async (data: LeaveTypeFormData) => {
     try {
       if (isCreate) {
-        const payload: CreateWorkScheduleRequest = {
+        const payload: CreateLeaveTypeRequest = {
           enumName: data.enumName,
           description: data.description,
         };
 
-        const result = await dispatch(
-          createWorkScheduleService(payload)
-        ).unwrap();
+        const result = await dispatch(createLeaveTypeService(payload)).unwrap();
 
         showToast.success(
-          `Work schedule "${result.enumName}" created successfully`
+          `Leave type "${result.enumName}" created successfully`
         );
         handleClose();
       } else {
-        const payload: UpdateWorkScheduleRequest = {
+        const payload: UpdateLeaveTypeRequest = {
           enumName: data.enumName,
           description: data.description,
         };
 
         const result = await dispatch(
-          updateWorkScheduleService({ id: data.id, param: payload })
+          updateLeaveTypeService({ id: data.id, param: payload })
         ).unwrap();
 
         showToast.success(
-          `Work schedule "${result.enumName}" updated successfully`
+          `Leave type "${result.enumName}" updated successfully`
         );
         handleClose();
       }
     } catch (error: any) {
       showToast.error(
-        error || `Failed to ${isCreate ? "create" : "update"} user business`
+        error || `Failed to ${isCreate ? "create" : "update"} leave type`
       );
     }
   };
@@ -176,11 +173,11 @@ export default function WorkScheduleModal({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="w-[90%] max-w-4xl max-h-[90vh] p-0 flex flex-col">
         <FormHeader
-          title={isCreate ? "Create New Work Schedule" : "Edit Work Schedule"}
+          title={isCreate ? "Create New Leave Type" : "Edit Leave Type"}
           description={
             isCreate
-              ? "Fill out the form to create a new work schedule"
-              : "Update work schedule information below"
+              ? "Fill out the form to create a new leave type"
+              : "Update leave type information below"
           }
         />
 
@@ -205,8 +202,8 @@ export default function WorkScheduleModal({
               <TextField
                 control={control}
                 name="enumName"
-                label="Work Schedule Name"
-                placeholder="Enter Work Schedule Name"
+                label="Leave Type Name"
+                placeholder="Enter Leave Type Name"
                 required
                 disabled={isSubmitting}
                 error={errors.enumName}
@@ -227,16 +224,16 @@ export default function WorkScheduleModal({
               isSubmitting={isSubmitting}
               isDirty={isDirty}
               isCreate={isCreate}
-              createMessage="Creating work schedule..."
-              updateMessage="Updating work schedule..."
+              createMessage="Creating leave type..."
+              updateMessage="Updating leave type..."
             >
               <CancelButton onClick={handleClose} disabled={isSubmitting} />
               <SubmitButton
                 isSubmitting={isSubmitting}
                 isDirty={isDirty}
                 isCreate={isCreate}
-                createText="Create Work Schedule"
-                updateText="Update Work Schedule"
+                createText="Create Leave Type"
+                updateText="Update Leave Type"
                 submittingCreateText="Creating..."
                 submittingUpdateText="Updating..."
               />
