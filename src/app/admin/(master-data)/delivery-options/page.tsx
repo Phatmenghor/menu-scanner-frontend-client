@@ -19,6 +19,7 @@ import {
   setPageNo,
   setSearchFilter,
   setStatusFilter,
+  resetState,
 } from "@/redux/features/master-data/store/slice/delivery-options-slice";
 import {
   deleteDeliveryOptionsService,
@@ -27,8 +28,11 @@ import {
 import { deliveryOptionsTableColumns } from "@/redux/features/master-data/table/delivery-options-table";
 import DeliveryOptionsModal from "@/redux/features/master-data/components/delivery-options-modal";
 import { DeliveryOptionsDetailModal } from "@/redux/features/master-data/components/delivery-options-detail-modal";
+import { useAdminCleanup } from "@/hooks/use-cleanup-on-unmount";
 
 export default function DeliveryOptionsPage() {
+  // Clean up state when leaving admin area (performance optimization)
+  useAdminCleanup(resetState);
   const searchParams = useSearchParams();
 
   // Redux state

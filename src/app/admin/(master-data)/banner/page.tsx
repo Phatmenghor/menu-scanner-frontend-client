@@ -18,6 +18,7 @@ import {
   setPageNo,
   setSearchFilter,
   setStatusFilter,
+  resetState,
 } from "@/redux/features/master-data/store/slice/banner-slice";
 import {
   deleteBannerService,
@@ -27,8 +28,11 @@ import { bannerTableColumns } from "@/redux/features/master-data/table/banner-ta
 import { STATUS_FILTER } from "@/constants/status/filter-status";
 import BannerModal from "@/redux/features/master-data/components/banner-modal";
 import { BannerDetailModal } from "@/redux/features/master-data/components/banner-detail-modal";
+import { useAdminCleanup } from "@/hooks/use-cleanup-on-unmount";
 
 export default function BannerPage() {
+  // Clean up state when leaving admin area (performance optimization)
+  useAdminCleanup(resetState);
   const searchParams = useSearchParams();
 
   // Redux state

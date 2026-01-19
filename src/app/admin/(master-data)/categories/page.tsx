@@ -19,6 +19,7 @@ import {
   setPageNo,
   setSearchFilter,
   setStatusFilter,
+  resetState,
 } from "@/redux/features/master-data/store/slice/categories-slice";
 import {
   deleteCategoriesService,
@@ -27,8 +28,11 @@ import {
 import { categoriesTableColumns } from "@/redux/features/master-data/table/categories-table";
 import CategoriesModal from "@/redux/features/master-data/components/categories-modal";
 import { CategoriesDetailModal } from "@/redux/features/master-data/components/categories-detail-modal";
+import { useAdminCleanup } from "@/hooks/use-cleanup-on-unmount";
 
 export default function CategoriesPage() {
+  // Clean up state when leaving admin area (performance optimization)
+  useAdminCleanup(resetState);
   const searchParams = useSearchParams();
 
   // Redux state

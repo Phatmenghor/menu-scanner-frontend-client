@@ -24,12 +24,14 @@ import {
   setPageNo,
   setRoleFilter,
   setSearchFilter,
+  resetState,
 } from "@/redux/features/auth/store/slice/users-slice";
 import { UserResponseModel } from "@/redux/features/auth/store/models/response/users-response";
 import {
   ACCOUNT_STATUS_FILTER,
   USER_BUSINESS_ROLE_FILTER,
 } from "@/constants/status/filter-status";
+import { useAdminCleanup } from "@/hooks/use-cleanup-on-unmount";
 import {
   AccountStatus,
   ModalMode,
@@ -40,6 +42,9 @@ import UserBusinessModal from "@/redux/features/auth/components/user-business-mo
 import { UserBusinessDetailModal } from "@/redux/features/auth/components/user-business-detail-modal";
 
 export default function UserBusinessPage() {
+  // Clean up state when leaving admin area (performance optimization)
+  useAdminCleanup(resetState);
+
   const searchParams = useSearchParams();
 
   // Redux state
