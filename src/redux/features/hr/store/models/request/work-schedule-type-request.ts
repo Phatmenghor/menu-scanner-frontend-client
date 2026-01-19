@@ -1,20 +1,20 @@
 import { BaseGetAllRequest } from "@/utils/common/get-all-request";
 
-export interface CreateWorkScheduleRequest {
+export interface CreateWorkScheduleTypeRequest {
   enumName: string;
   description: string;
 }
 
-export interface UpdateWorkScheduleRequest {
+export interface UpdateWorkScheduleTypeRequest {
   enumName: string;
   description: string;
 }
 
-export interface AllWorkScheduleRequest extends BaseGetAllRequest {
+export interface AllWorkScheduleTypeRequest extends BaseGetAllRequest {
   businessId?: string;
 }
 
-export interface UpdateWorkScheduleParams {
+export interface UpdateWorkScheduleTypeParams {
   id: string;
-  param: UpdateWorkScheduleRequest;
+  param: UpdateWorkScheduleTypeRequest;
 }

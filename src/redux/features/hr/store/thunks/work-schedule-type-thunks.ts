@@ -1,15 +1,15 @@
 import { axiosClientWithAuth } from "@/utils/axios";
 import { createApiThunk } from "@/utils/axios/api-wrapper";
 import {
-  AllWorkScheduleRequest,
-  CreateWorkScheduleRequest,
-  UpdateWorkScheduleParams,
+  AllWorkScheduleTypeRequest,
+  CreateWorkScheduleTypeRequest,
+  UpdateWorkScheduleTypeParams,
 } from "../models/request/work-schedule-type-request";
 import { AppDefault } from "@/constants/app-resource/default/default";
 
 export const fetchAllWorkSchedulesTypeService = createApiThunk<
   any,
-  AllWorkScheduleRequest
+  AllWorkScheduleTypeRequest
 >("work-schedule-type/fetchAll", async (params) => {
   const response = await axiosClientWithAuth.post(
     "/api/v1/enums/work-schedule-type/all",
@@ -33,7 +33,7 @@ export const fetchWorkScheduleTypeByIdService = createApiThunk<any, string>(
 
 export const createWorkScheduleTypeService = createApiThunk<
   any,
-  CreateWorkScheduleRequest
+  CreateWorkScheduleTypeRequest
 >("work-schedule-type/create", async (workScheduleData) => {
   const response = await axiosClientWithAuth.post(
     "/api/v1/enums/work-schedule-type",
@@ -47,7 +47,7 @@ export const createWorkScheduleTypeService = createApiThunk<
 
 export const updateWorkScheduleTypeService = createApiThunk<
   any,
-  UpdateWorkScheduleParams
+  UpdateWorkScheduleTypeParams
 >("work-schedule-type/update", async ({ id, param }) => {
   const response = await axiosClientWithAuth.put(
     `/api/v1/enums/work-schedule-type/${id}`,

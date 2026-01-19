@@ -4,25 +4,25 @@ import { Edit, Eye, Trash } from "lucide-react";
 import { TableColumn } from "@/components/shared/common/data-table";
 import { ActionButton } from "@/components/shared/button/action-button";
 import {
-  AllWorkScheduleResponseModel,
-  WorkScheduleResponseModel,
+  AllWorkScheduleTypeResponseModel,
+  WorkScheduleTypeResponseModel,
 } from "../store/models/response/work-schedule-type-response";
 
 interface WorkScheduleTableHandlers {
-  handleEditItem: (workSchedule: WorkScheduleResponseModel) => void;
-  handleViewDetailItem: (workSchedule: WorkScheduleResponseModel) => void;
-  handleDeleteItem: (workSchedule: WorkScheduleResponseModel) => void;
+  handleEditItem: (workSchedule: WorkScheduleTypeResponseModel) => void;
+  handleViewDetailItem: (workSchedule: WorkScheduleTypeResponseModel) => void;
+  handleDeleteItem: (workSchedule: WorkScheduleTypeResponseModel) => void;
 }
 
 interface WorkScheduleTableOptions {
-  data: AllWorkScheduleResponseModel | null;
+  data: AllWorkScheduleTypeResponseModel | null;
   handlers: WorkScheduleTableHandlers;
 }
 
 export const workScheduleTableColumns = ({
   data,
   handlers,
-}: WorkScheduleTableOptions): TableColumn<WorkScheduleResponseModel>[] => {
+}: WorkScheduleTableOptions): TableColumn<WorkScheduleTypeResponseModel>[] => {
   const { handleEditItem, handleViewDetailItem, handleDeleteItem } = handlers;
 
   return [

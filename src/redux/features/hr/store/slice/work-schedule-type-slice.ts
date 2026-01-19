@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { WorkScheduleManagementState } from "../models/type/work-schedule-types";
+import { WorkScheduleTypeManagementState } from "../models/type/work-schedule-type";
 import {
   createWorkScheduleTypeService,
   deleteWorkScheduleTypeService,
@@ -8,7 +8,7 @@ import {
   updateWorkScheduleTypeService,
 } from "../thunks/work-schedule-type-thunks";
 
-const initialState: WorkScheduleManagementState = {
+const initialState: WorkScheduleTypeManagementState = {
   data: null,
   selectedWorkSchedule: null,
   isLoading: true,
@@ -26,9 +26,9 @@ const initialState: WorkScheduleManagementState = {
 };
 
 /**
- * Work Schedule slice
+ * Work Schedule Type slice
  */
-const workScheduleSlice = createSlice({
+const workScheduleTypeSlice = createSlice({
   name: "work-schedule-type",
   initialState,
   reducers: {
@@ -174,6 +174,6 @@ export const {
   clearSelectedWorkSchedule,
   resetFilters,
   resetState,
-} = workScheduleSlice.actions;
+} = workScheduleTypeSlice.actions;
 
-export default workScheduleSlice.reducer;
+export default workScheduleTypeSlice.reducer;
