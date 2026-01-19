@@ -1,28 +1,28 @@
 import { indexDisplay } from "@/utils/common/common";
-import { dateTimeFormat } from "@/utils/date/date-time-format";
+import { dateTimeFormat, formatTime } from "@/utils/date/date-time-format";
 import { Edit, Eye, Trash } from "lucide-react";
 import { TableColumn } from "@/components/shared/common/data-table";
 import { ActionButton } from "@/components/shared/button/action-button";
 import {
-  AllWorkScheduleTypeResponseModel,
-  WorkScheduleTypeResponseModel,
-} from "../store/models/response/work-schedule-type-response";
+  AllWorkScheduleResponseModel,
+  WorkScheduleResponseModel,
+} from "../store/models/response/work-schedule-response";
 
 interface WorkScheduleTableHandlers {
-  handleEditItem: (workSchedule: WorkScheduleTypeResponseModel) => void;
-  handleViewDetailItem: (workSchedule: WorkScheduleTypeResponseModel) => void;
-  handleDeleteItem: (workSchedule: WorkScheduleTypeResponseModel) => void;
+  handleEditItem: (workSchedule: WorkScheduleResponseModel) => void;
+  handleViewDetailItem: (workSchedule: WorkScheduleResponseModel) => void;
+  handleDeleteItem: (workSchedule: WorkScheduleResponseModel) => void;
 }
 
 interface WorkScheduleTableOptions {
-  data: AllWorkScheduleTypeResponseModel | null;
+  data: AllWorkScheduleResponseModel | null;
   handlers: WorkScheduleTableHandlers;
 }
 
 export const workScheduleTableColumns = ({
   data,
   handlers,
-}: WorkScheduleTableOptions): TableColumn<WorkScheduleTypeResponseModel>[] => {
+}: WorkScheduleTableOptions): TableColumn<WorkScheduleResponseModel>[] => {
   const { handleEditItem, handleViewDetailItem, handleDeleteItem } = handlers;
 
   return [
@@ -39,29 +39,139 @@ export const workScheduleTableColumns = ({
     },
 
     {
-      key: "enumName",
+      key: "fullName",
+      label: "Full Name",
+      minWidth: "10px",
+      maxWidth: "400px",
+      truncate: true,
+      render: (workSchedule) => (
+        <span className="text-xs text-muted-foreground">
+          {workSchedule?.userInfo.fullName || "---"}
+        </span>
+      ),
+    },
+    {
+      key: "name",
       label: "Work Schedule Name",
       minWidth: "10px",
       maxWidth: "400px",
       truncate: true,
       render: (workSchedule) => (
         <span className="text-xs text-muted-foreground">
-          {workSchedule?.enumName || "---"}
+          {workSchedule?.name || "---"}
         </span>
       ),
     },
     {
-      key: "description",
-      label: "Description",
+      key: "phoneNumber",
+      label: "Phone Number",
       minWidth: "10px",
       maxWidth: "400px",
       truncate: true,
       render: (workSchedule) => (
         <span className="text-xs text-muted-foreground">
-          {workSchedule?.description || "---"}
+          {workSchedule?.userInfo.phoneNumber || "---"}
         </span>
       ),
     },
+
+    {
+      key: "name",
+      label: "Work Schedule Name",
+      minWidth: "10px",
+      maxWidth: "400px",
+      truncate: true,
+      render: (workSchedule) => (
+        <span className="text-xs text-muted-foreground">
+          {workSchedule?.name || "---"}
+        </span>
+      ),
+    },
+
+    {
+      key: "scheduleTypeEnumName",
+      label: "Schedule Type",
+      minWidth: "10px",
+      maxWidth: "400px",
+      truncate: true,
+      render: (workSchedule) => (
+        <span className="text-xs text-muted-foreground">
+          {workSchedule?.scheduleTypeEnumName || "---"}
+        </span>
+      ),
+    },
+
+    {
+      key: "workDays",
+      label: "Working Days",
+      minWidth: "10px",
+      maxWidth: "400px",
+      truncate: true,
+      render: (workSchedule) => (
+        <>
+          {workSchedule?.workDays?.length > 0
+            ? workSchedule?.workDays.map((day: string) => (
+                <span key={day} className="text-xs text-muted-foreground">
+                  {day}
+                </span>
+              ))
+            : "---"}
+        </>
+      ),
+    },
+
+    {
+      key: "startTime",
+      label: "Start Time",
+      minWidth: "10px",
+      maxWidth: "400px",
+      truncate: true,
+      render: (workSchedule) => (
+        <span className="text-xs text-muted-foreground">
+          {formatTime(workSchedule?.startTime) || "---"}
+        </span>
+      ),
+    },
+
+    {
+      key: "endTime",
+      label: "End Time",
+      minWidth: "10px",
+      maxWidth: "400px",
+      truncate: true,
+      render: (workSchedule) => (
+        <span className="text-xs text-muted-foreground">
+          {formatTime(workSchedule?.endTime) || "---"}
+        </span>
+      ),
+    },
+
+    {
+      key: "breakStartTime",
+      label: "Break Start Time",
+      minWidth: "10px",
+      maxWidth: "400px",
+      truncate: true,
+      render: (workSchedule) => (
+        <span className="text-xs text-muted-foreground">
+          {formatTime(workSchedule?.breakStartTime) || "---"}
+        </span>
+      ),
+    },
+
+    {
+      key: "breakEndTime",
+      label: "Break End Time",
+      minWidth: "10px",
+      maxWidth: "400px",
+      truncate: true,
+      render: (workSchedule) => (
+        <span className="text-xs text-muted-foreground">
+          {formatTime(workSchedule?.breakEndTime) || "---"}
+        </span>
+      ),
+    },
+
     {
       key: "createdAt",
       label: "Created At",

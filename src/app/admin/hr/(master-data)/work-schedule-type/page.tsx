@@ -22,9 +22,9 @@ import {
   deleteWorkScheduleTypeService,
   fetchAllWorkSchedulesTypeService,
 } from "@/redux/features/hr/store/thunks/work-schedule-type-thunks";
-import { workScheduleTableColumns } from "@/redux/features/hr/table/work-schedule-table";
-import WorkScheduleModal from "@/redux/features/hr/components/work-schedule-modal";
-import { WorkScheduleDetailModal } from "@/redux/features/hr/components/work-schedule-detail-modal";
+import { workScheduleTypeTableColumns } from "@/redux/features/hr/table/work-schedule-type-table";
+import WorkScheduleTypeModal from "@/redux/features/hr/components/work-schedule-type-modal";
+import { WorkScheduleTypeDetailModal } from "@/redux/features/hr/components/work-schedule-type-detail-modal";
 import { useAdminCleanup } from "@/hooks/use-cleanup-on-unmount";
 
 export default function WorkScheduleTypePage() {
@@ -83,7 +83,7 @@ export default function WorkScheduleTypePage() {
       fetchAllWorkSchedulesTypeService({
         search: debouncedSearch,
         pageNo: filters.pageNo,
-      })
+      }),
     );
   }, [dispatch, debouncedSearch, filters.pageNo]);
 
@@ -124,16 +124,16 @@ export default function WorkScheduleTypePage() {
       handleViewDetailItem,
       handleDeleteItem,
     }),
-    []
+    [],
   );
 
   const columns = useMemo(
     () =>
-      workScheduleTableColumns({
+      workScheduleTypeTableColumns({
         data: workScheduleTypeData,
         handlers: tableHandlers,
       }),
-    [workScheduleTypeState, tableHandlers]
+    [workScheduleTypeState, tableHandlers],
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -150,13 +150,13 @@ export default function WorkScheduleTypePage() {
 
     try {
       await dispatch(
-        deleteWorkScheduleTypeService(deleteState.workSchedule.id)
+        deleteWorkScheduleTypeService(deleteState.workSchedule.id),
       ).unwrap();
 
       showToast.success(
         `Work Schedule "${
           deleteState.workSchedule.enumName ?? ""
-        }" deleted successfully`
+        }" deleted successfully`,
       );
 
       closeDeleteModal();
@@ -226,7 +226,7 @@ export default function WorkScheduleTypePage() {
       </div>
 
       {/* Modals Add/Edit */}
-      <WorkScheduleModal
+      <WorkScheduleTypeModal
         isOpen={modalState.isOpen}
         onClose={closeModal}
         workScheduleId={modalState.id}
@@ -234,7 +234,7 @@ export default function WorkScheduleTypePage() {
       />
 
       {/* Modals User Detail */}
-      <WorkScheduleDetailModal
+      <WorkScheduleTypeDetailModal
         workScheduleId={detailModalState.id}
         isOpen={detailModalState.isOpen}
         onClose={closeDetailModal}
