@@ -4,10 +4,10 @@ import {
   AllWorkScheduleRequest,
   CreateWorkScheduleRequest,
   UpdateWorkScheduleParams,
-} from "../models/request/work-schedule-request";
+} from "../models/request/work-schedule-type-request";
 import { AppDefault } from "@/constants/app-resource/default/default";
 
-export const fetchAllWorkSchedulesService = createApiThunk<
+export const fetchAllWorkSchedulesTypeService = createApiThunk<
   any,
   AllWorkScheduleRequest
 >("work-schedule-type/fetchAll", async (params) => {
@@ -21,7 +21,7 @@ export const fetchAllWorkSchedulesService = createApiThunk<
   return response.data.data;
 });
 
-export const fetchWorkScheduleByIdService = createApiThunk<any, string>(
+export const fetchWorkScheduleTypeByIdService = createApiThunk<any, string>(
   "work-schedule-type/fetchById",
   async (workScheduleId) => {
     const response = await axiosClientWithAuth.get(
@@ -31,7 +31,7 @@ export const fetchWorkScheduleByIdService = createApiThunk<any, string>(
   }
 );
 
-export const createWorkScheduleService = createApiThunk<
+export const createWorkScheduleTypeService = createApiThunk<
   any,
   CreateWorkScheduleRequest
 >("work-schedule-type/create", async (workScheduleData) => {
@@ -45,7 +45,7 @@ export const createWorkScheduleService = createApiThunk<
   return response.data.data;
 });
 
-export const updateWorkScheduleService = createApiThunk<
+export const updateWorkScheduleTypeService = createApiThunk<
   any,
   UpdateWorkScheduleParams
 >("work-schedule-type/update", async ({ id, param }) => {
@@ -56,7 +56,7 @@ export const updateWorkScheduleService = createApiThunk<
   return response.data.data;
 });
 
-export const deleteWorkScheduleService = createApiThunk<any, string>(
+export const deleteWorkScheduleTypeService = createApiThunk<any, string>(
   "work-schedule-type/delete",
   async (workScheduleId) => {
     const response = await axiosClientWithAuth.delete(

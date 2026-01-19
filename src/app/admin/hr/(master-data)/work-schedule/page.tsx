@@ -27,14 +27,14 @@ import WorkScheduleModal from "@/redux/features/hr/components/work-schedule-moda
 import { WorkScheduleDetailModal } from "@/redux/features/hr/components/work-schedule-detail-modal";
 import { useAdminCleanup } from "@/hooks/use-cleanup-on-unmount";
 
-export default function WorkScheduleTypePage() {
+export default function WorkSchedulePage() {
   useAdminCleanup(resetState);
   const searchParams = useSearchParams();
 
   // Redux state
   const {
-    workScheduleTypeState,
-    workScheduleTypeData,
+    workScheduleState,
+    workScheduleData,
     workScheduleTypeContent: workScheduleContent,
     isLoading,
     filters,
@@ -130,10 +130,10 @@ export default function WorkScheduleTypePage() {
   const columns = useMemo(
     () =>
       workScheduleTableColumns({
-        data: workScheduleTypeData,
+        data: workScheduleData,
         handlers: tableHandlers,
       }),
-    [workScheduleTypeState, tableHandlers]
+    [workScheduleState, tableHandlers]
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {

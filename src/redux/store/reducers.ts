@@ -12,7 +12,7 @@ import categoriesReducer from "../features/master-data/store/slice/categories-sl
 import exchangeRateReducer from "../features/master-data/store/slice/exchange-rate-slice";
 import deliveryOptionsReducer from "../features/master-data/store/slice/delivery-options-slice";
 
-import workScheduleReducer from "../features/hr/store/slice/work-schedule-slice";
+import workScheduleTypeReducer from "../features/hr/store/slice/work-schedule-type-slice";
 import leaveTypeReducer from "../features/hr/store/slice/leave-type-slice";
 
 import productReducer from "../features/business/store/slice/product-slice";
@@ -42,7 +42,7 @@ export const reducers = {
   products: productReducer,
 
   // HR
-  workSchedule: workScheduleReducer,
+  workScheduleType: workScheduleTypeReducer,
   leaveType: leaveTypeReducer,
 
   // Main/Public

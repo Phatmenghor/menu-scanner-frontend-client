@@ -1,35 +1,38 @@
 import { RootState } from "@/redux/store";
 import { createSelector } from "@reduxjs/toolkit";
 
-export const selectWorkScheduleState = (state: RootState) => state.workSchedule;
+export const selectWorkScheduleTypeState = (state: RootState) =>
+  state.workScheduleType;
 
-export const selectWorkSchedule = (state: RootState) => state.workSchedule.data;
+export const selectWorkScheduleType = (state: RootState) =>
+  state.workScheduleType.data;
 
-export const selectSelectedWorkSchedule = (state: RootState) =>
-  state.workSchedule.selectedWorkSchedule;
+export const selectSelectedWorkScheduleType = (state: RootState) =>
+  state.workScheduleType.selectedWorkSchedule;
 
-export const selectWorkScheduleContent = createSelector(
-  [selectWorkSchedule],
+export const selectWorkScheduleTypeContent = createSelector(
+  [selectWorkScheduleType],
   (data) => data?.content || []
 );
 
 export const selectIsLoading = (state: RootState) =>
-  state.workSchedule.isLoading;
+  state.workScheduleType.isLoading;
 
 export const selectIsFetchingDetail = (state: RootState) =>
-  state.workSchedule.operations.isFetchingDetail;
+  state.workScheduleType.operations.isFetchingDetail;
 
-export const selectError = (state: RootState) => state.workSchedule.error;
+export const selectError = (state: RootState) => state.workScheduleType.error;
 
-export const selectFilters = (state: RootState) => state.workSchedule.filters;
+export const selectFilters = (state: RootState) =>
+  state.workScheduleType.filters;
 export const selectOperations = (state: RootState) =>
-  state.workSchedule.operations;
+  state.workScheduleType.operations;
 
 /**
  * Select pagination metadata
  */
 export const selectPagination = createSelector(
-  [selectWorkSchedule],
+  [selectWorkScheduleType],
   (data) => ({
     currentPage: data?.pageNo || 1,
     totalPages: data?.totalPages || 1,

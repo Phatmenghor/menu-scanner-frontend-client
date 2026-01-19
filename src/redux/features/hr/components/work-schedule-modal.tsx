@@ -18,27 +18,26 @@ import {
   selectError,
   selectIsFetchingDetail,
   selectOperations,
-  selectSelectedWorkSchedule,
-} from "../store/selectors/work-schedule-selectors";
+} from "../store/selectors/work-schedule-type-selectors";
 import {
   createWorkScheduleSchema,
   updateWorkScheduleSchema,
   WorkScheduleFormData,
-} from "../store/models/schema/work-schedule.schema";
+} from "../store/models/schema/work-schedule-type.schema";
 import {
-  createWorkScheduleService,
-  fetchWorkScheduleByIdService,
-  updateWorkScheduleService,
-} from "../store/thunks/work-schedule-thunks";
+  createWorkScheduleTypeService,
+  fetchWorkScheduleTypeByIdService,
+  updateWorkScheduleTypeService,
+} from "../store/thunks/work-schedule-type-thunks";
 import {
   clearError,
   clearSelectedWorkSchedule,
-} from "../store/slice/work-schedule-slice";
+} from "../store/slice/work-schedule-type-slice";
 import { FormHeader } from "@/components/shared/form-field/form-header";
 import {
   CreateWorkScheduleRequest,
   UpdateWorkScheduleRequest,
-} from "../store/models/request/work-schedule-request";
+} from "../store/models/request/work-schedule-type-request";
 
 type Props = {
   mode: ModalMode;
@@ -88,10 +87,10 @@ export default function WorkScheduleModal({
 
       try {
         const resultAction = await dispatch(
-          fetchWorkScheduleByIdService(workScheduleId)
+          fetchWorkScheduleTypeByIdService(workScheduleId)
         );
 
-        if (fetchWorkScheduleByIdService.fulfilled.match(resultAction)) {
+        if (fetchWorkScheduleTypeByIdService.fulfilled.match(resultAction)) {
           const data = resultAction.payload;
 
           reset({
@@ -134,7 +133,7 @@ export default function WorkScheduleModal({
         };
 
         const result = await dispatch(
-          createWorkScheduleService(payload)
+          createWorkScheduleTypeService(payload)
         ).unwrap();
 
         showToast.success(
@@ -148,7 +147,7 @@ export default function WorkScheduleModal({
         };
 
         const result = await dispatch(
-          updateWorkScheduleService({ id: data.id, param: payload })
+          updateWorkScheduleTypeService({ id: data.id, param: payload })
         ).unwrap();
 
         showToast.success(

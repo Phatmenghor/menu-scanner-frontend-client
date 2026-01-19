@@ -17,7 +17,7 @@ import { ModalMode } from "@/constants/status/status";
 import {
   clearError,
   clearSelectedWorkSchedule,
-} from "../store/slice/work-schedule-slice";
+} from "../store/slice/work-schedule-type-slice";
 import { FormHeader } from "@/components/shared/form-field/form-header";
 import {
   selectError,

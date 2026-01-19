@@ -10,10 +10,10 @@ import {
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import {
   selectIsFetchingDetail,
-  selectSelectedWorkSchedule,
-} from "../store/selectors/work-schedule-selectors";
-import { fetchWorkScheduleByIdService } from "../store/thunks/work-schedule-thunks";
-import { clearSelectedWorkSchedule } from "../store/slice/work-schedule-slice";
+  selectSelectedWorkScheduleType,
+} from "../store/selectors/work-schedule-type-selectors";
+import { fetchWorkScheduleTypeByIdService } from "../store/thunks/work-schedule-type-thunks";
+import { clearSelectedWorkSchedule } from "../store/slice/work-schedule-type-slice";
 
 interface WorkScheduleDetailModalProps {
   workScheduleId?: string;
@@ -28,13 +28,15 @@ export function WorkScheduleDetailModal({
 }: WorkScheduleDetailModalProps) {
   const dispatch = useAppDispatch();
   const isFetchingDetail = useAppSelector(selectIsFetchingDetail);
-  const workScheduleData = useAppSelector(selectSelectedWorkSchedule);
+  const workScheduleData = useAppSelector(selectSelectedWorkScheduleType);
 
   useEffect(() => {
     const fetchUserData = async () => {
       if (!workScheduleId || !isOpen) return;
       try {
-        await dispatch(fetchWorkScheduleByIdService(workScheduleId)).unwrap();
+        await dispatch(
+          fetchWorkScheduleTypeByIdService(workScheduleId)
+        ).unwrap();
       } catch (error: any) {
         console.error("Error fetching work schedule data:", error);
       }
