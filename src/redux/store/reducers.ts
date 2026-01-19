@@ -13,6 +13,7 @@ import exchangeRateReducer from "../features/master-data/store/slice/exchange-ra
 import deliveryOptionsReducer from "../features/master-data/store/slice/delivery-options-slice";
 
 import workScheduleReducer from "../features/hr/store/slice/work-schedule-slice";
+import leaveTypeReducer from "../features/hr/store/slice/leave-type-slice";
 
 import productReducer from "../features/business/store/slice/product-slice";
 import homeReducer from "../features/main/store/slice/home-slice";
@@ -42,6 +43,7 @@ export const reducers = {
 
   // HR
   workSchedule: workScheduleReducer,
+  leaveType: leaveTypeReducer,
 
   // Main/Public
   home: homeReducer,
