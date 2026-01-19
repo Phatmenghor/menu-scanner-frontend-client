@@ -24,11 +24,17 @@ import {
   deleteExchangeRateService,
   fetchAllExchangeRateService,
 } from "@/redux/features/master-data/store/thunks/exchange-rate-thunks";
-import { setExchangeRateStatusFilter } from "@/redux/features/master-data/store/slice/exchange-rate-slice";
+import {
+  setExchangeRateStatusFilter,
+  resetState
+} from "@/redux/features/master-data/store/slice/exchange-rate-slice";
 import { exchangeRateTableColumns } from "@/redux/features/master-data/table/exchange-rate-table";
 import { EXCHAGE_RATE_FILTER } from "@/constants/status/filter-status";
+import { useAdminCleanup } from "@/hooks/use-cleanup-on-unmount";
 
 export default function ExchangeRatePage() {
+  // Clean up state when leaving admin area (performance optimization)
+  useAdminCleanup(resetState);
   const searchParams = useSearchParams();
 
   // Redux state

@@ -19,6 +19,7 @@ import {
   setPageNo,
   setSearchFilter,
   setStatusFilter,
+  resetState,
 } from "@/redux/features/master-data/store/slice/brand-slice";
 import {
   deleteBrandService,
@@ -27,8 +28,11 @@ import {
 import { brandTableColumns } from "@/redux/features/master-data/table/brand-table";
 import BrandModal from "@/redux/features/master-data/components/brand-modal";
 import { BrandDetailModal } from "@/redux/features/master-data/components/brand-detail-modal";
+import { useAdminCleanup } from "@/hooks/use-cleanup-on-unmount";
 
 export default function BrandPage() {
+  // Clean up state when leaving admin area (performance optimization)
+  useAdminCleanup(resetState);
   const searchParams = useSearchParams();
 
   // Redux state

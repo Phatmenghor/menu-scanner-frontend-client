@@ -21,6 +21,7 @@ import {
   selectProductStatus,
   setPageNo,
   setSearchFilter,
+  resetState,
 } from "@/redux/features/business/store/slice/product-slice";
 import { productTableColumns } from "@/redux/features/business/table/product-table";
 import ProductModal from "@/redux/features/business/components/product-modal";
@@ -31,8 +32,11 @@ import { ComboboxSelectBrand } from "@/components/shared/combobox/combobox_selec
 import { ComboboxSelectCategories } from "@/components/shared/combobox/combobox_select_categories";
 import { CategoriesResponseModel } from "@/redux/features/master-data/store/models/response/categories-response";
 import { BrandResponseModel } from "@/redux/features/master-data/store/models/response/brand-response";
+import { useAdminCleanup } from "@/hooks/use-cleanup-on-unmount";
 
 export default function ProdyuctPage() {
+  // Clean up state when leaving admin area (performance optimization)
+  useAdminCleanup(resetState);
   const searchParams = useSearchParams();
 
   // Redux state
