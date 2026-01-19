@@ -1,7 +1,7 @@
 import {
   AllWorkScheduleResponseModel,
   WorkScheduleResponseModel,
-} from "../response/work-schedule-response";
+} from "../response/work-schedule-type-response";
 
 export interface WorkScheduleFilters {
   search: string;

@@ -1,12 +1,12 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { WorkScheduleManagementState } from "../models/type/work-schedule-types";
 import {
-  createWorkScheduleService,
-  deleteWorkScheduleService,
-  fetchAllWorkSchedulesService,
-  fetchWorkScheduleByIdService,
-  updateWorkScheduleService,
-} from "../thunks/work-schedule-thunks";
+  createWorkScheduleTypeService,
+  deleteWorkScheduleTypeService,
+  fetchAllWorkSchedulesTypeService,
+  fetchWorkScheduleTypeByIdService,
+  updateWorkScheduleTypeService,
+} from "../thunks/work-schedule-type-thunks";
 
 const initialState: WorkScheduleManagementState = {
   data: null,
@@ -62,26 +62,26 @@ const workScheduleSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
-      .addCase(fetchAllWorkSchedulesService.pending, (state) => {
+      .addCase(fetchAllWorkSchedulesTypeService.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(fetchAllWorkSchedulesService.fulfilled, (state, action) => {
+      .addCase(fetchAllWorkSchedulesTypeService.fulfilled, (state, action) => {
         state.isLoading = false;
         state.data = action.payload;
       })
-      .addCase(fetchAllWorkSchedulesService.rejected, (state, action) => {
+      .addCase(fetchAllWorkSchedulesTypeService.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });
 
     builder
-      .addCase(fetchWorkScheduleByIdService.pending, (state) => {
+      .addCase(fetchWorkScheduleTypeByIdService.pending, (state) => {
         state.operations.isFetchingDetail = true;
         state.error = null;
         state.selectedWorkSchedule = null;
       })
-      .addCase(fetchWorkScheduleByIdService.fulfilled, (state, action) => {
+      .addCase(fetchWorkScheduleTypeByIdService.fulfilled, (state, action) => {
         state.operations.isFetchingDetail = false;
         state.selectedWorkSchedule = action.payload;
         // Also update in list if exists (for consistency)
@@ -94,17 +94,17 @@ const workScheduleSlice = createSlice({
           }
         }
       })
-      .addCase(fetchWorkScheduleByIdService.rejected, (state, action) => {
+      .addCase(fetchWorkScheduleTypeByIdService.rejected, (state, action) => {
         state.operations.isFetchingDetail = false;
         state.error = action.payload as string;
       });
 
     builder
-      .addCase(createWorkScheduleService.pending, (state) => {
+      .addCase(createWorkScheduleTypeService.pending, (state) => {
         state.operations.isCreating = true;
         state.error = null;
       })
-      .addCase(createWorkScheduleService.fulfilled, (state, action) => {
+      .addCase(createWorkScheduleTypeService.fulfilled, (state, action) => {
         state.operations.isCreating = false;
         if (state.data) {
           state.data.content = [action.payload, ...state.data.content];
@@ -114,17 +114,17 @@ const workScheduleSlice = createSlice({
           );
         }
       })
-      .addCase(createWorkScheduleService.rejected, (state, action) => {
+      .addCase(createWorkScheduleTypeService.rejected, (state, action) => {
         state.operations.isCreating = false;
         state.error = action.payload as string;
       });
 
     builder
-      .addCase(updateWorkScheduleService.pending, (state) => {
+      .addCase(updateWorkScheduleTypeService.pending, (state) => {
         state.operations.isUpdating = true;
         state.error = null;
       })
-      .addCase(updateWorkScheduleService.fulfilled, (state, action) => {
+      .addCase(updateWorkScheduleTypeService.fulfilled, (state, action) => {
         state.operations.isUpdating = false;
         state.selectedWorkSchedule = action.payload;
 
@@ -135,17 +135,17 @@ const workScheduleSlice = createSlice({
           );
         }
       })
-      .addCase(updateWorkScheduleService.rejected, (state, action) => {
+      .addCase(updateWorkScheduleTypeService.rejected, (state, action) => {
         state.operations.isUpdating = false;
         state.error = action.payload as string;
       });
 
     builder
-      .addCase(deleteWorkScheduleService.pending, (state) => {
+      .addCase(deleteWorkScheduleTypeService.pending, (state) => {
         state.operations.isDeleting = true;
         state.error = null;
       })
-      .addCase(deleteWorkScheduleService.fulfilled, (state, action) => {
+      .addCase(deleteWorkScheduleTypeService.fulfilled, (state, action) => {
         state.operations.isDeleting = false;
         if (state.data) {
           state.data.content = state.data.content.filter(
@@ -160,7 +160,7 @@ const workScheduleSlice = createSlice({
           state.data.hasPrevious = state.data.pageNo > 1;
         }
       })
-      .addCase(deleteWorkScheduleService.rejected, (state, action) => {
+      .addCase(deleteWorkScheduleTypeService.rejected, (state, action) => {
         state.operations.isDeleting = false;
         state.error = action.payload as string;
       });

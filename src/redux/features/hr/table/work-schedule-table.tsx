@@ -6,7 +6,7 @@ import { ActionButton } from "@/components/shared/button/action-button";
 import {
   AllWorkScheduleResponseModel,
   WorkScheduleResponseModel,
-} from "../store/models/response/work-schedule-response";
+} from "../store/models/response/work-schedule-type-response";
 
 interface WorkScheduleTableHandlers {
   handleEditItem: (workSchedule: WorkScheduleResponseModel) => void;

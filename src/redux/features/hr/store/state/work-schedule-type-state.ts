@@ -5,18 +5,18 @@ import {
   selectIsLoading,
   selectOperations,
   selectPagination,
-  selectWorkSchedule,
-  selectWorkScheduleContent,
-  selectWorkScheduleState,
-} from "../selectors/work-schedule-selectors";
+  selectWorkScheduleType,
+  selectWorkScheduleTypeContent,
+  selectWorkScheduleTypeState,
+} from "../selectors/work-schedule-type-selectors";
 
-export const useWorkScheduleState = () => {
+export const useWorkScheduleTypeState = () => {
   const dispatch = useAppDispatch();
 
   // Redux selectors
-  const workScheduleState = useAppSelector(selectWorkScheduleState);
-  const workScheduleData = useAppSelector(selectWorkSchedule);
-  const workScheduleContent = useAppSelector(selectWorkScheduleContent);
+  const workScheduleTypeState = useAppSelector(selectWorkScheduleTypeState);
+  const workScheduleTypeData = useAppSelector(selectWorkScheduleType);
+  const workScheduleTypeContent = useAppSelector(selectWorkScheduleTypeContent);
   const filters = useAppSelector(selectFilters);
   const operations = useAppSelector(selectOperations);
   const pagination = useAppSelector(selectPagination);
@@ -24,9 +24,9 @@ export const useWorkScheduleState = () => {
   const error = useAppSelector(selectError);
 
   return {
-    workScheduleState,
-    workScheduleData,
-    workScheduleContent,
+    workScheduleTypeState,
+    workScheduleTypeData,
+    workScheduleTypeContent,
     isLoading,
     error,
     filters,
