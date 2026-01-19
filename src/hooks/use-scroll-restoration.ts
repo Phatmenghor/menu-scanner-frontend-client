@@ -5,7 +5,10 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useScrollState } from "@/redux/features/main/store/state/scroll-state";
+import {
+  useScrollState,
+  useScrollPosition,
+} from "@/redux/features/main/store/state/scroll-state";
 
 export interface UseScrollRestorationOptions {
   /**
@@ -60,8 +63,7 @@ export function useScrollRestoration(options: UseScrollRestorationOptions = {}) 
 
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { saveScrollPosition, getScrollPosition, setCurrentRoute } =
-    useScrollState();
+  const { saveScrollPosition, setCurrentRoute } = useScrollState();
 
   const hasMounted = useRef(false);
   const timeoutRef = useRef<NodeJS.Timeout>();
@@ -74,6 +76,9 @@ export function useScrollRestoration(options: UseScrollRestorationOptions = {}) 
     ? `${pathname}?${searchParams.toString()}`
     : pathname;
 
+  // Get scroll position for this route
+  const savedScrollPosition = useScrollPosition(routeKey);
+
   // Restore scroll on mount
   useEffect(() => {
     if (!enabled || !restoreOnMount || hasMounted.current) return;
@@ -81,12 +86,10 @@ export function useScrollRestoration(options: UseScrollRestorationOptions = {}) 
     hasMounted.current = true;
     setCurrentRoute(routeKey);
 
-    const savedPosition = getScrollPosition(routeKey);
-
-    if (savedPosition > 0) {
+    if (savedScrollPosition > 0) {
       restoreTimeoutRef.current = setTimeout(() => {
         window.scrollTo({
-          top: savedPosition,
+          top: savedScrollPosition,
           behavior: "auto",
         });
       }, restoreDelay);
@@ -97,7 +100,7 @@ export function useScrollRestoration(options: UseScrollRestorationOptions = {}) 
         clearTimeout(restoreTimeoutRef.current);
       }
     };
-  }, []);
+  }, [enabled, restoreOnMount, routeKey, savedScrollPosition, restoreDelay, setCurrentRoute]);
 
   // Save scroll position on scroll
   useEffect(() => {
@@ -126,7 +129,7 @@ export function useScrollRestoration(options: UseScrollRestorationOptions = {}) 
 
   return {
     routeKey,
-    scrollPosition: getScrollPosition(routeKey),
+    scrollPosition: savedScrollPosition,
   };
 }
 
