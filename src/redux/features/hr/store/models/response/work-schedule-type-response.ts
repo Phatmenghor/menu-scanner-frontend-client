@@ -1,10 +1,10 @@
 import { BasePagination } from "@/utils/common/pagination";
 
-export interface AllWorkScheduleResponseModel extends BasePagination {
-  content: WorkScheduleResponseModel[];
+export interface AllWorkScheduleTypeResponseModel extends BasePagination {
+  content: WorkScheduleTypeResponseModel[];
 }
 
-export interface WorkScheduleResponseModel {
+export interface WorkScheduleTypeResponseModel {
   id: string;
   createdAt: string;
   updatedAt: string;

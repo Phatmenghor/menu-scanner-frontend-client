@@ -12,7 +12,7 @@ import { showToast } from "@/components/shared/common/show-toast";
 import { usePagination } from "@/redux/store/use-pagination";
 import { useWorkScheduleTypeState } from "@/redux/features/hr/store/state/work-schedule-type-state";
 import { ModalMode } from "@/constants/status/status";
-import { WorkScheduleResponseModel } from "@/redux/features/hr/store/models/response/work-schedule-type-response";
+import { WorkScheduleTypeResponseModel } from "@/redux/features/hr/store/models/response/work-schedule-type-response";
 import {
   resetState,
   setPageNo,
@@ -57,7 +57,7 @@ export default function WorkSchedulePage() {
 
   const [deleteState, setDeleteState] = useState({
     isOpen: false,
-    workSchedule: null as WorkScheduleResponseModel | null,
+    workSchedule: null as WorkScheduleTypeResponseModel | null,
   });
 
   const debouncedSearch = useDebounce(filters.search, 400);
@@ -96,7 +96,7 @@ export default function WorkSchedulePage() {
     });
   };
 
-  const handleEditItem = (schedule: WorkScheduleResponseModel) => {
+  const handleEditItem = (schedule: WorkScheduleTypeResponseModel) => {
     setModalState({
       isOpen: true,
       mode: ModalMode.UPDATE_MODE,
@@ -104,14 +104,14 @@ export default function WorkSchedulePage() {
     });
   };
 
-  const handleViewDetailItem = (schedule: WorkScheduleResponseModel) => {
+  const handleViewDetailItem = (schedule: WorkScheduleTypeResponseModel) => {
     setDetailModalState({
       isOpen: true,
       id: schedule.id || "",
     });
   };
 
-  const handleDeleteItem = (schedule: WorkScheduleResponseModel) => {
+  const handleDeleteItem = (schedule: WorkScheduleTypeResponseModel) => {
     setDeleteState({
       isOpen: true,
       workSchedule: schedule,

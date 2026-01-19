@@ -20,9 +20,9 @@ import {
   selectOperations,
 } from "../store/selectors/work-schedule-type-selectors";
 import {
-  createWorkScheduleSchema,
-  updateWorkScheduleSchema,
-  WorkScheduleFormData,
+  createWorkScheduleTypeSchema,
+  updateWorkScheduleTypeSchema,
+  WorkScheduleTypeFormData,
 } from "../store/models/schema/work-schedule-type.schema";
 import {
   createWorkScheduleTypeService,
@@ -35,8 +35,8 @@ import {
 } from "../store/slice/work-schedule-type-slice";
 import { FormHeader } from "@/components/shared/form-field/form-header";
 import {
-  CreateWorkScheduleRequest,
-  UpdateWorkScheduleRequest,
+  CreateWorkScheduleTypeRequest,
+  UpdateWorkScheduleTypeRequest,
 } from "../store/models/request/work-schedule-type-request";
 
 type Props = {
@@ -68,9 +68,9 @@ export default function WorkScheduleModal({
     setValue,
     watch,
     formState: { errors, isDirty },
-  } = useForm<WorkScheduleFormData>({
+  } = useForm<WorkScheduleTypeFormData>({
     resolver: zodResolver(
-      isCreate ? createWorkScheduleSchema : updateWorkScheduleSchema
+      isCreate ? createWorkScheduleTypeSchema : updateWorkScheduleTypeSchema
     ) as any,
     defaultValues: {
       id: "",
@@ -124,10 +124,10 @@ export default function WorkScheduleModal({
     }
   }, [isOpen, dispatch]);
 
-  const onSubmit = async (data: WorkScheduleFormData) => {
+  const onSubmit = async (data: WorkScheduleTypeFormData) => {
     try {
       if (isCreate) {
-        const payload: CreateWorkScheduleRequest = {
+        const payload: CreateWorkScheduleTypeRequest = {
           enumName: data.enumName,
           description: data.description,
         };
@@ -141,7 +141,7 @@ export default function WorkScheduleModal({
         );
         handleClose();
       } else {
-        const payload: UpdateWorkScheduleRequest = {
+        const payload: UpdateWorkScheduleTypeRequest = {
           enumName: data.enumName,
           description: data.description,
         };

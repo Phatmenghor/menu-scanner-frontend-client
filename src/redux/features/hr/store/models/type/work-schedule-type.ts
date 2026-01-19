@@ -1,9 +1,9 @@
 import {
-  AllWorkScheduleResponseModel,
-  WorkScheduleResponseModel,
+  AllWorkScheduleTypeResponseModel,
+  WorkScheduleTypeResponseModel,
 } from "../response/work-schedule-type-response";
 
-export interface WorkScheduleFilters {
+export interface WorkScheduleTypeFilters {
   search: string;
   pageNo: number;
 }
@@ -15,11 +15,11 @@ export interface OperationStates {
   isFetchingDetail: boolean;
 }
 
-export interface WorkScheduleManagementState {
-  data: AllWorkScheduleResponseModel | null;
-  selectedWorkSchedule: WorkScheduleResponseModel | null;
+export interface WorkScheduleTypeManagementState {
+  data: AllWorkScheduleTypeResponseModel | null;
+  selectedWorkSchedule: WorkScheduleTypeResponseModel | null;
   isLoading: boolean;
   error: string | null;
-  filters: WorkScheduleFilters;
+  filters: WorkScheduleTypeFilters;
   operations: OperationStates;
 }
