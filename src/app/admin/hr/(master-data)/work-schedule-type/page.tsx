@@ -14,6 +14,7 @@ import { useWorkScheduleState } from "@/redux/features/hr/store/state/work-sched
 import { ModalMode } from "@/constants/status/status";
 import { WorkScheduleResponseModel } from "@/redux/features/hr/store/models/response/work-schedule-response";
 import {
+  resetState,
   setPageNo,
   setSearchFilter,
 } from "@/redux/features/hr/store/slice/work-schedule-slice";
@@ -24,6 +25,7 @@ import {
 import { workScheduleTableColumns } from "@/redux/features/hr/table/work-schedule-table";
 import WorkScheduleModal from "@/redux/features/hr/components/work-schedule-modal";
 import { WorkScheduleDetailModal } from "@/redux/features/hr/components/work-schedule-detail-modal";
+import { useAdminCleanup } from "@/hooks/use-cleanup-on-unmount";
 
 export default function WorkSchedulePage() {
   useAdminCleanup(resetState);
