@@ -68,20 +68,27 @@ export function Navbar() {
 
   // Handle debounced search - update URL when debounced value changes
   useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    let searchRoute = pathname === "/" ? "/products" : pathname;
-
-    if (debouncedSearchQuery.trim()) {
-      params.set("q", debouncedSearchQuery.trim());
-      router.push(`${searchRoute}?${params.toString()}`);
-    } else {
-      params.delete("q");
-      const newUrl = params.toString()
-        ? `${searchRoute}?${params.toString()}`
-        : searchRoute;
-      router.push(newUrl);
+    // Only handle search if there's actually a search query
+    if (!debouncedSearchQuery.trim()) {
+      // Only clear search param if it exists in URL
+      const hasSearchParam = searchParams.get("q");
+      if (hasSearchParam) {
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete("q");
+        const newUrl = params.toString()
+          ? `${pathname}?${params.toString()}`
+          : pathname;
+        router.push(newUrl);
+      }
+      return;
     }
-  }, [debouncedSearchQuery]);
+
+    // Handle search query - redirect to /products if on home page
+    const params = new URLSearchParams(searchParams.toString());
+    const searchRoute = pathname === "/" ? "/products" : pathname;
+    params.set("q", debouncedSearchQuery.trim());
+    router.push(`${searchRoute}?${params.toString()}`);
+  }, [debouncedSearchQuery, pathname, searchParams, router]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
