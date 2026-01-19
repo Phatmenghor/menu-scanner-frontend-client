@@ -1,17 +1,33 @@
+import { DayOfWeek } from "@/constants/status/type";
 import { BaseGetAllRequest } from "@/utils/common/get-all-request";
 
 export interface CreateWorkScheduleRequest {
-  enumName: string;
-  description: string;
+  userId: string;
+  businessId: string;
+  name: string;
+  scheduleTypeEnumName: string;
+  workDays: DayOfWeek[];
+
+  startTime: string;
+  endTime: string;
+  breakStartTime?: string;
+  breakEndTime?: string;
 }
 
 export interface UpdateWorkScheduleRequest {
-  enumName: string;
-  description: string;
+  name: string;
+  scheduleTypeEnumName: string;
+  workDays: DayOfWeek[];
+
+  startTime: string;
+  endTime: string;
+  breakStartTime?: string;
+  breakEndTime?: string;
 }
 
 export interface AllWorkScheduleRequest extends BaseGetAllRequest {
   businessId?: string;
+  userId?: string;
 }
 
 export interface UpdateWorkScheduleParams {
