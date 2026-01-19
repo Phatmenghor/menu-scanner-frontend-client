@@ -39,8 +39,8 @@ export function DetailModal({
 }: DetailModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      {/* Changed: w-[90%] for 90% width, max-w-3xl for maximum limit */}
-      <DialogContent className="w-[90%] max-w-3xl h-[90vh] p-0 gap-0 flex flex-col">
+      {/* Dynamic height with max-h-[90vh] instead of fixed h-[90vh] */}
+      <DialogContent className="w-[90%] max-w-3xl max-h-[90vh] p-0 gap-0 flex flex-col">
         {/* Header */}
         <DialogHeader className="px-6 py-4 border-b bg-muted/30 flex-shrink-0">
           <div className="flex items-center gap-4 pr-8">
