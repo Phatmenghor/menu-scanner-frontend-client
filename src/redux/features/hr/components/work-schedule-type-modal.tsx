@@ -46,7 +46,7 @@ type Props = {
   isOpen: boolean;
 };
 
-export default function WorkScheduleModal({
+export default function WorkScheduleTypeModal({
   isOpen,
   onClose,
   workScheduleId,
@@ -70,7 +70,7 @@ export default function WorkScheduleModal({
     formState: { errors, isDirty },
   } = useForm<WorkScheduleTypeFormData>({
     resolver: zodResolver(
-      isCreate ? createWorkScheduleTypeSchema : updateWorkScheduleTypeSchema
+      isCreate ? createWorkScheduleTypeSchema : updateWorkScheduleTypeSchema,
     ) as any,
     defaultValues: {
       id: "",
@@ -87,7 +87,7 @@ export default function WorkScheduleModal({
 
       try {
         const resultAction = await dispatch(
-          fetchWorkScheduleTypeByIdService(workScheduleId)
+          fetchWorkScheduleTypeByIdService(workScheduleId),
         );
 
         if (fetchWorkScheduleTypeByIdService.fulfilled.match(resultAction)) {
@@ -133,11 +133,11 @@ export default function WorkScheduleModal({
         };
 
         const result = await dispatch(
-          createWorkScheduleTypeService(payload)
+          createWorkScheduleTypeService(payload),
         ).unwrap();
 
         showToast.success(
-          `Work schedule "${result.enumName}" created successfully`
+          `Work schedule "${result.enumName}" created successfully`,
         );
         handleClose();
       } else {
@@ -147,17 +147,17 @@ export default function WorkScheduleModal({
         };
 
         const result = await dispatch(
-          updateWorkScheduleTypeService({ id: data.id, param: payload })
+          updateWorkScheduleTypeService({ id: data.id, param: payload }),
         ).unwrap();
 
         showToast.success(
-          `Work schedule "${result.enumName}" updated successfully`
+          `Work schedule "${result.enumName}" updated successfully`,
         );
         handleClose();
       }
     } catch (error: any) {
       showToast.error(
-        error || `Failed to ${isCreate ? "create" : "update"} user business`
+        error || `Failed to ${isCreate ? "create" : "update"} user business`,
       );
     }
   };

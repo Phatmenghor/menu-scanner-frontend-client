@@ -21,7 +21,7 @@ interface WorkScheduleDetailModalProps {
   onClose: () => void;
 }
 
-export function WorkScheduleDetailModal({
+export function WorkScheduleTypeDetailModal({
   workScheduleId,
   isOpen,
   onClose,
@@ -35,7 +35,7 @@ export function WorkScheduleDetailModal({
       if (!workScheduleId || !isOpen) return;
       try {
         await dispatch(
-          fetchWorkScheduleTypeByIdService(workScheduleId)
+          fetchWorkScheduleTypeByIdService(workScheduleId),
         ).unwrap();
       } catch (error: any) {
         console.error("Error fetching work schedule data:", error);
