@@ -33,14 +33,11 @@ export interface BusinessProfile {
   features?: string[];
   services?: Service[];
 
-  // Products Showcase (for eCommerce)
-  featuredProducts?: FeaturedProduct[];
-
   // Team Members
   team?: TeamMember[];
 
-  // Testimonials
-  testimonials?: Testimonial[];
+  // Customer Reviews (Enhanced)
+  reviews?: CustomerReview[];
 
   // Stats/Achievements
   stats?: BusinessStats;
@@ -128,16 +125,6 @@ export interface Service {
   currency?: string;
 }
 
-export interface FeaturedProduct {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  currency: string;
-  image: string;
-  link?: string;
-}
-
 export interface TeamMember {
   id: string;
   name: string;
@@ -151,14 +138,39 @@ export interface TeamMember {
   };
 }
 
-export interface Testimonial {
+// Enhanced Customer Review System
+export interface CustomerReview {
   id: string;
   customerName: string;
+  customerEmail?: string;
+  customerPhone?: string;
   customerPhoto?: string;
   rating: number; // 1-5
   comment: string;
-  date: string;
-  position?: string; // e.g., "CEO at Company"
+  title?: string; // Review title/headline
+
+  // Rich details
+  visitDate?: string; // When they visited/used service
+  serviceUsed?: string; // Which service/product they reviewed
+  wouldRecommend?: boolean;
+
+  // Review metadata
+  isVerified?: boolean; // Verified purchase/visit
+  isApproved: boolean; // Admin approval
+  createdAt: string;
+
+  // Optional response from business
+  businessResponse?: {
+    message: string;
+    respondedAt: string;
+    respondedBy?: string; // Staff name
+  };
+
+  // Helpful votes
+  helpfulCount?: number;
+
+  // Additional photos from customer
+  photos?: string[];
 }
 
 export interface BusinessStats {

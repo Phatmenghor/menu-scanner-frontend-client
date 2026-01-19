@@ -167,36 +167,6 @@ export const demoBusinessProfile: BusinessProfile = {
     },
   ],
 
-  featuredProducts: [
-    {
-      id: "1",
-      name: "Signature Blend",
-      description: "Our house special coffee blend",
-      price: 4.5,
-      currency: "USD",
-      image:
-        "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&h=400&fit=crop",
-    },
-    {
-      id: "2",
-      name: "Croissant",
-      description: "Buttery, flaky, and freshly baked",
-      price: 3.5,
-      currency: "USD",
-      image:
-        "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400&h=400&fit=crop",
-    },
-    {
-      id: "3",
-      name: "Avocado Toast",
-      description: "Sourdough with fresh avocado and toppings",
-      price: 8.5,
-      currency: "USD",
-      image:
-        "https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=400&h=400&fit=crop",
-    },
-  ],
-
   team: [
     {
       id: "1",
@@ -224,33 +194,104 @@ export const demoBusinessProfile: BusinessProfile = {
     },
   ],
 
-  testimonials: [
+  reviews: [
     {
       id: "1",
       customerName: "John Smith",
+      customerEmail: "john.smith@example.com",
+      customerPhoto:
+        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
       rating: 5,
+      title: "Best coffee in town!",
       comment:
-        "Best coffee in town! The atmosphere is perfect for working or catching up with friends.",
-      date: "2024-01-15",
-      position: "Regular Customer",
+        "I've been coming to The Amazing Café for over a year now, and I'm never disappointed. The atmosphere is perfect for working or catching up with friends. The baristas know their craft, and the coffee is consistently excellent. The outdoor seating is a huge plus during nice weather. Highly recommend the signature blend!",
+      visitDate: "2024-01-10",
+      serviceUsed: "Specialty Coffee",
+      wouldRecommend: true,
+      isVerified: true,
+      isApproved: true,
+      createdAt: "2024-01-15T10:30:00Z",
+      helpfulCount: 24,
+      businessResponse: {
+        message:
+          "Thank you so much, John! We're thrilled to have you as a regular. Your support means the world to us! ☕",
+        respondedAt: "2024-01-15T14:20:00Z",
+        respondedBy: "Sarah Johnson",
+      },
     },
     {
       id: "2",
       customerName: "Lisa Anderson",
+      customerEmail: "lisa.anderson@example.com",
+      customerPhoto:
+        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
       rating: 5,
+      title: "Absolutely divine pastries!",
       comment:
-        "Their pastries are absolutely divine! I come here every morning before work.",
-      date: "2024-01-10",
-      position: "Coffee Enthusiast",
+        "I'm a pastry lover, and these are hands down the best I've had in the city. Everything is made fresh daily, and you can really taste the difference. The croissants are buttery perfection, and don't even get me started on the chocolate danish. I come here every morning before work - it's become my favorite part of my routine!",
+      visitDate: "2024-01-08",
+      serviceUsed: "Fresh Pastries",
+      wouldRecommend: true,
+      isVerified: true,
+      isApproved: true,
+      createdAt: "2024-01-10T08:15:00Z",
+      helpfulCount: 18,
+      photos: [
+        "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400&h=300&fit=crop",
+      ],
     },
     {
       id: "3",
       customerName: "David Kim",
+      customerEmail: "david.kim@example.com",
       rating: 5,
+      title: "Perfect spot for a weekend brunch",
       comment:
-        "Great service, amazing coffee, and the outdoor seating is perfect on sunny days.",
-      date: "2024-01-05",
-      position: "Local Resident",
+        "Great service, amazing coffee, and the outdoor seating is perfect on sunny days. We brought our dog, and they were so welcoming - even brought out a water bowl without us asking. The staff is friendly and attentive. Will definitely be back!",
+      visitDate: "2024-01-03",
+      serviceUsed: "Brunch Menu",
+      wouldRecommend: true,
+      isVerified: false,
+      isApproved: true,
+      createdAt: "2024-01-05T16:45:00Z",
+      helpfulCount: 12,
+    },
+    {
+      id: "4",
+      customerName: "Emily Chen",
+      customerEmail: "emily.chen@example.com",
+      rating: 4,
+      title: "Great atmosphere, could use more vegan options",
+      comment:
+        "I love the vibe of this place - it's cozy and welcoming. The coffee is excellent, and the staff is super friendly. My only suggestion would be to add more vegan pastry options. Currently there's only one, and it would be great to have more variety. But overall, a wonderful spot!",
+      visitDate: "2024-01-12",
+      serviceUsed: "Specialty Coffee",
+      wouldRecommend: true,
+      isVerified: true,
+      isApproved: true,
+      createdAt: "2024-01-14T11:20:00Z",
+      helpfulCount: 8,
+      businessResponse: {
+        message:
+          "Thank you for the feedback, Emily! We're actually working on expanding our vegan options - stay tuned! 🌱",
+        respondedAt: "2024-01-14T15:30:00Z",
+        respondedBy: "Mike Chen",
+      },
+    },
+    {
+      id: "5",
+      customerName: "Marcus Johnson",
+      customerEmail: "marcus.j@example.com",
+      rating: 5,
+      title: "My go-to workspace",
+      comment:
+        "Fast WiFi, plenty of outlets, and great coffee - what more could you ask for? I work remotely and this has become my favorite spot to get work done. The background music is at the perfect level, and there's always a good mix of people. Plus, the coffee keeps me productive all day!",
+      visitDate: "2024-01-11",
+      wouldRecommend: true,
+      isVerified: false,
+      isApproved: true,
+      createdAt: "2024-01-13T09:00:00Z",
+      helpfulCount: 15,
     },
   ],
 

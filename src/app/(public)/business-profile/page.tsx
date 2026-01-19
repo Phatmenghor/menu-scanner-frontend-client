@@ -16,15 +16,21 @@ import {
   Check,
   ExternalLink,
   MessageCircle,
+  ThumbsUp,
+  BadgeCheck,
+  Calendar,
+  MessageSquare,
 } from "lucide-react";
 import { demoBusinessProfile } from "@/data/business-profile-template";
-import { BusinessProfile, DayOfWeek } from "@/types/business-profile";
+import { BusinessProfile, DayOfWeek, CustomerReview } from "@/types/business-profile";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ReviewSubmissionModal } from "@/components/business-profile/review-submission-modal";
 
 export default function BusinessProfilePage() {
   const [profile] = useState<BusinessProfile>(demoBusinessProfile);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
   const getDayLabel = (day: DayOfWeek): string => {
     return day.charAt(0) + day.slice(1).toLowerCase();
@@ -37,6 +43,35 @@ export default function BusinessProfilePage() {
     const displayHour = hour % 12 || 12;
     return `${displayHour}:${minutes} ${ampm}`;
   };
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const calculateAverageRating = (reviews?: CustomerReview[]): number => {
+    if (!reviews || reviews.length === 0) return 0;
+    const total = reviews.reduce((sum, review) => sum + review.rating, 0);
+    return total / reviews.length;
+  };
+
+  const getRatingDistribution = (reviews?: CustomerReview[]) => {
+    if (!reviews) return {};
+    const dist: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    reviews.forEach((review) => {
+      dist[review.rating] = (dist[review.rating] || 0) + 1;
+    });
+    return dist;
+  };
+
+  const averageRating = calculateAverageRating(profile.reviews);
+  const ratingDistribution = getRatingDistribution(profile.reviews);
+  const totalReviews = profile.reviews?.length || 0;
+  const servicesList = profile.services?.map((s) => s.name) || [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -86,6 +121,12 @@ export default function BusinessProfilePage() {
                   <Badge className="bg-white/20 text-white border-white/30">
                     {profile.industry}
                   </Badge>
+                  {totalReviews > 0 && (
+                    <Badge className="bg-white/20 text-white border-white/30 flex items-center gap-1">
+                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      {averageRating.toFixed(1)} ({totalReviews} reviews)
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
@@ -123,7 +164,7 @@ export default function BusinessProfilePage() {
               </CardContent>
             </Card>
 
-            {/* Services/Products Section */}
+            {/* Services Section */}
             {profile.services && profile.services.length > 0 && (
               <Card>
                 <CardContent className="pt-6">
@@ -151,41 +192,6 @@ export default function BusinessProfilePage() {
                               </p>
                             )}
                           </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Featured Products */}
-            {profile.featuredProducts && profile.featuredProducts.length > 0 && (
-              <Card>
-                <CardContent className="pt-6">
-                  <h2 className="text-2xl font-bold mb-6">Featured Products</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {profile.featuredProducts.map((product) => (
-                      <div
-                        key={product.id}
-                        className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
-                      >
-                        <div className="relative h-48">
-                          <Image
-                            src={product.image}
-                            alt={product.name}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <div className="p-4">
-                          <h3 className="font-semibold">{product.name}</h3>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {product.description}
-                          </p>
-                          <p className="text-orange-600 font-bold mt-2">
-                            ${product.price.toFixed(2)}
-                          </p>
                         </div>
                       </div>
                     ))}
@@ -255,45 +261,213 @@ export default function BusinessProfilePage() {
               </Card>
             )}
 
-            {/* Testimonials */}
-            {profile.testimonials && profile.testimonials.length > 0 && (
-              <Card>
-                <CardContent className="pt-6">
-                  <h2 className="text-2xl font-bold mb-6">What Our Customers Say</h2>
-                  <div className="space-y-4">
-                    {profile.testimonials.map((testimonial) => (
-                      <div key={testimonial.id} className="border rounded-lg p-4">
+            {/* Customer Reviews Section - ENHANCED */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold">Customer Reviews</h2>
+                  <Button
+                    onClick={() => setIsReviewModalOpen(true)}
+                    className="gap-2"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    Write a Review
+                  </Button>
+                </div>
+
+                {/* Rating Summary */}
+                {profile.reviews && profile.reviews.length > 0 && (
+                  <div className="bg-gray-50 rounded-lg p-6 mb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Overall Rating */}
+                      <div className="text-center md:text-left">
+                        <div className="text-5xl font-bold text-orange-600">
+                          {averageRating.toFixed(1)}
+                        </div>
+                        <div className="flex items-center justify-center md:justify-start gap-1 mt-2">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-5 h-5 ${
+                                i < Math.round(averageRating)
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "text-gray-300"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <p className="text-gray-600 mt-1">
+                          Based on {totalReviews} reviews
+                        </p>
+                      </div>
+
+                      {/* Rating Distribution */}
+                      <div className="space-y-2">
+                        {[5, 4, 3, 2, 1].map((rating) => (
+                          <div key={rating} className="flex items-center gap-2">
+                            <span className="text-sm w-12">{rating} star</span>
+                            <div className="flex-1 bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-yellow-400 h-2 rounded-full"
+                                style={{
+                                  width: `${
+                                    ((ratingDistribution[rating] || 0) /
+                                      totalReviews) *
+                                    100
+                                  }%`,
+                                }}
+                              />
+                            </div>
+                            <span className="text-sm text-gray-600 w-8">
+                              {ratingDistribution[rating] || 0}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Review List */}
+                <div className="space-y-6">
+                  {profile.reviews && profile.reviews.length > 0 ? (
+                    profile.reviews.map((review) => (
+                      <div key={review.id} className="border-b last:border-0 pb-6">
+                        {/* Review Header */}
                         <div className="flex items-start gap-4">
-                          <div>
-                            <div className="flex items-center gap-2 mb-2">
+                          {review.customerPhoto && (
+                            <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                              <Image
+                                src={review.customerPhoto}
+                                alt={review.customerName}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <h4 className="font-semibold">
-                                {testimonial.customerName}
+                                {review.customerName}
                               </h4>
+                              {review.isVerified && (
+                                <BadgeCheck className="w-4 h-4 text-green-600" />
+                              )}
+                              {review.wouldRecommend && (
+                                <Badge
+                                  variant="secondary"
+                                  className="text-xs bg-green-50 text-green-700"
+                                >
+                                  ✓ Recommends
+                                </Badge>
+                              )}
+                            </div>
+
+                            {/* Rating */}
+                            <div className="flex items-center gap-2 mt-1">
                               <div className="flex">
-                                {[...Array(testimonial.rating)].map((_, i) => (
+                                {[...Array(review.rating)].map((_, i) => (
                                   <Star
                                     key={i}
                                     className="w-4 h-4 fill-yellow-400 text-yellow-400"
                                   />
                                 ))}
                               </div>
+                              <span className="text-sm text-gray-500">
+                                {formatDate(review.createdAt)}
+                              </span>
                             </div>
-                            <p className="text-gray-700 italic">
-                              "{testimonial.comment}"
+
+                            {/* Review Title */}
+                            {review.title && (
+                              <h5 className="font-semibold mt-3">
+                                {review.title}
+                              </h5>
+                            )}
+
+                            {/* Review Comment */}
+                            <p className="text-gray-700 mt-2 leading-relaxed">
+                              {review.comment}
                             </p>
-                            {testimonial.position && (
-                              <p className="text-sm text-gray-500 mt-2">
-                                - {testimonial.position}
-                              </p>
+
+                            {/* Review Details */}
+                            <div className="flex flex-wrap gap-4 mt-3 text-sm text-gray-600">
+                              {review.visitDate && (
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="w-4 h-4" />
+                                  Visited: {formatDate(review.visitDate)}
+                                </div>
+                              )}
+                              {review.serviceUsed && (
+                                <div>Service: {review.serviceUsed}</div>
+                              )}
+                            </div>
+
+                            {/* Review Photos */}
+                            {review.photos && review.photos.length > 0 && (
+                              <div className="flex gap-2 mt-3">
+                                {review.photos.map((photo, index) => (
+                                  <div
+                                    key={index}
+                                    className="relative w-24 h-24 rounded-lg overflow-hidden"
+                                  >
+                                    <Image
+                                      src={photo}
+                                      alt="Review photo"
+                                      fill
+                                      className="object-cover"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Business Response */}
+                            {review.businessResponse && (
+                              <div className="mt-4 ml-4 border-l-2 border-orange-500 pl-4 bg-orange-50 p-3 rounded">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <MessageCircle className="w-4 h-4 text-orange-600" />
+                                  <span className="font-semibold text-sm">
+                                    Response from{" "}
+                                    {review.businessResponse.respondedBy || "Owner"}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-700">
+                                  {review.businessResponse.message}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {formatDate(review.businessResponse.respondedAt)}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Helpful Button */}
+                            {review.helpfulCount !== undefined && (
+                              <div className="mt-3">
+                                <button className="text-sm text-gray-600 hover:text-orange-600 flex items-center gap-1">
+                                  <ThumbsUp className="w-4 h-4" />
+                                  Helpful ({review.helpfulCount})
+                                </button>
+                              </div>
                             )}
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                    ))
+                  ) : (
+                    <div className="text-center py-12">
+                      <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-600 mb-4">
+                        No reviews yet. Be the first to review!
+                      </p>
+                      <Button onClick={() => setIsReviewModalOpen(true)}>
+                        Write the First Review
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Stats */}
             {profile.stats && (
@@ -498,6 +672,18 @@ export default function BusinessProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Review Submission Modal */}
+      <ReviewSubmissionModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        businessName={profile.businessName}
+        services={servicesList}
+        onSubmit={(review) => {
+          console.log("New review submitted:", review);
+          // TODO: API call to save review
+        }}
+      />
     </div>
   );
 }
