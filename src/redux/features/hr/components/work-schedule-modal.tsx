@@ -79,7 +79,9 @@ export default function WorkScheduleModal({
   const { isCreating, isUpdating } = operations;
 
   // State for combobox selections
-  const [selectedUser, setSelectedUser] = useState<UserResponseModel | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserResponseModel | null>(
+    null,
+  );
   const [selectedScheduleType, setSelectedScheduleType] = useState<string>("");
 
   const {
@@ -97,7 +99,7 @@ export default function WorkScheduleModal({
       userId: currentUser?.userId || "",
       businessId: AppDefault.BUSINESS_ID,
       name: "",
-      scheduleTypeEnumName: "",
+      scheduleTypeEnum: "",
       workDays: DEFAULT_WORK_DAYS,
       startTime: "",
       endTime: "",
@@ -126,8 +128,8 @@ export default function WorkScheduleModal({
           }
 
           // Set the selected schedule type
-          if (data.scheduleTypeEnumName) {
-            setSelectedScheduleType(data.scheduleTypeEnumName);
+          if (data.scheduleTypeEnum) {
+            setSelectedScheduleType(data.scheduleTypeEnum);
           }
 
           reset({
@@ -135,7 +137,7 @@ export default function WorkScheduleModal({
             userId: data.userInfo?.id || currentUser?.userId || "",
             businessId: data.businessId || AppDefault.BUSINESS_ID,
             name: data.name || "",
-            scheduleTypeEnumName: data.scheduleTypeEnumName || "",
+            scheduleTypeEnum: data.scheduleTypeEnum || "",
             workDays: (data.workDays || []) as DayOfWeek[],
             startTime: data.startTime || "",
             endTime: data.endTime || "",
@@ -160,7 +162,7 @@ export default function WorkScheduleModal({
         userId: currentUser?.userId || "",
         businessId: AppDefault.BUSINESS_ID,
         name: "",
-        scheduleTypeEnumName: "",
+        scheduleTypeEnum: "",
         workDays: DEFAULT_WORK_DAYS,
         startTime: "",
         endTime: "",
@@ -184,7 +186,7 @@ export default function WorkScheduleModal({
           userId: data.userId,
           businessId: data.businessId,
           name: data.name,
-          scheduleTypeEnumName: data.scheduleTypeEnumName,
+          scheduleTypeEnum: data.scheduleTypeEnum,
           workDays: data.workDays,
           startTime: data.startTime,
           endTime: data.endTime,
@@ -203,7 +205,7 @@ export default function WorkScheduleModal({
       } else {
         const payload: UpdateWorkScheduleRequest = {
           name: data.name,
-          scheduleTypeEnumName: data.scheduleTypeEnumName,
+          scheduleTypeEnum: data.scheduleTypeEnum,
           workDays: data.workDays,
           startTime: data.startTime,
           endTime: data.endTime,
@@ -274,7 +276,10 @@ export default function WorkScheduleModal({
                 dataSelect={selectedUser}
                 onChangeSelected={(user) => {
                   setSelectedUser(user);
-                  setValue("userId", user?.id || "", { shouldValidate: true, shouldDirty: true });
+                  setValue("userId", user?.id || "", {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  });
                 }}
                 disabled={isSubmitting}
                 label="Select User"
@@ -298,7 +303,7 @@ export default function WorkScheduleModal({
                 value={selectedScheduleType}
                 onValueChange={(value) => {
                   setSelectedScheduleType(value);
-                  setValue("scheduleTypeEnumName", value, {
+                  setValue("scheduleTypeEnum", value, {
                     shouldValidate: true,
                     shouldDirty: true,
                   });
@@ -307,7 +312,7 @@ export default function WorkScheduleModal({
                 label="Schedule Type"
                 required
                 placeholder="Select schedule type"
-                error={errors.scheduleTypeEnumName?.message}
+                error={errors.scheduleTypeEnum?.message}
               />
 
               {/* Work Days */}

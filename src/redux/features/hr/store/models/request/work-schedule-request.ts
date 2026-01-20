@@ -5,7 +5,7 @@ export interface CreateWorkScheduleRequest {
   userId: string;
   businessId?: string;
   name: string;
-  scheduleTypeEnumName: string;
+  scheduleTypeEnum: string;
   workDays: DayOfWeek[];
   startTime: string;
   endTime: string;
@@ -15,7 +15,7 @@ export interface CreateWorkScheduleRequest {
 
 export interface UpdateWorkScheduleRequest {
   name: string;
-  scheduleTypeEnumName: string;
+  scheduleTypeEnum: string;
   workDays: DayOfWeek[];
 
   startTime: string;

@@ -77,14 +77,14 @@ export const workScheduleTableColumns = ({
     },
 
     {
-      key: "scheduleTypeEnumName",
+      key: "scheduleTypeEnum",
       label: "Schedule Type",
       minWidth: "10px",
       maxWidth: "400px",
       truncate: true,
       render: (workSchedule) => (
         <span className="text-xs text-muted-foreground">
-          {workSchedule?.scheduleTypeEnumName || "---"}
+          {workSchedule?.scheduleTypeEnum || "---"}
         </span>
       ),
     },

@@ -13,7 +13,7 @@ export interface WorkScheduleResponseModel {
   userInfo: UserInfo;
   businessId: string;
   name: string;
-  scheduleTypeEnumName: any;
+  scheduleTypeEnum: string;
   workDays: string[];
   startTime: string;
   endTime: string;
