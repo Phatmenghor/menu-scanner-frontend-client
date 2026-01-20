@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { dateTimeFormat } from "@/utils/date/date-time-format";
+import { dateTimeFormat, formatTime } from "@/utils/date/date-time-format";
 import { DetailModal } from "@/components/shared/modal/detail-modal";
 import {
   DetailRow,
@@ -35,9 +35,7 @@ export function WorkScheduleDetailModal({
     const fetchWorkScheduleData = async () => {
       if (!workScheduleId || !isOpen) return;
       try {
-        await dispatch(
-          fetchWorkScheduleByIdService(workScheduleId),
-        ).unwrap();
+        await dispatch(fetchWorkScheduleByIdService(workScheduleId)).unwrap();
       } catch (error: any) {
         console.error("Error fetching work schedule data:", error);
       }
@@ -49,20 +47,6 @@ export function WorkScheduleDetailModal({
   const handleClose = () => {
     dispatch(clearSelectedWorkSchedule());
     onClose();
-  };
-
-  // Format time display (HH:mm to HH:mm AM/PM)
-  const formatTimeDisplay = (time?: string) => {
-    if (!time) return "---";
-    const timeParts = time.split(":");
-    if (timeParts.length < 2) return time;
-
-    const hour = parseInt(timeParts[0]);
-    const minute = timeParts[1];
-    const period = hour >= 12 ? "PM" : "AM";
-    const displayHour = hour % 12 || 12;
-
-    return `${String(displayHour).padStart(2, "0")}:${minute} ${period}`;
   };
 
   return (
@@ -115,22 +99,22 @@ export function WorkScheduleDetailModal({
           <DetailSection title="Time Information">
             <DetailRow
               label="Start Time"
-              value={formatTimeDisplay(workScheduleData?.startTime)}
+              value={formatTime(workScheduleData?.startTime)}
             />
 
             <DetailRow
               label="End Time"
-              value={formatTimeDisplay(workScheduleData?.endTime)}
+              value={formatTime(workScheduleData?.endTime)}
             />
 
             <DetailRow
               label="Break Start Time"
-              value={formatTimeDisplay(workScheduleData?.breakStartTime)}
+              value={formatTime(workScheduleData?.breakStartTime)}
             />
 
             <DetailRow
               label="Break End Time"
-              value={formatTimeDisplay(workScheduleData?.breakEndTime)}
+              value={formatTime(workScheduleData?.breakEndTime)}
               isLast
             />
           </DetailSection>
@@ -163,14 +147,6 @@ export function WorkScheduleDetailModal({
               value={
                 <span className="text-xs font-mono bg-muted px-2 py-1 rounded break-all">
                   {workScheduleData?.id}
-                </span>
-              }
-            />
-            <DetailRow
-              label="Business ID"
-              value={
-                <span className="text-xs font-mono bg-muted px-2 py-1 rounded break-all">
-                  {workScheduleData?.businessId}
                 </span>
               }
             />
