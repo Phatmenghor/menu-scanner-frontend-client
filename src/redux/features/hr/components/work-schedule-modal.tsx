@@ -274,7 +274,7 @@ export default function WorkScheduleModal({
                 dataSelect={selectedUser}
                 onChangeSelected={(user) => {
                   setSelectedUser(user);
-                  setValue("userId", user?.id || "", { shouldValidate: true });
+                  setValue("userId", user?.id || "", { shouldValidate: true, shouldDirty: true });
                 }}
                 disabled={isSubmitting}
                 label="Select User"
@@ -300,6 +300,7 @@ export default function WorkScheduleModal({
                   setSelectedScheduleType(value);
                   setValue("scheduleTypeEnumName", value, {
                     shouldValidate: true,
+                    shouldDirty: true,
                   });
                 }}
                 disabled={isSubmitting}
