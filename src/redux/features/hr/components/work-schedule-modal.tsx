@@ -111,6 +111,9 @@ export default function WorkScheduleModal({
       return;
     }
 
+    // Mark as fetched IMMEDIATELY to prevent duplicate calls during re-renders
+    fetchedWorkScheduleIdRef.current = workScheduleId;
+
     const fetchWorkScheduleData = async () => {
       try {
         const resultAction = await dispatch(
@@ -141,12 +144,11 @@ export default function WorkScheduleModal({
             breakStartTime: data.breakStartTime || "",
             breakEndTime: data.breakEndTime || "",
           });
-
-          // Mark this workScheduleId as fetched
-          fetchedWorkScheduleIdRef.current = workScheduleId;
         }
       } catch (error) {
         console.error("Error fetching work schedule data:", error);
+        // Reset ref on error to allow retry
+        fetchedWorkScheduleIdRef.current = null;
       }
     };
 
