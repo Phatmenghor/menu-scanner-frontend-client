@@ -70,6 +70,7 @@ export default function WorkScheduleModal({
   const [selectedUser, setSelectedUser] = useState<UserResponseModel | null>(
     null,
   );
+  const [selectedScheduleType, setSelectedScheduleType] = useState<string>("");
 
   // Ref to track if data has been fetched for current workScheduleId
   const fetchedWorkScheduleIdRef = React.useRef<string | null>(null);
@@ -79,7 +80,6 @@ export default function WorkScheduleModal({
     handleSubmit,
     reset,
     setValue,
-    watch,
     formState: { errors, isDirty },
   } = useForm<WorkScheduleTypeFormData>({
     resolver: zodResolver(
@@ -124,6 +124,11 @@ export default function WorkScheduleModal({
             setSelectedUser(data.userInfo);
           }
 
+          // Set selected schedule type
+          if (data.scheduleTypeEnumName) {
+            setSelectedScheduleType(data.scheduleTypeEnumName);
+          }
+
           reset({
             id: data.id,
             userId: data.userInfo?.id || currentUser?.userId || "",
@@ -153,6 +158,7 @@ export default function WorkScheduleModal({
   useEffect(() => {
     if (isOpen && isCreate) {
       setSelectedUser(null);
+      setSelectedScheduleType("");
       reset({
         userId: currentUser?.userId || "",
         businessId: AppDefault.BUSINESS_ID,
@@ -229,6 +235,7 @@ export default function WorkScheduleModal({
   const handleClose = () => {
     reset();
     setSelectedUser(null);
+    setSelectedScheduleType("");
     fetchedWorkScheduleIdRef.current = null; // Reset ref to allow re-fetching
     dispatch(clearError());
     dispatch(clearSelectedWorkSchedule());
@@ -293,8 +300,9 @@ export default function WorkScheduleModal({
 
               {/* Schedule Type */}
               <ComboboxSelectScheduleType
-                value={watch("scheduleTypeEnumName") || ""}
+                value={selectedScheduleType}
                 onValueChange={(value) => {
+                  setSelectedScheduleType(value);
                   setValue("scheduleTypeEnumName", value, {
                     shouldValidate: true,
                   });
