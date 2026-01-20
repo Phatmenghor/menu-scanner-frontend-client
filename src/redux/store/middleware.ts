@@ -16,6 +16,15 @@ const enableLogging =
  */
 export const loggingMiddleware: Middleware =
   (storeAPI) => (next) => (action: any) => {
+    // Validate action is a plain object with a type
+    if (!action || typeof action !== "object" || !action.type) {
+      if (!enableLogging) {
+        return next(action);
+      }
+      console.warn("⚠️ Invalid action dispatched:", action);
+      return next(action);
+    }
+
     if (!enableLogging) {
       return next(action);
     }
@@ -46,6 +55,10 @@ export const loggingMiddleware: Middleware =
  */
 export const authLoggingMiddleware: Middleware =
   (storeAPI) => (next) => (action: any) => {
+    if (!action || !action.type) {
+      return next(action);
+    }
+
     if (!enableLogging) {
       return next(action);
     }
@@ -65,6 +78,10 @@ export const authLoggingMiddleware: Middleware =
  */
 export const userLoggingMiddleware: Middleware =
   (storeAPI) => (next) => (action: any) => {
+    if (!action || !action.type) {
+      return next(action);
+    }
+
     if (!enableLogging) {
       return next(action);
     }
@@ -94,6 +111,10 @@ export const userLoggingMiddleware: Middleware =
  */
 export const errorLoggingMiddleware: Middleware =
   (storeAPI) => (next) => (action: any) => {
+    if (!action || !action.type) {
+      return next(action);
+    }
+
     if (!enableLogging) {
       return next(action);
     }

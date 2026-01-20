@@ -133,7 +133,7 @@ export default function WorkSchedulePage() {
         data: workScheduleData,
         handlers: tableHandlers,
       }),
-    [workScheduleData, tableHandlers],
+    [workScheduleState, tableHandlers],
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -7,6 +7,7 @@ import {
   AllWorkScheduleResponseModel,
   WorkScheduleResponseModel,
 } from "../store/models/response/work-schedule-response";
+import { formatWorkDays } from "@/utils/common/parse-work-days";
 
 interface WorkScheduleTableHandlers {
   handleEditItem: (workSchedule: WorkScheduleResponseModel) => void;
@@ -91,19 +92,10 @@ export const workScheduleTableColumns = ({
     {
       key: "workDays",
       label: "Working Days",
-      minWidth: "10px",
-      maxWidth: "400px",
-      truncate: true,
       render: (workSchedule) => (
-        <>
-          {workSchedule?.workDays?.length > 0
-            ? workSchedule?.workDays.map((day: string) => (
-                <span key={day} className="text-xs text-muted-foreground">
-                  {day}
-                </span>
-              ))
-            : "---"}
-        </>
+        <span className="text-xs text-muted-foreground">
+          {formatWorkDays(workSchedule?.workDays)}
+        </span>
       ),
     },
 

@@ -39,8 +39,7 @@ export function DetailModal({
 }: DetailModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      {/* Dynamic height with max-h-[90vh] instead of fixed h-[90vh] */}
-      <DialogContent className="w-[90%] max-w-3xl max-h-[90vh] p-0 gap-0 flex flex-col">
+      <DialogContent className="w-[90%] max-w-3xl max-h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
         {/* Header */}
         <DialogHeader className="px-6 py-4 border-b bg-muted/30 flex-shrink-0">
           <div className="flex items-center gap-4 pr-8">
@@ -64,10 +63,10 @@ export function DetailModal({
           </div>
         </DialogHeader>
 
-        {/* Content */}
-        <ScrollArea className="flex-1 min-h-0">
+        {/* Content - Use explicit height calculation */}
+        <div className="flex-1 overflow-y-auto">
           <div className="p-6">{isLoading ? <Loading /> : children}</div>
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
