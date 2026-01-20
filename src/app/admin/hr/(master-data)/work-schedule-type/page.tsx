@@ -35,7 +35,7 @@ export default function WorkScheduleTypePage() {
   const {
     workScheduleTypeState,
     workScheduleTypeData,
-    workScheduleTypeContent: workScheduleContent,
+    workScheduleTypeContent,
     isLoading,
     filters,
     operations,
@@ -162,7 +162,7 @@ export default function WorkScheduleTypePage() {
       closeDeleteModal();
 
       // Navigate to previous page if this was the last item
-      if (workScheduleContent.length === 1 && pagination.currentPage > 1) {
+      if (workScheduleTypeContent.length === 1 && pagination.currentPage > 1) {
         const newPage = pagination.currentPage - 1;
         dispatch(setPageNo(newPage));
         updateUrlWithPage(newPage);
@@ -214,7 +214,7 @@ export default function WorkScheduleTypePage() {
 
         {/* Data Table with Your Custom Pagination */}
         <DataTableWithPagination
-          data={workScheduleContent}
+          data={workScheduleTypeContent}
           columns={columns}
           loading={isLoading}
           emptyMessage="No work schedule types found"

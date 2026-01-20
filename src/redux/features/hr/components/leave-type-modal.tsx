@@ -70,7 +70,7 @@ export default function LeaveTypeModal({
     formState: { errors, isDirty },
   } = useForm<LeaveTypeFormData>({
     resolver: zodResolver(
-      isCreate ? createLeaveTypeSchema : updateLeaveTypeSchema
+      isCreate ? createLeaveTypeSchema : updateLeaveTypeSchema,
     ) as any,
     defaultValues: {
       id: "",
@@ -80,14 +80,13 @@ export default function LeaveTypeModal({
     mode: "onChange",
   });
 
-  // Fetch leave type data for edit mode
   useEffect(() => {
     const fetchLeaveTypeData = async () => {
       if (!leaveTypeId || !isOpen || isCreate) return;
 
       try {
         const resultAction = await dispatch(
-          fetchLeaveTypeByIdService(leaveTypeId)
+          fetchLeaveTypeByIdService(leaveTypeId),
         );
 
         if (fetchLeaveTypeByIdService.fulfilled.match(resultAction)) {
@@ -105,7 +104,7 @@ export default function LeaveTypeModal({
     };
 
     fetchLeaveTypeData();
-  }, [leaveTypeId, isOpen, isCreate, reset, dispatch]);
+  }, [leaveTypeId, isOpen, isCreate]);
 
   // Reset form for create mode
   useEffect(() => {
@@ -115,14 +114,14 @@ export default function LeaveTypeModal({
         description: "",
       });
     }
-  }, [isOpen, isCreate, reset]);
+  }, [isOpen, isCreate]);
 
   // Clear errors when modal opens
   useEffect(() => {
     if (isOpen) {
       dispatch(clearError());
     }
-  }, [isOpen, dispatch]);
+  }, [isOpen]);
 
   const onSubmit = async (data: LeaveTypeFormData) => {
     try {
@@ -135,7 +134,7 @@ export default function LeaveTypeModal({
         const result = await dispatch(createLeaveTypeService(payload)).unwrap();
 
         showToast.success(
-          `Leave type "${result.enumName}" created successfully`
+          `Leave type "${result.enumName}" created successfully`,
         );
         handleClose();
       } else {
@@ -145,17 +144,17 @@ export default function LeaveTypeModal({
         };
 
         const result = await dispatch(
-          updateLeaveTypeService({ id: data.id, param: payload })
+          updateLeaveTypeService({ id: data.id, param: payload }),
         ).unwrap();
 
         showToast.success(
-          `Leave type "${result.enumName}" updated successfully`
+          `Leave type "${result.enumName}" updated successfully`,
         );
         handleClose();
       }
     } catch (error: any) {
       showToast.error(
-        error || `Failed to ${isCreate ? "create" : "update"} leave type`
+        error || `Failed to ${isCreate ? "create" : "update"} leave type`,
       );
     }
   };

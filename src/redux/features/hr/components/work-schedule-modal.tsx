@@ -38,7 +38,7 @@ import {
 import {
   CreateWorkScheduleRequest,
   UpdateWorkScheduleRequest,
-} from "../store/models/request/work-schedule-type";
+} from "../store/models/request/work-schedule-request";
 import { CustomTimePicker } from "@/components/shared/common/custom-time-picker";
 import { MultiSelectDaysField } from "@/components/shared/form-field/multi-select-days-field";
 import { Label } from "@/components/ui/label";
@@ -68,7 +68,6 @@ export default function WorkScheduleModal({
   mode,
 }: Props) {
   const isCreate = mode === ModalMode.CREATE_MODE;
-
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectUser);
 
@@ -82,7 +81,7 @@ export default function WorkScheduleModal({
   >([]);
   const [loadingScheduleTypes, setLoadingScheduleTypes] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserResponseModel | null>(
-    null
+    null,
   );
 
   const {
@@ -90,7 +89,6 @@ export default function WorkScheduleModal({
     handleSubmit,
     reset,
     setValue,
-    watch,
     formState: { errors, isDirty },
   } = useForm<WorkScheduleTypeFormData>({
     resolver: zodResolver(
@@ -113,9 +111,9 @@ export default function WorkScheduleModal({
 
   // Fetch schedule types
   useEffect(() => {
-    const fetchScheduleTypes = async () => {
-      if (!isOpen) return;
+    if (!isOpen) return;
 
+    const fetchScheduleTypes = async () => {
       try {
         setLoadingScheduleTypes(true);
         const result = await dispatch(
@@ -137,13 +135,13 @@ export default function WorkScheduleModal({
     };
 
     fetchScheduleTypes();
-  }, [isOpen, dispatch]);
+  }, [isOpen]);
 
   // Fetch work schedule data for edit mode
   useEffect(() => {
-    const fetchWorkScheduleData = async () => {
-      if (!workScheduleId || !isOpen || isCreate) return;
+    if (!workScheduleId || !isOpen || isCreate) return;
 
+    const fetchWorkScheduleData = async () => {
       try {
         const resultAction = await dispatch(
           fetchWorkScheduleByIdService(workScheduleId),
@@ -152,7 +150,6 @@ export default function WorkScheduleModal({
         if (fetchWorkScheduleByIdService.fulfilled.match(resultAction)) {
           const data = resultAction.payload;
 
-          // Set selected user from userInfo
           if (data.userInfo) {
             setSelectedUser(data.userInfo);
           }
@@ -176,7 +173,7 @@ export default function WorkScheduleModal({
     };
 
     fetchWorkScheduleData();
-  }, [workScheduleId, isOpen, isCreate, reset, dispatch, currentUser]);
+  }, [workScheduleId, isOpen, isCreate, currentUser]);
 
   // Reset form for create mode
   useEffect(() => {
@@ -194,14 +191,15 @@ export default function WorkScheduleModal({
         breakEndTime: "",
       });
     }
-  }, [isOpen, isCreate, reset, currentUser]);
+    // Note: 'reset' excluded from dependencies to prevent infinite loop
+  }, [isOpen, isCreate, currentUser]);
 
   // Clear errors when modal opens
   useEffect(() => {
     if (isOpen) {
       dispatch(clearError());
     }
-  }, [isOpen, dispatch]);
+  }, [isOpen]);
 
   const onSubmit = async (data: WorkScheduleTypeFormData) => {
     try {
@@ -293,7 +291,7 @@ export default function WorkScheduleModal({
                 </div>
               )}
 
-              {/* User Selection Combobox */}
+              {/* User Selection */}
               <ComboboxSelectUser
                 dataSelect={selectedUser}
                 onChangeSelected={(user) => {
@@ -306,65 +304,64 @@ export default function WorkScheduleModal({
                 error={errors.userId?.message}
               />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextField
-                  control={control}
-                  name="name"
-                  label="Schedule Name"
-                  placeholder="Enter schedule name"
-                  required
-                  disabled={isSubmitting}
-                  error={errors.name}
-                />
+              {/* Schedule Name */}
+              <TextField
+                control={control}
+                name="name"
+                label="Schedule Name"
+                placeholder="Enter schedule name"
+                required
+                disabled={isSubmitting}
+                error={errors.name}
+              />
 
-                {/* Schedule Type Dropdown */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">
-                    Schedule Type <span className="text-red-500">*</span>
-                  </Label>
-                  <Controller
-                    control={control}
-                    name="scheduleTypeEnumName"
-                    render={({ field }) => (
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        disabled={isSubmitting || loadingScheduleTypes}
+              {/* Schedule Type */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  Schedule Type <span className="text-red-500">*</span>
+                </Label>
+                <Controller
+                  control={control}
+                  name="scheduleTypeEnumName"
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={isSubmitting || loadingScheduleTypes}
+                    >
+                      <SelectTrigger
+                        className={`transition-colors ${
+                          errors.scheduleTypeEnumName
+                            ? "border-red-500 focus:border-red-500"
+                            : ""
+                        }`}
                       >
-                        <SelectTrigger
-                          className={`transition-colors ${
-                            errors.scheduleTypeEnumName
-                              ? "border-red-500 focus:border-red-500"
-                              : ""
-                          }`}
-                        >
-                          <SelectValue
-                            placeholder={
-                              loadingScheduleTypes
-                                ? "Loading schedule types..."
-                                : "Select schedule type"
-                            }
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {scheduleTypes.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {errors.scheduleTypeEnumName && (
-                    <p className="text-sm text-red-600">
-                      {errors.scheduleTypeEnumName.message}
-                    </p>
+                        <SelectValue
+                          placeholder={
+                            loadingScheduleTypes
+                              ? "Loading schedule types..."
+                              : "Select schedule type"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {scheduleTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   )}
-                </div>
+                />
+                {errors.scheduleTypeEnumName && (
+                  <p className="text-sm text-red-600">
+                    {errors.scheduleTypeEnumName.message}
+                  </p>
+                )}
               </div>
 
-              {/* Work Days Multi-Select */}
+              {/* Work Days */}
               <MultiSelectDaysField
                 control={control}
                 name="workDays"
@@ -374,106 +371,104 @@ export default function WorkScheduleModal({
                 error={errors.workDays as any}
               />
 
-              {/* Time Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">
-                    Start Time <span className="text-red-500">*</span>
-                  </Label>
-                  <Controller
-                    control={control}
-                    name="startTime"
-                    render={({ field }) => (
-                      <CustomTimePicker
-                        value={field.value}
-                        onChange={field.onChange}
-                        disabled={isSubmitting}
-                        placeholder="Select start time"
-                        error={!!errors.startTime}
-                      />
-                    )}
-                  />
-                  {errors.startTime && (
-                    <p className="text-sm text-red-600">
-                      {errors.startTime.message}
-                    </p>
+              {/* Start Time */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  Start Time <span className="text-red-500">*</span>
+                </Label>
+                <Controller
+                  control={control}
+                  name="startTime"
+                  render={({ field }) => (
+                    <CustomTimePicker
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={isSubmitting}
+                      placeholder="Select start time"
+                      error={!!errors.startTime}
+                    />
                   )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">
-                    End Time <span className="text-red-500">*</span>
-                  </Label>
-                  <Controller
-                    control={control}
-                    name="endTime"
-                    render={({ field }) => (
-                      <CustomTimePicker
-                        value={field.value}
-                        onChange={field.onChange}
-                        disabled={isSubmitting}
-                        placeholder="Select end time"
-                        error={!!errors.endTime}
-                      />
-                    )}
-                  />
-                  {errors.endTime && (
-                    <p className="text-sm text-red-600">
-                      {errors.endTime.message}
-                    </p>
-                  )}
-                </div>
+                />
+                {errors.startTime && (
+                  <p className="text-sm text-red-600">
+                    {errors.startTime.message}
+                  </p>
+                )}
               </div>
 
-              {/* Break Time Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">
-                    Break Start Time (Optional)
-                  </Label>
-                  <Controller
-                    control={control}
-                    name="breakStartTime"
-                    render={({ field }) => (
-                      <CustomTimePicker
-                        value={field.value}
-                        onChange={field.onChange}
-                        disabled={isSubmitting}
-                        placeholder="Select break start time"
-                        error={!!errors.breakStartTime}
-                      />
-                    )}
-                  />
-                  {errors.breakStartTime && (
-                    <p className="text-sm text-red-600">
-                      {errors.breakStartTime.message}
-                    </p>
+              {/* End Time */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  End Time <span className="text-red-500">*</span>
+                </Label>
+                <Controller
+                  control={control}
+                  name="endTime"
+                  render={({ field }) => (
+                    <CustomTimePicker
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={isSubmitting}
+                      placeholder="Select end time"
+                      error={!!errors.endTime}
+                    />
                   )}
-                </div>
+                />
+                {errors.endTime && (
+                  <p className="text-sm text-red-600">
+                    {errors.endTime.message}
+                  </p>
+                )}
+              </div>
 
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">
-                    Break End Time (Optional)
-                  </Label>
-                  <Controller
-                    control={control}
-                    name="breakEndTime"
-                    render={({ field }) => (
-                      <CustomTimePicker
-                        value={field.value}
-                        onChange={field.onChange}
-                        disabled={isSubmitting}
-                        placeholder="Select break end time"
-                        error={!!errors.breakEndTime}
-                      />
-                    )}
-                  />
-                  {errors.breakEndTime && (
-                    <p className="text-sm text-red-600">
-                      {errors.breakEndTime.message}
-                    </p>
+              {/* Break Start Time */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  Break Start Time (Optional)
+                </Label>
+                <Controller
+                  control={control}
+                  name="breakStartTime"
+                  render={({ field }) => (
+                    <CustomTimePicker
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={isSubmitting}
+                      placeholder="Select break start time"
+                      error={!!errors.breakStartTime}
+                    />
                   )}
-                </div>
+                />
+                {errors.breakStartTime && (
+                  <p className="text-sm text-red-600">
+                    {errors.breakStartTime.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Break End Time */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  Break End Time (Optional)
+                </Label>
+                <Controller
+                  control={control}
+                  name="breakEndTime"
+                  render={({ field }) => (
+                    <CustomTimePicker
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={isSubmitting}
+                      placeholder="Select break end time"
+                      error={!!errors.breakEndTime}
+                    />
+                  )}
+                />
+                {errors.breakEndTime && (
+                  <p className="text-sm text-red-600">
+                    {errors.breakEndTime.message}
+                  </p>
+                )}
               </div>
             </FormBody>
 

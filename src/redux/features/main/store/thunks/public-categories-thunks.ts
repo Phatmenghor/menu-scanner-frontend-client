@@ -23,26 +23,23 @@ export const fetchPublicCategories = createAsyncThunk<
   PaginationResponseModel<CategoriesResponseModel>,
   FetchPublicCategoriesParams,
   { rejectValue: string }
->(
-  "publicCategories/fetchAll",
-  async (params, { rejectWithValue }) => {
-    try {
-      const response = await axiosInstance.get<
-        PaginationResponseModel<CategoriesResponseModel>
-      >("/public/categories", {
-        params: {
-          pageNo: params.pageNo || 1,
-          pageSize: params.pageSize || 12,
-          search: params.search || undefined,
-          status: params.status || "ACTIVE",
-        },
-      });
+>("publicCategories/fetchAll", async (params, { rejectWithValue }) => {
+  try {
+    const response = await axiosInstance.get<
+      PaginationResponseModel<CategoriesResponseModel>
+    >("/public/categories", {
+      params: {
+        pageNo: params.pageNo || 1,
+        pageSize: params.pageSize || 12,
+        search: params.search || undefined,
+        status: params.status || "ACTIVE",
+      },
+    });
 
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch categories"
-      );
-    }
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(
+      error.response?.data?.message || "Failed to fetch categories",
+    );
   }
-);
+});
