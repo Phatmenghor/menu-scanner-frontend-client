@@ -23,6 +23,8 @@ export function SelectField({
   placeholder = "Select an option",
   onValueChange,
   className = "",
+  loading = false,
+  loadingPlaceholder = "Loading...",
 }: SelectFieldProps) {
   return (
     <div className={`space-y-2 ${className}`}>
@@ -48,14 +50,16 @@ export function SelectField({
                   field.onChange(value);
                 }
               }}
-              disabled={disabled}
+              disabled={disabled || loading}
             >
               <SelectTrigger
                 className={`transition-colors ${
                   error ? "border-red-500 focus:border-red-500" : ""
                 }`}
               >
-                <SelectValue placeholder={placeholder} />
+                <SelectValue
+                  placeholder={loading ? loadingPlaceholder : placeholder}
+                />
               </SelectTrigger>
               <SelectContent>
                 {options.map((option) => (

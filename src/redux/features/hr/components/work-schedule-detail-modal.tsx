@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { dateTimeFormat } from "@/utils/date/date-time-format";
+import { dateTimeFormat, formatTime } from "@/utils/date/date-time-format";
 import { DetailModal } from "@/components/shared/modal/detail-modal";
 import {
   DetailRow,
@@ -10,10 +10,11 @@ import {
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import {
   selectIsFetchingDetail,
-  selectSelectedWorkScheduleType,
-} from "../store/selectors/work-schedule-type-selectors";
-import { fetchWorkScheduleTypeByIdService } from "../store/thunks/work-schedule-type-thunks";
-import { clearSelectedWorkSchedule } from "../store/slice/work-schedule-type-slice";
+  selectSelectedWorkSchedule,
+} from "../store/selectors/work-schedule-selectors";
+import { fetchWorkScheduleByIdService } from "../store/thunks/work-schedule-thunks";
+import { clearSelectedWorkSchedule } from "../store/slice/work-schedule-slice";
+import { Badge } from "@/components/ui/badge";
 
 interface WorkScheduleDetailModalProps {
   workScheduleId?: string;
@@ -28,21 +29,19 @@ export function WorkScheduleDetailModal({
 }: WorkScheduleDetailModalProps) {
   const dispatch = useAppDispatch();
   const isFetchingDetail = useAppSelector(selectIsFetchingDetail);
-  const workScheduleData = useAppSelector(selectSelectedWorkScheduleType);
+  const workScheduleData = useAppSelector(selectSelectedWorkSchedule);
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchWorkScheduleData = async () => {
       if (!workScheduleId || !isOpen) return;
       try {
-        await dispatch(
-          fetchWorkScheduleTypeByIdService(workScheduleId)
-        ).unwrap();
+        await dispatch(fetchWorkScheduleByIdService(workScheduleId)).unwrap();
       } catch (error: any) {
         console.error("Error fetching work schedule data:", error);
       }
     };
 
-    fetchUserData();
+    fetchWorkScheduleData();
   }, [workScheduleId, isOpen, dispatch]);
 
   const handleClose = () => {
@@ -61,18 +60,85 @@ export function WorkScheduleDetailModal({
       {workScheduleData ? (
         <div className="space-y-6">
           {/* Work Schedule Information */}
-          <DetailSection title="Work Schedule Information">
+          <DetailSection title="Schedule Information">
             <DetailRow
-              label="Work Schedule Name"
-              value={workScheduleData?.enumName || "---"}
+              label="Schedule Name"
+              value={workScheduleData?.name || "---"}
             />
 
             <DetailRow
-              label="Description"
-              value={workScheduleData?.description || "---"}
+              label="Schedule Type"
+              value={workScheduleData?.scheduleTypeEnumName || "---"}
+            />
+
+            <DetailRow
+              label="Work Days"
+              value={
+                workScheduleData?.workDays &&
+                workScheduleData.workDays.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {workScheduleData.workDays.map((day) => (
+                      <Badge
+                        key={day}
+                        variant="secondary"
+                        className="text-xs px-2 py-0.5"
+                      >
+                        {day}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  "---"
+                )
+              }
               isLast
             />
           </DetailSection>
+
+          {/* Time Information */}
+          <DetailSection title="Time Information">
+            <DetailRow
+              label="Start Time"
+              value={formatTime(workScheduleData?.startTime)}
+            />
+
+            <DetailRow
+              label="End Time"
+              value={formatTime(workScheduleData?.endTime)}
+            />
+
+            <DetailRow
+              label="Break Start Time"
+              value={formatTime(workScheduleData?.breakStartTime)}
+            />
+
+            <DetailRow
+              label="Break End Time"
+              value={formatTime(workScheduleData?.breakEndTime)}
+              isLast
+            />
+          </DetailSection>
+
+          {/* User Information */}
+          {workScheduleData?.userInfo && (
+            <DetailSection title="Assigned User">
+              <DetailRow
+                label="User Name"
+                value={workScheduleData.userInfo.fullName || "---"}
+              />
+
+              <DetailRow
+                label="Email"
+                value={workScheduleData.userInfo.email || "---"}
+              />
+
+              <DetailRow
+                label="Phone Number"
+                value={workScheduleData.userInfo.phoneNumber || "---"}
+                isLast
+              />
+            </DetailSection>
+          )}
 
           {/* System Information */}
           <DetailSection title="System Information">

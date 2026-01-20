@@ -3,7 +3,7 @@ import { BaseGetAllRequest } from "@/utils/common/get-all-request";
 
 export interface CreateWorkScheduleRequest {
   userId: string;
-  businessId: string;
+  businessId?: string;
   name: string;
   scheduleTypeEnumName: string;
   workDays: DayOfWeek[];

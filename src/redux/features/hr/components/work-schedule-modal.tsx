@@ -1,43 +1,58 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Loading from "@/components/shared/common/loading";
 import { TextField } from "@/components/shared/form-field/text-field";
-import { TextareaField } from "@/components/shared/form-field/text-area-field";
 import { CancelButton } from "@/components/shared/form-field/cancel-button";
 import { SubmitButton } from "@/components/shared/form-field/submid-button";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { showToast } from "@/components/shared/common/show-toast";
 import { FormBody } from "@/components/shared/form-field/form-body";
 import { FormFooter } from "@/components/shared/form-field/form-footer";
+import { FormHeader } from "@/components/shared/form-field/form-header";
 import { ModalMode } from "@/constants/status/status";
+import { AppDefault } from "@/constants/app-resource/default/default";
+import { selectUser } from "@/redux/features/auth/store/selectors/auth-selectors";
 import {
   selectError,
   selectIsFetchingDetail,
   selectOperations,
-} from "../store/selectors/work-schedule-type-selectors";
+} from "../store/selectors/work-schedule-selectors";
 import {
-  createWorkScheduleTypeSchema,
-  updateWorkScheduleTypeSchema,
+  createWorkScheduleSchema,
+  updateWorkScheduleSchema,
   WorkScheduleTypeFormData,
-} from "../store/models/schema/work-schedule-type.schema";
+} from "../store/models/schema/work-schedule.schema";
 import {
-  createWorkScheduleTypeService,
-  fetchWorkScheduleTypeByIdService,
-  updateWorkScheduleTypeService,
-} from "../store/thunks/work-schedule-type-thunks";
+  createWorkScheduleService,
+  fetchWorkScheduleByIdService,
+  updateWorkScheduleService,
+} from "../store/thunks/work-schedule-thunks";
 import {
   clearError,
   clearSelectedWorkSchedule,
-} from "../store/slice/work-schedule-type-slice";
-import { FormHeader } from "@/components/shared/form-field/form-header";
+} from "../store/slice/work-schedule-slice";
 import {
-  CreateWorkScheduleTypeRequest,
-  UpdateWorkScheduleTypeRequest,
-} from "../store/models/request/work-schedule-type-request";
+  CreateWorkScheduleRequest,
+  UpdateWorkScheduleRequest,
+} from "../store/models/request/work-schedule-request";
+import { MultiSelectDaysField } from "@/components/shared/form-field/multi-select-days-field";
+import { TimePickerField } from "@/components/shared/form-field/time-picker-field";
+import { ComboboxSelectUser } from "@/components/shared/combobox/combobox_select_user";
+import { ComboboxSelectScheduleType } from "@/components/shared/combobox/combobox_select_schedule_type";
+import { DayOfWeek } from "@/types/business-profile";
+
+// Default working days: Monday to Friday
+const DEFAULT_WORK_DAYS: DayOfWeek[] = [
+  DayOfWeek.MONDAY,
+  DayOfWeek.TUESDAY,
+  DayOfWeek.WEDNESDAY,
+  DayOfWeek.THURSDAY,
+  DayOfWeek.FRIDAY,
+];
 
 type Props = {
   mode: ModalMode;
@@ -53,8 +68,8 @@ export default function WorkScheduleModal({
   mode,
 }: Props) {
   const isCreate = mode === ModalMode.CREATE_MODE;
-
   const dispatch = useAppDispatch();
+  const currentUser = useAppSelector(selectUser);
 
   const operations = useAppSelector(selectOperations);
   const isFetchingDetail = useAppSelector(selectIsFetchingDetail);
@@ -66,37 +81,50 @@ export default function WorkScheduleModal({
     handleSubmit,
     reset,
     setValue,
-    watch,
     formState: { errors, isDirty },
   } = useForm<WorkScheduleTypeFormData>({
     resolver: zodResolver(
-      isCreate ? createWorkScheduleTypeSchema : updateWorkScheduleTypeSchema
+      isCreate ? createWorkScheduleSchema : updateWorkScheduleSchema,
     ) as any,
     defaultValues: {
       id: "",
-      enumName: "",
-      description: "",
+      userId: currentUser?.userId || "",
+      businessId: AppDefault.BUSINESS_ID,
+      name: "",
+      scheduleTypeEnumName: "",
+      workDays: DEFAULT_WORK_DAYS,
+      startTime: "",
+      endTime: "",
+      breakStartTime: "",
+      breakEndTime: "",
     },
     mode: "onChange",
   });
 
-  // Fetch user data for edit mode
+  // Fetch data in edit mode
   useEffect(() => {
-    const fetchWorkScheduleData = async () => {
+    const fetchScheduleData = async () => {
       if (!workScheduleId || !isOpen || isCreate) return;
 
       try {
         const resultAction = await dispatch(
-          fetchWorkScheduleTypeByIdService(workScheduleId)
+          fetchWorkScheduleByIdService(workScheduleId),
         );
 
-        if (fetchWorkScheduleTypeByIdService.fulfilled.match(resultAction)) {
+        if (fetchWorkScheduleByIdService.fulfilled.match(resultAction)) {
           const data = resultAction.payload;
 
           reset({
             id: data.id,
-            enumName: data.enumName || "",
-            description: data.description || "",
+            userId: data.userInfo?.id || currentUser?.userId || "",
+            businessId: data.businessId || AppDefault.BUSINESS_ID,
+            name: data.name || "",
+            scheduleTypeEnumName: data.scheduleTypeEnumName || "",
+            workDays: (data.workDays || []) as DayOfWeek[],
+            startTime: data.startTime || "",
+            endTime: data.endTime || "",
+            breakStartTime: data.breakStartTime || "",
+            breakEndTime: data.breakEndTime || "",
           });
         }
       } catch (error) {
@@ -104,18 +132,25 @@ export default function WorkScheduleModal({
       }
     };
 
-    fetchWorkScheduleData();
-  }, [workScheduleId, isOpen, isCreate, reset, dispatch]);
+    fetchScheduleData();
+  }, [workScheduleId, isOpen, isCreate, dispatch, reset, currentUser?.userId]);
 
   // Reset form for create mode
   useEffect(() => {
     if (isOpen && isCreate) {
       reset({
-        enumName: "",
-        description: "",
+        userId: currentUser?.userId || "",
+        businessId: AppDefault.BUSINESS_ID,
+        name: "",
+        scheduleTypeEnumName: "",
+        workDays: DEFAULT_WORK_DAYS,
+        startTime: "",
+        endTime: "",
+        breakStartTime: "",
+        breakEndTime: "",
       });
     }
-  }, [isOpen, isCreate, reset]);
+  }, [isOpen, isCreate, reset, currentUser?.userId]);
 
   // Clear errors when modal opens
   useEffect(() => {
@@ -127,37 +162,50 @@ export default function WorkScheduleModal({
   const onSubmit = async (data: WorkScheduleTypeFormData) => {
     try {
       if (isCreate) {
-        const payload: CreateWorkScheduleTypeRequest = {
-          enumName: data.enumName,
-          description: data.description,
+        const payload: CreateWorkScheduleRequest = {
+          userId: data.userId,
+          businessId: data.businessId,
+          name: data.name,
+          scheduleTypeEnumName: data.scheduleTypeEnumName,
+          workDays: data.workDays,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          breakStartTime: data.breakStartTime,
+          breakEndTime: data.breakEndTime,
         };
 
         const result = await dispatch(
-          createWorkScheduleTypeService(payload)
+          createWorkScheduleService(payload),
         ).unwrap();
 
         showToast.success(
-          `Work schedule "${result.enumName}" created successfully`
+          `Work schedule "${result.name}" created successfully`,
         );
         handleClose();
       } else {
-        const payload: UpdateWorkScheduleTypeRequest = {
-          enumName: data.enumName,
-          description: data.description,
+        const payload: UpdateWorkScheduleRequest = {
+          name: data.name,
+          scheduleTypeEnumName: data.scheduleTypeEnumName,
+          workDays: data.workDays,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          breakStartTime: data.breakStartTime,
+          breakEndTime: data.breakEndTime,
         };
 
         const result = await dispatch(
-          updateWorkScheduleTypeService({ id: data.id, param: payload })
+          updateWorkScheduleService({ id: data.id || "", param: payload }),
         ).unwrap();
 
         showToast.success(
-          `Work schedule "${result.enumName}" updated successfully`
+          `Work schedule "${result.name}" updated successfully`,
         );
         handleClose();
       }
     } catch (error: any) {
       showToast.error(
-        error || `Failed to ${isCreate ? "create" : "update"} user business`
+        error?.message ||
+          `Failed to ${isCreate ? "create" : "update"} work schedule`,
       );
     }
   };
@@ -201,25 +249,109 @@ export default function WorkScheduleModal({
                 </div>
               )}
 
-              <TextField
-                control={control}
-                name="enumName"
-                label="Work Schedule Name"
-                placeholder="Enter Work Schedule Name"
-                required
+              {/* User Selection */}
+              <ComboboxSelectUser
+                dataSelect={null}
+                onChangeSelected={(user) => {
+                  setValue("userId", user?.id || "", { shouldValidate: true });
+                }}
                 disabled={isSubmitting}
-                error={errors.enumName}
+                label="Select User"
+                required
+                error={errors.userId?.message}
               />
 
-              <TextareaField
+              {/* Schedule Name */}
+              <TextField
                 control={control}
-                name="description"
-                label="Description"
-                placeholder="Enter any additional description (optional)"
-                rows={5}
+                name="name"
+                label="Schedule Name"
+                placeholder="Enter schedule name"
+                required
                 disabled={isSubmitting}
-                error={errors.description}
+                error={errors.name}
               />
+
+              {/* Schedule Type */}
+              <ComboboxSelectScheduleType
+                value=""
+                onValueChange={(value) => {
+                  setValue("scheduleTypeEnumName", value, {
+                    shouldValidate: true,
+                  });
+                }}
+                disabled={isSubmitting}
+                label="Schedule Type"
+                required
+                placeholder="Select schedule type"
+                error={errors.scheduleTypeEnumName?.message}
+              />
+
+              {/* Work Days */}
+              <MultiSelectDaysField
+                control={control}
+                name="workDays"
+                label="Work Days"
+                required
+                disabled={isSubmitting}
+                error={errors.workDays as any}
+                defaultDays={DEFAULT_WORK_DAYS}
+              />
+
+              {/* Time Section - Required Fields */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Start Time */}
+                  <TimePickerField
+                    control={control}
+                    name="startTime"
+                    label="Start Time"
+                    placeholder="Select start time"
+                    required
+                    disabled={isSubmitting}
+                    error={errors.startTime}
+                  />
+
+                  {/* End Time */}
+                  <TimePickerField
+                    control={control}
+                    name="endTime"
+                    label="End Time"
+                    placeholder="Select end time"
+                    required
+                    disabled={isSubmitting}
+                    error={errors.endTime}
+                  />
+                </div>
+
+                {/* Break Times - Optional Fields */}
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-medium text-gray-600 mb-3">
+                    Break Times (Optional)
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Break Start Time */}
+                    <TimePickerField
+                      control={control}
+                      name="breakStartTime"
+                      label="Break Start Time"
+                      placeholder="Select break start time"
+                      disabled={isSubmitting}
+                      error={errors.breakStartTime}
+                    />
+
+                    {/* Break End Time */}
+                    <TimePickerField
+                      control={control}
+                      name="breakEndTime"
+                      label="Break End Time"
+                      placeholder="Select break end time"
+                      disabled={isSubmitting}
+                      error={errors.breakEndTime}
+                    />
+                  </div>
+                </div>
+              </div>
             </FormBody>
 
             <FormFooter

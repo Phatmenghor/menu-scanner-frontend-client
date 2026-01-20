@@ -10,18 +10,18 @@ import { DeleteConfirmationModal } from "@/components/shared/modal/delete-confir
 import { DataTableWithPagination } from "@/components/shared/common/data-table";
 import { showToast } from "@/components/shared/common/show-toast";
 import { usePagination } from "@/redux/store/use-pagination";
-import { useWorkScheduleTypeState } from "@/redux/features/hr/store/state/work-schedule-type-state";
+import { useWorkScheduleState } from "@/redux/features/hr/store/state/work-schedule-state";
 import { ModalMode } from "@/constants/status/status";
-import { WorkScheduleTypeResponseModel } from "@/redux/features/hr/store/models/response/work-schedule-type-response";
+import { WorkScheduleResponseModel } from "@/redux/features/hr/store/models/response/work-schedule-response";
 import {
   resetState,
   setPageNo,
   setSearchFilter,
-} from "@/redux/features/hr/store/slice/work-schedule-type-slice";
+} from "@/redux/features/hr/store/slice/work-schedule-slice";
 import {
-  deleteWorkScheduleTypeService,
-  fetchAllWorkSchedulesTypeService,
-} from "@/redux/features/hr/store/thunks/work-schedule-type-thunks";
+  deleteWorkScheduleService,
+  fetchAllWorkScheduleService,
+} from "@/redux/features/hr/store/thunks/work-schedule-thunks";
 import { workScheduleTableColumns } from "@/redux/features/hr/table/work-schedule-table";
 import WorkScheduleModal from "@/redux/features/hr/components/work-schedule-modal";
 import { WorkScheduleDetailModal } from "@/redux/features/hr/components/work-schedule-detail-modal";
@@ -35,13 +35,13 @@ export default function WorkSchedulePage() {
   const {
     workScheduleState,
     workScheduleData,
-    workScheduleTypeContent: workScheduleContent,
+    workScheduleContent,
     isLoading,
     filters,
     operations,
     pagination,
     dispatch,
-  } = useWorkScheduleTypeState();
+  } = useWorkScheduleState();
 
   // Local UI state for modals only
   const [modalState, setModalState] = useState({
@@ -57,13 +57,13 @@ export default function WorkSchedulePage() {
 
   const [deleteState, setDeleteState] = useState({
     isOpen: false,
-    workSchedule: null as WorkScheduleTypeResponseModel | null,
+    workSchedule: null as WorkScheduleResponseModel | null,
   });
 
   const debouncedSearch = useDebounce(filters.search, 400);
 
   const { updateUrlWithPage, handlePageChange } = usePagination({
-    baseRoute: ROUTES.HR.WORK_SCHEDULE_TYPE,
+    baseRoute: ROUTES.HR.WORK_SCHEDULE,
     defaultPageSize: 15,
   });
 
@@ -77,13 +77,13 @@ export default function WorkSchedulePage() {
     }
   }, [searchParams, filters.pageNo, dispatch]);
 
-  // Fetch users when filters change
+  // Fetch work schedules when filters change
   useEffect(() => {
     dispatch(
-      fetchAllWorkSchedulesTypeService({
+      fetchAllWorkScheduleService({
         search: debouncedSearch,
         pageNo: filters.pageNo,
-      })
+      }),
     );
   }, [dispatch, debouncedSearch, filters.pageNo]);
 
@@ -96,7 +96,7 @@ export default function WorkSchedulePage() {
     });
   };
 
-  const handleEditItem = (schedule: WorkScheduleTypeResponseModel) => {
+  const handleEditItem = (schedule: WorkScheduleResponseModel) => {
     setModalState({
       isOpen: true,
       mode: ModalMode.UPDATE_MODE,
@@ -104,14 +104,14 @@ export default function WorkSchedulePage() {
     });
   };
 
-  const handleViewDetailItem = (schedule: WorkScheduleTypeResponseModel) => {
+  const handleViewDetailItem = (schedule: WorkScheduleResponseModel) => {
     setDetailModalState({
       isOpen: true,
       id: schedule.id || "",
     });
   };
 
-  const handleDeleteItem = (schedule: WorkScheduleTypeResponseModel) => {
+  const handleDeleteItem = (schedule: WorkScheduleResponseModel) => {
     setDeleteState({
       isOpen: true,
       workSchedule: schedule,
@@ -124,7 +124,7 @@ export default function WorkSchedulePage() {
       handleViewDetailItem,
       handleDeleteItem,
     }),
-    []
+    [],
   );
 
   const columns = useMemo(
@@ -133,7 +133,7 @@ export default function WorkSchedulePage() {
         data: workScheduleData,
         handlers: tableHandlers,
       }),
-    [workScheduleState, tableHandlers]
+    [workScheduleState, tableHandlers],
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -150,13 +150,13 @@ export default function WorkSchedulePage() {
 
     try {
       await dispatch(
-        deleteWorkScheduleTypeService(deleteState.workSchedule.id)
+        deleteWorkScheduleService(deleteState.workSchedule.id),
       ).unwrap();
 
       showToast.success(
         `Work Schedule "${
-          deleteState.workSchedule.enumName ?? ""
-        }" deleted successfully`
+          deleteState.workSchedule.name ?? ""
+        }" deleted successfully`,
       );
 
       closeDeleteModal();
@@ -200,12 +200,12 @@ export default function WorkSchedulePage() {
         <CardHeaderSection
           breadcrumbs={[
             { label: "Dashboard", href: ROUTES.ADMIN.ROOT },
-            { label: "Work Schedule Type", href: "" },
+            { label: "Work Schedules", href: "" },
           ]}
-          title="Work Schedule Type Information"
+          title="Work Schedule Management"
           searchValue={filters.search}
-          searchPlaceholder="Search work schedule types..."
-          buttonTooltip="Create a new work schedule type"
+          searchPlaceholder="Search work schedules..."
+          buttonTooltip="Create a new work schedule"
           buttonIcon={<Plus className="w-3 h-3" />}
           buttonText="New"
           onSearchChange={handleSearchChange}
@@ -217,7 +217,7 @@ export default function WorkSchedulePage() {
           data={workScheduleContent}
           columns={columns}
           loading={isLoading}
-          emptyMessage="No work schedule types found"
+          emptyMessage="No work schedules found"
           getRowKey={(workSchedule) => workSchedule.id}
           currentPage={filters.pageNo}
           totalPages={pagination.totalPages}
@@ -233,21 +233,21 @@ export default function WorkSchedulePage() {
         mode={modalState.mode}
       />
 
-      {/* Modals User Detail */}
+      {/* Modals Work Schedule Detail */}
       <WorkScheduleDetailModal
         workScheduleId={detailModalState.id}
         isOpen={detailModalState.isOpen}
         onClose={closeDetailModal}
       />
 
-      {/* Modals Delete User */}
+      {/* Modals Delete Work Schedule */}
       <DeleteConfirmationModal
         isOpen={deleteState.isOpen}
         onClose={closeDeleteModal}
         onDelete={handleDelete}
         title="Delete Work Schedule"
-        description={`Are you sure you want to delete this work schedule ${deleteState.workSchedule?.enumName}?`}
-        itemName={deleteState.workSchedule?.enumName || "this work schedule"}
+        description={`Are you sure you want to delete this work schedule ${deleteState.workSchedule?.name}?`}
+        itemName={deleteState.workSchedule?.name || "this work schedule"}
         isSubmitting={operations.isDeleting}
       />
     </div>
