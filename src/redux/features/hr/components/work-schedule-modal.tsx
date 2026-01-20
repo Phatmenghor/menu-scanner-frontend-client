@@ -24,7 +24,7 @@ import {
 import {
   createWorkScheduleSchema,
   updateWorkScheduleSchema,
-  WorkScheduleTypeFormData,
+  WorkScheduleFormData,
 } from "../store/models/schema/work-schedule.schema";
 import {
   createWorkScheduleService,
@@ -44,6 +44,7 @@ import { TimePickerField } from "@/components/shared/form-field/time-picker-fiel
 import { ComboboxSelectUser } from "@/components/shared/combobox/combobox_select_user";
 import { ComboboxSelectScheduleType } from "@/components/shared/combobox/combobox_select_schedule_type";
 import { DayOfWeek } from "@/types/business-profile";
+import { WorkScheduleTypeFormData } from "../store/models/schema/work-schedule-type.schema";
 
 // Default working days: Monday to Friday
 const DEFAULT_WORK_DAYS: DayOfWeek[] = [
@@ -82,7 +83,7 @@ export default function WorkScheduleModal({
     reset,
     setValue,
     formState: { errors, isDirty },
-  } = useForm<WorkScheduleTypeFormData>({
+  } = useForm<WorkScheduleFormData>({
     resolver: zodResolver(
       isCreate ? createWorkScheduleSchema : updateWorkScheduleSchema,
     ) as any,
@@ -159,7 +160,7 @@ export default function WorkScheduleModal({
     }
   }, [isOpen, dispatch]);
 
-  const onSubmit = async (data: WorkScheduleTypeFormData) => {
+  const onSubmit = async (data: WorkScheduleFormData) => {
     try {
       if (isCreate) {
         const payload: CreateWorkScheduleRequest = {

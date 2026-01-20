@@ -7,7 +7,6 @@ export interface CreateWorkScheduleRequest {
   name: string;
   scheduleTypeEnumName: string;
   workDays: DayOfWeek[];
-
   startTime: string;
   endTime: string;
   breakStartTime?: string;
