@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,6 +16,7 @@ import { FormHeader } from "@/components/shared/form-field/form-header";
 import { ModalMode } from "@/constants/status/status";
 import { AppDefault } from "@/constants/app-resource/default/default";
 import { selectUser } from "@/redux/features/auth/store/selectors/auth-selectors";
+import { UserResponseModel } from "@/redux/features/auth/store/models/response/users-response";
 import {
   selectError,
   selectIsFetchingDetail,
@@ -77,6 +78,10 @@ export default function WorkScheduleModal({
   const reduxError = useAppSelector(selectError);
   const { isCreating, isUpdating } = operations;
 
+  // State for combobox selections
+  const [selectedUser, setSelectedUser] = useState<UserResponseModel | null>(null);
+  const [selectedScheduleType, setSelectedScheduleType] = useState<string>("");
+
   const {
     control,
     handleSubmit,
@@ -115,6 +120,16 @@ export default function WorkScheduleModal({
         if (fetchWorkScheduleByIdService.fulfilled.match(resultAction)) {
           const data = resultAction.payload;
 
+          // Set the selected user
+          if (data.userInfo) {
+            setSelectedUser(data.userInfo as UserResponseModel);
+          }
+
+          // Set the selected schedule type
+          if (data.scheduleTypeEnumName) {
+            setSelectedScheduleType(data.scheduleTypeEnumName);
+          }
+
           reset({
             id: data.id,
             userId: data.userInfo?.id || currentUser?.userId || "",
@@ -139,6 +154,8 @@ export default function WorkScheduleModal({
   // Reset form for create mode
   useEffect(() => {
     if (isOpen && isCreate) {
+      setSelectedUser(null);
+      setSelectedScheduleType("");
       reset({
         userId: currentUser?.userId || "",
         businessId: AppDefault.BUSINESS_ID,
@@ -213,6 +230,8 @@ export default function WorkScheduleModal({
 
   const handleClose = () => {
     reset();
+    setSelectedUser(null);
+    setSelectedScheduleType("");
     dispatch(clearError());
     dispatch(clearSelectedWorkSchedule());
     onClose();
@@ -252,8 +271,9 @@ export default function WorkScheduleModal({
 
               {/* User Selection */}
               <ComboboxSelectUser
-                dataSelect={null}
+                dataSelect={selectedUser}
                 onChangeSelected={(user) => {
+                  setSelectedUser(user);
                   setValue("userId", user?.id || "", { shouldValidate: true });
                 }}
                 disabled={isSubmitting}
@@ -275,8 +295,9 @@ export default function WorkScheduleModal({
 
               {/* Schedule Type */}
               <ComboboxSelectScheduleType
-                value=""
+                value={selectedScheduleType}
                 onValueChange={(value) => {
+                  setSelectedScheduleType(value);
                   setValue("scheduleTypeEnumName", value, {
                     shouldValidate: true,
                   });
