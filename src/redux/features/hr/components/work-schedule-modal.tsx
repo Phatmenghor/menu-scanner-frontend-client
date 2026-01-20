@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -43,7 +43,16 @@ import { MultiSelectDaysField } from "@/components/shared/form-field/multi-selec
 import { TimePickerField } from "@/components/shared/form-field/time-picker-field";
 import { ComboboxSelectUser } from "@/components/shared/combobox/combobox_select_user";
 import { ComboboxSelectScheduleType } from "@/components/shared/combobox/combobox_select_schedule_type";
-import { UserResponseModel } from "@/redux/features/auth/store/models/response/users-response";
+import { DayOfWeek } from "@/types/business-profile";
+
+// Default working days: Monday to Friday
+const DEFAULT_WORK_DAYS: DayOfWeek[] = [
+  DayOfWeek.MONDAY,
+  DayOfWeek.TUESDAY,
+  DayOfWeek.WEDNESDAY,
+  DayOfWeek.THURSDAY,
+  DayOfWeek.FRIDAY,
+];
 
 type Props = {
   mode: ModalMode;
@@ -67,14 +76,6 @@ export default function WorkScheduleModal({
   const reduxError = useAppSelector(selectError);
   const { isCreating, isUpdating } = operations;
 
-  const [selectedUser, setSelectedUser] = useState<UserResponseModel | null>(
-    null,
-  );
-  const [selectedScheduleType, setSelectedScheduleType] = useState<string>("");
-
-  // Ref to prevent re-initialization during the same modal session
-  const hasInitialized = React.useRef(false);
-
   const {
     control,
     handleSubmit,
@@ -91,7 +92,7 @@ export default function WorkScheduleModal({
       businessId: AppDefault.BUSINESS_ID,
       name: "",
       scheduleTypeEnumName: "",
-      workDays: [],
+      workDays: DEFAULT_WORK_DAYS,
       startTime: "",
       endTime: "",
       breakStartTime: "",
@@ -100,84 +101,63 @@ export default function WorkScheduleModal({
     mode: "onChange",
   });
 
-  // Single initialization effect - runs only ONCE per modal open
+  // Fetch data in edit mode
   useEffect(() => {
-    // Reset flag when modal closes
-    if (!isOpen) {
-      hasInitialized.current = false;
-      return;
-    }
+    const fetchScheduleData = async () => {
+      if (!workScheduleId || !isOpen || isCreate) return;
 
-    // Skip if already initialized
-    if (hasInitialized.current) {
-      return;
-    }
+      try {
+        const resultAction = await dispatch(
+          fetchWorkScheduleByIdService(workScheduleId),
+        );
 
-    // Mark as initialized
-    hasInitialized.current = true;
+        if (fetchWorkScheduleByIdService.fulfilled.match(resultAction)) {
+          const data = resultAction.payload;
 
-    // Initialize based on mode
-    const initialize = async () => {
-      // EDIT MODE
-      if (!isCreate && workScheduleId) {
-        try {
-          const resultAction = await dispatch(
-            fetchWorkScheduleByIdService(workScheduleId),
-          );
-
-          if (fetchWorkScheduleByIdService.fulfilled.match(resultAction)) {
-            const data = resultAction.payload;
-
-            if (data.userInfo) {
-              setSelectedUser(data.userInfo);
-            }
-
-            if (data.scheduleTypeEnumName) {
-              setSelectedScheduleType(data.scheduleTypeEnumName);
-            }
-
-            reset({
-              id: data.id,
-              userId: data.userInfo?.id || currentUser?.userId || "",
-              businessId: data.businessId || AppDefault.BUSINESS_ID,
-              name: data.name || "",
-              scheduleTypeEnumName: data.scheduleTypeEnumName || "",
-              workDays: data.workDays || [],
-              startTime: data.startTime || "",
-              endTime: data.endTime || "",
-              breakStartTime: data.breakStartTime || "",
-              breakEndTime: data.breakEndTime || "",
-            });
-          }
-        } catch (error) {
-          console.error("Error fetching work schedule data:", error);
+          reset({
+            id: data.id,
+            userId: data.userInfo?.id || currentUser?.userId || "",
+            businessId: data.businessId || AppDefault.BUSINESS_ID,
+            name: data.name || "",
+            scheduleTypeEnumName: data.scheduleTypeEnumName || "",
+            workDays: (data.workDays || []) as DayOfWeek[],
+            startTime: data.startTime || "",
+            endTime: data.endTime || "",
+            breakStartTime: data.breakStartTime || "",
+            breakEndTime: data.breakEndTime || "",
+          });
         }
+      } catch (error) {
+        console.error("Error fetching work schedule data:", error);
       }
-
-      // CREATE MODE
-      if (isCreate) {
-        setSelectedUser(null);
-        setSelectedScheduleType("");
-        reset({
-          userId: currentUser?.userId || "",
-          businessId: AppDefault.BUSINESS_ID,
-          name: "",
-          scheduleTypeEnumName: "",
-          workDays: [],
-          startTime: "",
-          endTime: "",
-          breakStartTime: "",
-          breakEndTime: "",
-        });
-      }
-
-      // Clear errors
-      dispatch(clearError());
     };
 
-    initialize();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
+    fetchScheduleData();
+  }, [workScheduleId, isOpen, isCreate, dispatch, reset, currentUser?.userId]);
+
+  // Reset form for create mode
+  useEffect(() => {
+    if (isOpen && isCreate) {
+      reset({
+        userId: currentUser?.userId || "",
+        businessId: AppDefault.BUSINESS_ID,
+        name: "",
+        scheduleTypeEnumName: "",
+        workDays: DEFAULT_WORK_DAYS,
+        startTime: "",
+        endTime: "",
+        breakStartTime: "",
+        breakEndTime: "",
+      });
+    }
+  }, [isOpen, isCreate, reset, currentUser?.userId]);
+
+  // Clear errors when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      dispatch(clearError());
+    }
+  }, [isOpen, dispatch]);
 
   const onSubmit = async (data: WorkScheduleTypeFormData) => {
     try {
@@ -214,7 +194,7 @@ export default function WorkScheduleModal({
         };
 
         const result = await dispatch(
-          updateWorkScheduleService({ id: data.id, param: payload }),
+          updateWorkScheduleService({ id: data.id || "", param: payload }),
         ).unwrap();
 
         showToast.success(
@@ -224,15 +204,14 @@ export default function WorkScheduleModal({
       }
     } catch (error: any) {
       showToast.error(
-        error || `Failed to ${isCreate ? "create" : "update"} work schedule`,
+        error?.message ||
+          `Failed to ${isCreate ? "create" : "update"} work schedule`,
       );
     }
   };
 
   const handleClose = () => {
     reset();
-    setSelectedUser(null);
-    setSelectedScheduleType("");
     dispatch(clearError());
     dispatch(clearSelectedWorkSchedule());
     onClose();
@@ -272,9 +251,8 @@ export default function WorkScheduleModal({
 
               {/* User Selection */}
               <ComboboxSelectUser
-                dataSelect={selectedUser}
+                dataSelect={null}
                 onChangeSelected={(user) => {
-                  setSelectedUser(user);
                   setValue("userId", user?.id || "", { shouldValidate: true });
                 }}
                 disabled={isSubmitting}
@@ -296,9 +274,8 @@ export default function WorkScheduleModal({
 
               {/* Schedule Type */}
               <ComboboxSelectScheduleType
-                value={selectedScheduleType}
+                value=""
                 onValueChange={(value) => {
-                  setSelectedScheduleType(value);
                   setValue("scheduleTypeEnumName", value, {
                     shouldValidate: true,
                   });
@@ -318,49 +295,63 @@ export default function WorkScheduleModal({
                 required
                 disabled={isSubmitting}
                 error={errors.workDays as any}
+                defaultDays={DEFAULT_WORK_DAYS}
               />
 
-              {/* Start Time */}
-              <TimePickerField
-                control={control}
-                name="startTime"
-                label="Start Time"
-                placeholder="Select start time"
-                required
-                disabled={isSubmitting}
-                error={errors.startTime}
-              />
+              {/* Time Section - Required Fields */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Start Time */}
+                  <TimePickerField
+                    control={control}
+                    name="startTime"
+                    label="Start Time"
+                    placeholder="Select start time"
+                    required
+                    disabled={isSubmitting}
+                    error={errors.startTime}
+                  />
 
-              {/* End Time */}
-              <TimePickerField
-                control={control}
-                name="endTime"
-                label="End Time"
-                placeholder="Select end time"
-                required
-                disabled={isSubmitting}
-                error={errors.endTime}
-              />
+                  {/* End Time */}
+                  <TimePickerField
+                    control={control}
+                    name="endTime"
+                    label="End Time"
+                    placeholder="Select end time"
+                    required
+                    disabled={isSubmitting}
+                    error={errors.endTime}
+                  />
+                </div>
 
-              {/* Break Start Time */}
-              <TimePickerField
-                control={control}
-                name="breakStartTime"
-                label="Break Start Time (Optional)"
-                placeholder="Select break start time"
-                disabled={isSubmitting}
-                error={errors.breakStartTime}
-              />
+                {/* Break Times - Optional Fields */}
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-medium text-gray-600 mb-3">
+                    Break Times (Optional)
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Break Start Time */}
+                    <TimePickerField
+                      control={control}
+                      name="breakStartTime"
+                      label="Break Start Time"
+                      placeholder="Select break start time"
+                      disabled={isSubmitting}
+                      error={errors.breakStartTime}
+                    />
 
-              {/* Break End Time */}
-              <TimePickerField
-                control={control}
-                name="breakEndTime"
-                label="Break End Time (Optional)"
-                placeholder="Select break end time"
-                disabled={isSubmitting}
-                error={errors.breakEndTime}
-              />
+                    {/* Break End Time */}
+                    <TimePickerField
+                      control={control}
+                      name="breakEndTime"
+                      label="Break End Time"
+                      placeholder="Select break end time"
+                      disabled={isSubmitting}
+                      error={errors.breakEndTime}
+                    />
+                  </div>
+                </div>
+              </div>
             </FormBody>
 
             <FormFooter
