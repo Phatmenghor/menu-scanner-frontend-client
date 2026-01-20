@@ -68,7 +68,7 @@ export function WorkScheduleDetailModal({
 
             <DetailRow
               label="Schedule Type"
-              value={workScheduleData?.scheduleTypeEnumName || "---"}
+              value={workScheduleData?.scheduleTypeEnum || "---"}
             />
 
             <DetailRow
