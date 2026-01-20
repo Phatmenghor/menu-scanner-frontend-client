@@ -72,6 +72,9 @@ export default function WorkScheduleModal({
   );
   const [selectedScheduleType, setSelectedScheduleType] = useState<string>("");
 
+  // Ref to prevent re-initialization during the same modal session
+  const hasInitialized = React.useRef(false);
+
   const {
     control,
     handleSubmit,
@@ -97,72 +100,83 @@ export default function WorkScheduleModal({
     mode: "onChange",
   });
 
-  // Fetch work schedule data for edit mode
+  // Single initialization effect - runs only ONCE per modal open
   useEffect(() => {
-    const fetchWorkScheduleData = async () => {
-      if (!workScheduleId || !isOpen || isCreate) return;
+    // Reset flag when modal closes
+    if (!isOpen) {
+      hasInitialized.current = false;
+      return;
+    }
 
-      try {
-        const resultAction = await dispatch(
-          fetchWorkScheduleByIdService(workScheduleId),
-        );
+    // Skip if already initialized
+    if (hasInitialized.current) {
+      return;
+    }
 
-        if (fetchWorkScheduleByIdService.fulfilled.match(resultAction)) {
-          const data = resultAction.payload;
+    // Mark as initialized
+    hasInitialized.current = true;
 
-          if (data.userInfo) {
-            setSelectedUser(data.userInfo);
+    // Initialize based on mode
+    const initialize = async () => {
+      // EDIT MODE
+      if (!isCreate && workScheduleId) {
+        try {
+          const resultAction = await dispatch(
+            fetchWorkScheduleByIdService(workScheduleId),
+          );
+
+          if (fetchWorkScheduleByIdService.fulfilled.match(resultAction)) {
+            const data = resultAction.payload;
+
+            if (data.userInfo) {
+              setSelectedUser(data.userInfo);
+            }
+
+            if (data.scheduleTypeEnumName) {
+              setSelectedScheduleType(data.scheduleTypeEnumName);
+            }
+
+            reset({
+              id: data.id,
+              userId: data.userInfo?.id || currentUser?.userId || "",
+              businessId: data.businessId || AppDefault.BUSINESS_ID,
+              name: data.name || "",
+              scheduleTypeEnumName: data.scheduleTypeEnumName || "",
+              workDays: data.workDays || [],
+              startTime: data.startTime || "",
+              endTime: data.endTime || "",
+              breakStartTime: data.breakStartTime || "",
+              breakEndTime: data.breakEndTime || "",
+            });
           }
-
-          if (data.scheduleTypeEnumName) {
-            setSelectedScheduleType(data.scheduleTypeEnumName);
-          }
-
-          reset({
-            id: data.id,
-            userId: data.userInfo?.id || currentUser?.userId || "",
-            businessId: data.businessId || AppDefault.BUSINESS_ID,
-            name: data.name || "",
-            scheduleTypeEnumName: data.scheduleTypeEnumName || "",
-            workDays: data.workDays || [],
-            startTime: data.startTime || "",
-            endTime: data.endTime || "",
-            breakStartTime: data.breakStartTime || "",
-            breakEndTime: data.breakEndTime || "",
-          });
+        } catch (error) {
+          console.error("Error fetching work schedule data:", error);
         }
-      } catch (error) {
-        console.error("Error fetching work schedule data:", error);
       }
+
+      // CREATE MODE
+      if (isCreate) {
+        setSelectedUser(null);
+        setSelectedScheduleType("");
+        reset({
+          userId: currentUser?.userId || "",
+          businessId: AppDefault.BUSINESS_ID,
+          name: "",
+          scheduleTypeEnumName: "",
+          workDays: [],
+          startTime: "",
+          endTime: "",
+          breakStartTime: "",
+          breakEndTime: "",
+        });
+      }
+
+      // Clear errors
+      dispatch(clearError());
     };
 
-    fetchWorkScheduleData();
-  }, [workScheduleId, isOpen, isCreate]);
-
-  // Reset form for create mode
-  useEffect(() => {
-    if (isOpen && isCreate) {
-      setSelectedUser(null);
-      setSelectedScheduleType("");
-      reset({
-        userId: currentUser?.userId || "",
-        businessId: AppDefault.BUSINESS_ID,
-        name: "",
-        scheduleTypeEnumName: "",
-        workDays: [],
-        startTime: "",
-        endTime: "",
-        breakStartTime: "",
-        breakEndTime: "",
-      });
-    }
-  }, [isOpen, isCreate]);
-
-  // Clear errors when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      dispatch(clearError());
-    }
+    initialize();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const onSubmit = async (data: WorkScheduleTypeFormData) => {
