@@ -130,7 +130,8 @@ export default function WorkScheduleModal({
     };
 
     fetchScheduleTypes();
-  }, [isOpen, dispatch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   // Fetch work schedule data for edit mode
   useEffect(() => {
@@ -178,7 +179,8 @@ export default function WorkScheduleModal({
     };
 
     fetchWorkScheduleData();
-  }, [workScheduleId, isOpen, isCreate, dispatch, reset]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workScheduleId, isOpen, isCreate]);
 
   // Reset form for create mode
   useEffect(() => {
@@ -204,7 +206,8 @@ export default function WorkScheduleModal({
     if (isOpen) {
       dispatch(clearError());
     }
-  }, [isOpen, dispatch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const onSubmit = async (data: WorkScheduleTypeFormData) => {
     try {
