@@ -26,6 +26,8 @@ export interface SelectFieldProps extends BaseFieldProps {
   options: Array<{ value: string; label: string }>;
   placeholder?: string;
   onValueChange?: (value: string) => void;
+  loading?: boolean;
+  loadingPlaceholder?: string;
 }
 
 export interface TextareaFieldProps extends BaseFieldProps {
