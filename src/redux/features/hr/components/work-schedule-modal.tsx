@@ -76,6 +76,9 @@ export default function WorkScheduleModal({
     null,
   );
 
+  // Ref to track if data has been fetched for current workScheduleId
+  const fetchedWorkScheduleIdRef = React.useRef<string | null>(null);
+
   const {
     control,
     handleSubmit,
@@ -127,11 +130,18 @@ export default function WorkScheduleModal({
     };
 
     fetchScheduleTypes();
-  }, [isOpen]);
+  }, [isOpen, dispatch]);
 
   // Fetch work schedule data for edit mode
   useEffect(() => {
-    if (!workScheduleId || !isOpen || isCreate) return;
+    if (!workScheduleId || !isOpen || isCreate) {
+      return;
+    }
+
+    // Prevent fetching if already fetched for this workScheduleId
+    if (fetchedWorkScheduleIdRef.current === workScheduleId) {
+      return;
+    }
 
     const fetchWorkScheduleData = async () => {
       try {
@@ -158,6 +168,9 @@ export default function WorkScheduleModal({
             breakStartTime: data.breakStartTime || "",
             breakEndTime: data.breakEndTime || "",
           });
+
+          // Mark this workScheduleId as fetched
+          fetchedWorkScheduleIdRef.current = workScheduleId;
         }
       } catch (error) {
         console.error("Error fetching work schedule data:", error);
@@ -165,7 +178,7 @@ export default function WorkScheduleModal({
     };
 
     fetchWorkScheduleData();
-  }, [workScheduleId, isOpen, isCreate, currentUser]);
+  }, [workScheduleId, isOpen, isCreate, dispatch, reset]);
 
   // Reset form for create mode
   useEffect(() => {
@@ -183,15 +196,15 @@ export default function WorkScheduleModal({
         breakEndTime: "",
       });
     }
-    // Note: 'reset' excluded from dependencies to prevent infinite loop
-  }, [isOpen, isCreate, currentUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, isCreate]);
 
   // Clear errors when modal opens
   useEffect(() => {
     if (isOpen) {
       dispatch(clearError());
     }
-  }, [isOpen]);
+  }, [isOpen, dispatch]);
 
   const onSubmit = async (data: WorkScheduleTypeFormData) => {
     try {
@@ -246,6 +259,7 @@ export default function WorkScheduleModal({
   const handleClose = () => {
     reset();
     setSelectedUser(null);
+    fetchedWorkScheduleIdRef.current = null; // Reset ref to allow re-fetching
     dispatch(clearError());
     dispatch(clearSelectedWorkSchedule());
     onClose();
