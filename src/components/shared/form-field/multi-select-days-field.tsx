@@ -57,7 +57,7 @@ export function MultiSelectDaysField<T extends FieldValues>({
           return (
             <div
               className={cn(
-                "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2",
+                "flex flex-wrap gap-2",
                 error && "border border-red-500 rounded-md p-2"
               )}
             >
@@ -67,27 +67,29 @@ export function MultiSelectDaysField<T extends FieldValues>({
                   <div
                     key={day.value}
                     className={cn(
-                      "flex items-center space-x-2 p-2 rounded-md border cursor-pointer transition-all",
+                      "flex items-center space-x-2 px-3 py-2 rounded-md border cursor-pointer transition-all min-w-[100px]",
                       isSelected
                         ? "bg-primary/10 border-primary hover:bg-primary/20"
                         : "bg-background border-border hover:bg-accent",
                       disabled && "opacity-50 cursor-not-allowed"
                     )}
-                    onClick={() => !disabled && toggleDay(day.value)}
+                    onClick={() => {
+                      if (!disabled) {
+                        toggleDay(day.value);
+                      }
+                    }}
                   >
                     <Checkbox
                       id={`${name}-${day.value}`}
                       checked={isSelected}
-                      onCheckedChange={() => !disabled && toggleDay(day.value)}
                       disabled={disabled}
                       className="pointer-events-none"
                     />
                     <Label
                       htmlFor={`${name}-${day.value}`}
-                      className="text-xs font-medium cursor-pointer select-none flex-1"
+                      className="text-sm font-medium cursor-pointer select-none flex-1 pointer-events-none"
                     >
-                      <span className="hidden sm:inline">{day.label}</span>
-                      <span className="inline sm:hidden">{day.short}</span>
+                      {day.label}
                     </Label>
                   </div>
                 );
