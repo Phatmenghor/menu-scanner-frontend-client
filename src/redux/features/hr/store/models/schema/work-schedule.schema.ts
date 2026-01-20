@@ -7,7 +7,7 @@ export const createWorkScheduleSchema = z.object({
   name: z.string().min(1, "Schedule name is required"),
   scheduleTypeEnumName: z.string().min(1, "Schedule type is required"),
   workDays: z
-    .array(z.enum(DayOfWeek))
+    .array(z.nativeEnum(DayOfWeek))
     .min(1, "At least one work day is required"),
 
   startTime: z
@@ -30,7 +30,7 @@ export const updateWorkScheduleSchema = z.object({
   name: z.string().min(1, "Schedule name is required"),
   scheduleTypeEnumName: z.string().min(1, "Schedule type is required"),
   workDays: z
-    .array(z.enum(DayOfWeek))
+    .array(z.nativeEnum(DayOfWeek))
     .min(1, "At least one work day is required"),
 
   startTime: z
@@ -50,7 +50,7 @@ export const updateWorkScheduleSchema = z.object({
 });
 
 export type WorkScheduleTypeFormData = {
-  id: string;
+  id?: string;
   userId: string;
   businessId: string;
   name: string;
