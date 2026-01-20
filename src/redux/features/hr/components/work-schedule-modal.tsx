@@ -40,10 +40,9 @@ import {
   UpdateWorkScheduleRequest,
 } from "../store/models/request/work-schedule-request";
 import { MultiSelectDaysField } from "@/components/shared/form-field/multi-select-days-field";
-import { SelectField } from "@/components/shared/form-field/select-field";
 import { TimePickerField } from "@/components/shared/form-field/time-picker-field";
-import { fetchAllWorkSchedulesTypeService } from "../store/thunks/work-schedule-type-thunks";
 import { ComboboxSelectUser } from "@/components/shared/combobox/combobox_select_user";
+import { ComboboxSelectScheduleType } from "@/components/shared/combobox/combobox_select_schedule_type";
 import { UserResponseModel } from "@/redux/features/auth/store/models/response/users-response";
 
 type Props = {
@@ -68,10 +67,6 @@ export default function WorkScheduleModal({
   const reduxError = useAppSelector(selectError);
   const { isCreating, isUpdating } = operations;
 
-  const [scheduleTypes, setScheduleTypes] = useState<
-    { value: string; label: string }[]
-  >([]);
-  const [loadingScheduleTypes, setLoadingScheduleTypes] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserResponseModel | null>(
     null,
   );
@@ -84,6 +79,7 @@ export default function WorkScheduleModal({
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors, isDirty },
   } = useForm<WorkScheduleTypeFormData>({
     resolver: zodResolver(
@@ -103,35 +99,6 @@ export default function WorkScheduleModal({
     },
     mode: "onChange",
   });
-
-  // Fetch schedule types
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const fetchScheduleTypes = async () => {
-      try {
-        setLoadingScheduleTypes(true);
-        const result = await dispatch(
-          fetchAllWorkSchedulesTypeService({ search: "", pageNo: 1 }),
-        ).unwrap();
-
-        const types =
-          result?.content?.map((type: any) => ({
-            value: type.enumName,
-            label: type.enumName,
-          })) || [];
-        setScheduleTypes(types);
-      } catch (error) {
-        console.error("Error fetching schedule types:", error);
-        showToast.error("Failed to fetch schedule types");
-      } finally {
-        setLoadingScheduleTypes(false);
-      }
-    };
-
-    fetchScheduleTypes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
 
   // Fetch work schedule data for edit mode
   useEffect(() => {
@@ -325,17 +292,18 @@ export default function WorkScheduleModal({
               />
 
               {/* Schedule Type */}
-              <SelectField
-                control={control}
-                name="scheduleTypeEnumName"
-                label="Schedule Type"
-                placeholder="Select schedule type"
-                required
+              <ComboboxSelectScheduleType
+                value={watch("scheduleTypeEnumName") || ""}
+                onValueChange={(value) => {
+                  setValue("scheduleTypeEnumName", value, {
+                    shouldValidate: true,
+                  });
+                }}
                 disabled={isSubmitting}
-                loading={loadingScheduleTypes}
-                loadingPlaceholder="Loading schedule types..."
-                options={scheduleTypes}
-                error={errors.scheduleTypeEnumName}
+                label="Schedule Type"
+                required
+                placeholder="Select schedule type"
+                error={errors.scheduleTypeEnumName?.message}
               />
 
               {/* Work Days */}
