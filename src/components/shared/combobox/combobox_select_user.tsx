@@ -205,14 +205,14 @@ export function ComboboxSelectUser({
                         dataSelect?.id === item.id ? "opacity-100" : "opacity-0"
                       )}
                     />
-                    <div className="flex flex-col">
-                      <span>{item.fullName}</span>
-                      {item.email && (
-                        <span className="text-xs text-muted-foreground">
-                          {item.email}
+                    <span>
+                      {item.fullName}
+                      {item.roles && item.roles.length > 0 && (
+                        <span className="text-xs text-muted-foreground ml-1">
+                          ({item.roles.join(", ")})
                         </span>
                       )}
-                    </div>
+                    </span>
                   </CommandItem>
                 ))}
               </CommandGroup>
