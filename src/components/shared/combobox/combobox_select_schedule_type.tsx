@@ -60,7 +60,7 @@ export function ComboboxSelectScheduleType({
       setLoading(true);
       try {
         const result = await dispatch(
-          fetchAllWorkSchedulesTypeService({ search: "", pageNo: 1 })
+          fetchAllWorkSchedulesTypeService({ search: "", pageNo: 1 }),
         ).unwrap();
 
         if (result?.content) {
@@ -84,12 +84,12 @@ export function ComboboxSelectScheduleType({
 
   // Filter schedule types based on search term
   const filteredScheduleTypes = scheduleTypes.filter((type) =>
-    type.enumName.toLowerCase().includes(searchTerm.toLowerCase())
+    type.enumName.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   // Find the selected schedule type to display
   const selectedScheduleType = scheduleTypes.find(
-    (type) => type.enumName === value
+    (type) => type.enumName === value,
   );
 
   return (
@@ -110,11 +110,13 @@ export function ComboboxSelectScheduleType({
               "w-full justify-between h-9 text-sm",
               !value && "text-muted-foreground",
               disabled && "opacity-50 cursor-not-allowed",
-              error && "border-red-500"
+              error && "border-red-500",
             )}
             disabled={disabled}
           >
-            {selectedScheduleType ? selectedScheduleType.enumName : placeholder}
+            {selectedScheduleType
+              ? selectedScheduleType.enumName
+              : value || placeholder}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
@@ -154,7 +156,9 @@ export function ComboboxSelectScheduleType({
                         <Check
                           className={cn(
                             "mr-2 h-4 w-4",
-                            value === type.enumName ? "opacity-100" : "opacity-0"
+                            value === type.enumName
+                              ? "opacity-100"
+                              : "opacity-0",
                           )}
                         />
                         {type.enumName}
