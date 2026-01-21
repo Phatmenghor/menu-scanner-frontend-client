@@ -87,7 +87,7 @@ export default function ApproveRejectLeaveModal({
         actionNote: data.actionNote,
       };
 
-      const result = await dispatch(
+      await dispatch(
         approveLeaveService({ id: leaveId, param: payload }),
       ).unwrap();
 
@@ -97,8 +97,7 @@ export default function ApproveRejectLeaveModal({
       handleClose();
     } catch (error: any) {
       showToast.error(
-        error ||
-          `Failed to ${isApprove ? "approve" : "reject"} leave request`,
+        error || `Failed to ${isApprove ? "approve" : "reject"} leave request`,
       );
     }
   };
@@ -113,9 +112,7 @@ export default function ApproveRejectLeaveModal({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="w-[90%] max-w-2xl max-h-[90vh] p-0 flex flex-col">
         <FormHeader
-          title={
-            isApprove ? "Approve Leave Request" : "Reject Leave Request"
-          }
+          title={isApprove ? "Approve Leave Request" : "Reject Leave Request"}
           description={
             isApprove
               ? "Please provide a note for approving this leave request"
@@ -172,9 +169,7 @@ export default function ApproveRejectLeaveModal({
               }
             >
               {isUpdating ? (
-                <>
-                  {isApprove ? "Approving..." : "Rejecting..."}
-                </>
+                <>{isApprove ? "Approving..." : "Rejecting..."}</>
               ) : (
                 <>
                   {isApprove ? (

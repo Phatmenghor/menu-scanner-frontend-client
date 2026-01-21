@@ -31,6 +31,7 @@ export const ROUTES = {
     WORK_SCHEDULE_TYPE: "/admin/hr/work-schedule-type",
     LEAVE_TYPE: "/admin/hr/leave-type",
     LEAVE: "/admin/hr/leave",
+    ATTENDANCE: "/admin/hr/attendance",
   },
 } as const;
 
@@ -79,6 +80,10 @@ export const SIDEBAR_MENU: MenuItem[] = [
       {
         title: "Leave",
         href: ROUTES.HR.LEAVE,
+      },
+      {
+        title: "Attendance",
+        href: ROUTES.HR.ATTENDANCE,
       },
     ],
   },

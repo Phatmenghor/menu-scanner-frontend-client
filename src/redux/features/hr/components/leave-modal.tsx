@@ -147,7 +147,7 @@ export default function LeaveModal({
           reason: data.reason,
         };
 
-        const result = await dispatch(createLeaveService(payload)).unwrap();
+        await dispatch(createLeaveService(payload)).unwrap();
 
         showToast.success(`Leave request created successfully`);
         handleClose();
@@ -159,7 +159,7 @@ export default function LeaveModal({
           reason: data.reason,
         };
 
-        const result = await dispatch(
+        await dispatch(
           updateLeaveService({ id: data.id, param: payload }),
         ).unwrap();
 
