@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Loading from "@/components/shared/common/loading";
@@ -37,15 +38,25 @@ import {
   CreateLeaveRequest,
   UpdateLeaveRequest,
 } from "../store/models/request/leave-request";
+import { Check, X } from "lucide-react";
 
 type Props = {
   mode: ModalMode;
   leaveId?: string;
   onClose: () => void;
   isOpen: boolean;
+  onApprove?: (leave: any) => void;
+  onReject?: (leave: any) => void;
 };
 
-export default function LeaveModal({ isOpen, onClose, leaveId, mode }: Props) {
+export default function LeaveModal({
+  isOpen,
+  onClose,
+  leaveId,
+  mode,
+  onApprove,
+  onReject,
+}: Props) {
   const isCreate = mode === ModalMode.CREATE_MODE;
 
   const dispatch = useAppDispatch();
@@ -54,6 +65,8 @@ export default function LeaveModal({ isOpen, onClose, leaveId, mode }: Props) {
   const isFetchingDetail = useAppSelector(selectIsFetchingDetail);
   const reduxError = useAppSelector(selectError);
   const { isCreating, isUpdating } = operations;
+
+  const [currentLeaveData, setCurrentLeaveData] = useState<any>(null);
 
   const {
     control,
@@ -85,6 +98,8 @@ export default function LeaveModal({ isOpen, onClose, leaveId, mode }: Props) {
 
         if (fetchLeaveByIdService.fulfilled.match(resultAction)) {
           const data = resultAction.payload;
+
+          setCurrentLeaveData(data);
 
           reset({
             id: data.id,
@@ -160,12 +175,28 @@ export default function LeaveModal({ isOpen, onClose, leaveId, mode }: Props) {
 
   const handleClose = () => {
     reset();
+    setCurrentLeaveData(null);
     dispatch(clearError());
     dispatch(clearSelectedLeave());
     onClose();
   };
 
+  const handleApprove = () => {
+    if (currentLeaveData && onApprove) {
+      onApprove(currentLeaveData);
+      handleClose();
+    }
+  };
+
+  const handleReject = () => {
+    if (currentLeaveData && onReject) {
+      onReject(currentLeaveData);
+      handleClose();
+    }
+  };
+
   const isSubmitting = isCreate ? isCreating : isUpdating;
+  const isPending = currentLeaveData?.status === "PENDING";
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -254,16 +285,44 @@ export default function LeaveModal({ isOpen, onClose, leaveId, mode }: Props) {
               createMessage="Creating leave request..."
               updateMessage="Updating leave request..."
             >
-              <CancelButton onClick={handleClose} disabled={isSubmitting} />
-              <SubmitButton
-                isSubmitting={isSubmitting}
-                isDirty={isDirty}
-                isCreate={isCreate}
-                createText="Create Leave Request"
-                updateText="Update Leave Request"
-                submittingCreateText="Creating..."
-                submittingUpdateText="Updating..."
-              />
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  {!isCreate && isPending && onApprove && (
+                    <Button
+                      type="button"
+                      onClick={handleApprove}
+                      disabled={isSubmitting}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Check className="w-4 h-4 mr-2" />
+                      Approve
+                    </Button>
+                  )}
+                  {!isCreate && isPending && onReject && (
+                    <Button
+                      type="button"
+                      onClick={handleReject}
+                      disabled={isSubmitting}
+                      variant="destructive"
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Reject
+                    </Button>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <CancelButton onClick={handleClose} disabled={isSubmitting} />
+                  <SubmitButton
+                    isSubmitting={isSubmitting}
+                    isDirty={isDirty}
+                    isCreate={isCreate}
+                    createText="Create Leave Request"
+                    updateText="Update Leave Request"
+                    submittingCreateText="Creating..."
+                    submittingUpdateText="Updating..."
+                  />
+                </div>
+              </div>
             </FormFooter>
           </form>
         )}

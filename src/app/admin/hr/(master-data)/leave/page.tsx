@@ -26,6 +26,7 @@ import {
 import { leaveTableColumns } from "@/redux/features/hr/table/leave-table";
 import LeaveModal from "@/redux/features/hr/components/leave-modal";
 import { LeaveDetailModal } from "@/redux/features/hr/components/leave-detail-modal";
+import ApproveRejectLeaveModal from "@/redux/features/hr/components/approve-reject-leave-modal";
 
 export default function LeaveTypePage() {
   useAdminCleanup(resetState);
@@ -59,6 +60,12 @@ export default function LeaveTypePage() {
   const [deleteState, setDeleteState] = useState({
     isOpen: false,
     leave: null as LeaveResponseModel | null,
+  });
+
+  const [approveRejectState, setApproveRejectState] = useState({
+    isOpen: false,
+    leaveId: "",
+    action: "APPROVED" as "APPROVED" | "REJECTED",
   });
 
   const debouncedSearch = useDebounce(filters.search, 400);
@@ -119,11 +126,29 @@ export default function LeaveTypePage() {
     });
   };
 
+  const handleApproveItem = (leave: LeaveResponseModel) => {
+    setApproveRejectState({
+      isOpen: true,
+      leaveId: leave.id,
+      action: "APPROVED",
+    });
+  };
+
+  const handleRejectItem = (leave: LeaveResponseModel) => {
+    setApproveRejectState({
+      isOpen: true,
+      leaveId: leave.id,
+      action: "REJECTED",
+    });
+  };
+
   const tableHandlers = useMemo(
     () => ({
       handleEditItem,
       handleViewDetailItem,
       handleDeleteItem,
+      handleApproveItem,
+      handleRejectItem,
     }),
     [],
   );
@@ -191,6 +216,21 @@ export default function LeaveTypePage() {
     });
   };
 
+  const closeApproveRejectModal = () => {
+    setApproveRejectState({
+      isOpen: false,
+      leaveId: "",
+      action: "APPROVED",
+    });
+    // Refresh the leave list after approve/reject
+    dispatch(
+      fetchAllLeaveService({
+        search: debouncedSearch,
+        pageNo: filters.pageNo,
+      }),
+    );
+  };
+
   return (
     <div className="flex flex-1 flex-col gap-4 px-2">
       <div className="space-y-4">
@@ -226,8 +266,10 @@ export default function LeaveTypePage() {
       <LeaveModal
         isOpen={modalState.isOpen}
         onClose={closeModal}
-        leaveTypeId={modalState.id}
+        leaveId={modalState.id}
         mode={modalState.mode}
+        onApprove={handleApproveItem}
+        onReject={handleRejectItem}
       />
 
       {/* Modals Leave Detail */}
@@ -235,6 +277,17 @@ export default function LeaveTypePage() {
         leaveId={detailModalState.id}
         isOpen={detailModalState.isOpen}
         onClose={closeDetailModal}
+        onApprove={handleApproveItem}
+        onReject={handleRejectItem}
+        onEdit={handleEditItem}
+      />
+
+      {/* Modals Approve/Reject Leave */}
+      <ApproveRejectLeaveModal
+        isOpen={approveRejectState.isOpen}
+        onClose={closeApproveRejectModal}
+        leaveId={approveRejectState.leaveId}
+        action={approveRejectState.action}
       />
 
       {/* Modals Delete User */}
