@@ -1,5 +1,12 @@
 import { ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export interface TableColumn<T = any> {
   key: string;
@@ -30,8 +37,8 @@ interface DataTableWithPaginationProps<T = any> {
   showPagination?: boolean;
 
   // Page size selector props
-  pageSize: number;
-  onPageSizeChange: (size: number) => void;
+  pageSize?: number;
+  onPageSizeChange?: (size: number) => void;
   pageSizeOptions?: number[];
   showPageSizeSelector?: boolean;
 }
@@ -49,8 +56,8 @@ export function DataTableWithPagination<T = any>({
   onPageChange,
   paginationSize = "md",
   showPagination = true,
-  pageSize,
-  onPageSizeChange,
+  pageSize = 10,
+  onPageSizeChange = () => {},
   pageSizeOptions = [10, 20, 50, 100],
   showPageSizeSelector = true,
 }: DataTableWithPaginationProps<T>) {
@@ -262,24 +269,21 @@ export function DataTableWithPagination<T = any>({
               <span className="text-sm text-muted-foreground whitespace-nowrap">
                 Rows per page:
               </span>
-              <select
-                value={pageSize}
-                onChange={(e) => onPageSizeChange(Number(e.target.value))}
-                className={`
-                  ${classes.select}
-                  px-3 rounded-lg border border-border bg-background
-                  text-foreground font-medium cursor-pointer
-                  transition-all duration-200
-                  hover:bg-muted hover:border-border-strong
-                  focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
-                `}
+              <Select
+                value={pageSize.toString()}
+                onValueChange={(value) => onPageSizeChange(Number(value))}
               >
-                {pageSizeOptions.map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className={`w-[70px] ${classes.select}`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {pageSizeOptions.map((size) => (
+                    <SelectItem key={size} value={size.toString()}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
 
