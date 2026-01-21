@@ -17,7 +17,6 @@ import { LeaveResponseModel } from "@/redux/features/hr/store/models/response/le
 import {
   resetState,
   setPageNo,
-  setPageSize,
   setSearchFilter,
 } from "@/redux/features/hr/store/slice/leave-slice";
 import {
@@ -29,6 +28,9 @@ import LeaveModal from "@/redux/features/hr/components/leave-modal";
 import { LeaveDetailModal } from "@/redux/features/hr/components/leave-detail-modal";
 import ApproveRejectLeaveModal from "@/redux/features/hr/components/approve-reject-leave-modal";
 import { AppDefault } from "@/constants/app-resource/default/default";
+import { setGlobalPageSize } from "@/redux/store/slices/global-settings-slice";
+import { selectGlobalPageSize } from "@/redux/store/selectors/global-settings-selectors";
+import { useAppSelector } from "@/redux/store";
 
 export default function LeaveTypePage() {
   useAdminCleanup(resetState);
@@ -70,6 +72,9 @@ export default function LeaveTypePage() {
     action: "APPROVED" as "APPROVED" | "REJECTED",
   });
 
+  // Global page size from global settings (synced across all admin pages)
+  const globalPageSize = useAppSelector(selectGlobalPageSize);
+
   const debouncedSearch = useDebounce(filters.search, 400);
 
   const { updateUrlWithPage, handlePageChange } = usePagination({
@@ -93,10 +98,10 @@ export default function LeaveTypePage() {
       fetchAllLeaveService({
         search: debouncedSearch,
         pageNo: filters.pageNo,
-        pageSize: filters.pageSize,
+        pageSize: globalPageSize,
       }),
     );
-  }, [dispatch, debouncedSearch, filters.pageNo, filters.pageSize]);
+  }, [dispatch, debouncedSearch, filters.pageNo, globalPageSize]);
 
   // Event handlers
   const handleCreate = () => {
@@ -175,7 +180,8 @@ export default function LeaveTypePage() {
   };
 
   const handlePageSizeChange = (size: number) => {
-    dispatch(setPageSize(size));
+    dispatch(setGlobalPageSize(size)); // Update global settings (syncs to all pages)
+    dispatch(setPageNo(1)); // Reset to first page
   };
 
   const handleDelete = async () => {
@@ -260,7 +266,7 @@ export default function LeaveTypePage() {
           currentPage={filters.pageNo}
           totalPages={pagination.totalPages}
           onPageChange={handlePageChangeWrapper}
-          pageSize={filters.pageSize}
+          pageSize={globalPageSize}
           onPageSizeChange={handlePageSizeChange}
           pageSizeOptions={AppDefault.PAGE_SIZE_OPTIONS}
         />
