@@ -26,6 +26,11 @@ interface ScheduleType {
   id: string;
 }
 
+interface CustomOption {
+  id: string;
+  enumName: string;
+}
+
 interface ComboboxSelectScheduleTypeProps {
   value: string;
   onValueChange: (value: string) => void;
@@ -34,6 +39,9 @@ interface ComboboxSelectScheduleTypeProps {
   required?: boolean;
   placeholder?: string;
   error?: string;
+  customOptions?: CustomOption[];
+  showCustomOptions?: boolean;
+  fetchOnMount?: boolean;
 }
 
 export function ComboboxSelectScheduleType({
@@ -44,6 +52,9 @@ export function ComboboxSelectScheduleType({
   required = false,
   placeholder = "Select schedule type...",
   error,
+  customOptions = [],
+  showCustomOptions = false,
+  fetchOnMount = false,
 }: ComboboxSelectScheduleTypeProps) {
   const dispatch = useAppDispatch();
 
@@ -51,29 +62,49 @@ export function ComboboxSelectScheduleType({
   const [searchTerm, setSearchTerm] = useState("");
   const [scheduleTypes, setScheduleTypes] = useState<ScheduleType[]>([]);
   const [loading, setLoading] = useState(false);
+  const [dataFetched, setDataFetched] = useState(false);
 
-  // Fetch schedule types when combobox opens
-  useEffect(() => {
-    if (!open || scheduleTypes.length > 0) return;
+  // Helper function to merge custom options with schedule types
+  const getMergedData = (types: ScheduleType[]): ScheduleType[] => {
+    if (showCustomOptions && customOptions.length > 0) {
+      return [...customOptions, ...types];
+    }
+    return types;
+  };
 
-    const fetchScheduleTypes = async () => {
-      setLoading(true);
-      try {
-        const result = await dispatch(
-          fetchAllWorkSchedulesTypeService({ search: "", pageNo: 1 })
-        ).unwrap();
+  const fetchScheduleTypes = async () => {
+    if (loading || dataFetched) return;
 
-        if (result?.content) {
-          setScheduleTypes(result.content);
-        }
-      } catch (error) {
-        console.error("Error fetching schedule types:", error);
-      } finally {
-        setLoading(false);
+    setLoading(true);
+    try {
+      const result = await dispatch(
+        fetchAllWorkSchedulesTypeService({ search: "", pageNo: 1 })
+      ).unwrap();
+
+      if (result?.content) {
+        setScheduleTypes(result.content);
+        setDataFetched(true);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching schedule types:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchScheduleTypes();
+  // Fetch schedule types on mount if fetchOnMount is true
+  useEffect(() => {
+    if (fetchOnMount) {
+      fetchScheduleTypes();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchOnMount]);
+
+  // Fetch schedule types when combobox opens (if not already fetched)
+  useEffect(() => {
+    if (open && !dataFetched && !fetchOnMount) {
+      fetchScheduleTypes();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -82,15 +113,23 @@ export function ComboboxSelectScheduleType({
     setOpen(false);
   };
 
+  // Get merged data with custom options
+  const allScheduleTypes = getMergedData(scheduleTypes);
+
   // Filter schedule types based on search term
-  const filteredScheduleTypes = scheduleTypes.filter((type) =>
+  const filteredScheduleTypes = allScheduleTypes.filter((type) =>
     type.enumName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Find the selected schedule type to display
-  const selectedScheduleType = scheduleTypes.find(
+  const selectedScheduleType = allScheduleTypes.find(
     (type) => type.enumName === value
   );
+
+  // Display value: show selected type, or value directly (for edit mode before data loads), or placeholder
+  const displayValue = selectedScheduleType
+    ? selectedScheduleType.enumName
+    : value || placeholder;
 
   return (
     <div className="space-y-2 w-full">
@@ -114,7 +153,7 @@ export function ComboboxSelectScheduleType({
             )}
             disabled={disabled}
           >
-            {selectedScheduleType ? selectedScheduleType.enumName : placeholder}
+            {displayValue}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
