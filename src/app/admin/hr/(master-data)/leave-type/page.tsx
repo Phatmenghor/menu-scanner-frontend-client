@@ -26,6 +26,11 @@ import {
   setSearchFilter,
 } from "@/redux/features/hr/store/slice/leave-type-slice";
 import { useAdminCleanup } from "@/hooks/use-cleanup-on-unmount";
+import { AppDefault } from "@/constants/app-resource/default/default";
+import { setGlobalPageSize } from "@/redux/store/slices/global-settings-slice";
+import { selectGlobalPageSize } from "@/redux/store/selectors/global-settings-selectors";
+import { useAppSelector } from "@/redux/store";
+
 export default function LeaveTypePage() {
   useAdminCleanup(resetState);
 
@@ -60,6 +65,9 @@ export default function LeaveTypePage() {
     leaveType: null as LeaveTypeResponseModel | null,
   });
 
+  // Global page size from global settings (synced across all admin pages)
+  const globalPageSize = useAppSelector(selectGlobalPageSize);
+
   const debouncedSearch = useDebounce(filters.search, 400);
 
   const { updateUrlWithPage, handlePageChange } = usePagination({
@@ -83,9 +91,10 @@ export default function LeaveTypePage() {
       fetchAllLeaveTypesService({
         search: debouncedSearch,
         pageNo: filters.pageNo,
+        pageSize: globalPageSize,
       }),
     );
-  }, [dispatch, debouncedSearch, filters.pageNo]);
+  }, [dispatch, debouncedSearch, filters.pageNo, globalPageSize]);
 
   // Event handlers
   const handleCreate = () => {
@@ -143,6 +152,11 @@ export default function LeaveTypePage() {
   const handlePageChangeWrapper = (page: number) => {
     dispatch(setPageNo(page));
     handlePageChange(page);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    dispatch(setGlobalPageSize(size));
+    dispatch(setPageNo(1));
   };
 
   const handleDelete = async () => {
@@ -220,6 +234,9 @@ export default function LeaveTypePage() {
           currentPage={filters.pageNo}
           totalPages={pagination.totalPages}
           onPageChange={handlePageChangeWrapper}
+          pageSize={globalPageSize}
+          onPageSizeChange={handlePageSizeChange}
+          pageSizeOptions={AppDefault.PAGE_SIZE_OPTIONS}
         />
       </div>
 

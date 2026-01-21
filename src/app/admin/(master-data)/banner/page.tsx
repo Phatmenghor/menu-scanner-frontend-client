@@ -29,6 +29,10 @@ import { STATUS_FILTER } from "@/constants/status/filter-status";
 import BannerModal from "@/redux/features/master-data/components/banner-modal";
 import { BannerDetailModal } from "@/redux/features/master-data/components/banner-detail-modal";
 import { useAdminCleanup } from "@/hooks/use-cleanup-on-unmount";
+import { AppDefault } from "@/constants/app-resource/default/default";
+import { setGlobalPageSize } from "@/redux/store/slices/global-settings-slice";
+import { selectGlobalPageSize } from "@/redux/store/selectors/global-settings-selectors";
+import { useAppSelector } from "@/redux/store";
 
 export default function BannerPage() {
   // Clean up state when leaving admin area (performance optimization)
@@ -64,6 +68,9 @@ export default function BannerPage() {
     banner: null as BannerResponseModel | null,
   });
 
+  // Global page size from global settings (synced across all admin pages)
+  const globalPageSize = useAppSelector(selectGlobalPageSize);
+
   const debouncedSearch = useDebounce(filters.search, 400);
 
   const { updateUrlWithPage, handlePageChange } = usePagination({
@@ -86,10 +93,11 @@ export default function BannerPage() {
       fetchAllBannerService({
         search: debouncedSearch,
         pageNo: filters.pageNo,
+        pageSize: globalPageSize,
         status: filters.status == Status.ALL ? undefined : filters.status,
       })
     );
-  }, [dispatch, debouncedSearch, filters.status, filters.pageNo]);
+  }, [dispatch, debouncedSearch, filters.status, filters.pageNo, globalPageSize]);
 
   // Event handlers
   const handleCreateBanner = () => {
@@ -151,6 +159,11 @@ export default function BannerPage() {
   const handlePageChangeWrapper = (page: number) => {
     dispatch(setPageNo(page));
     handlePageChange(page);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    dispatch(setGlobalPageSize(size));
+    dispatch(setPageNo(1));
   };
 
   const handleDelete = async () => {
@@ -236,6 +249,9 @@ export default function BannerPage() {
           currentPage={filters.pageNo}
           totalPages={pagination.totalPages}
           onPageChange={handlePageChangeWrapper}
+          pageSize={globalPageSize}
+          onPageSizeChange={handlePageSizeChange}
+          pageSizeOptions={AppDefault.PAGE_SIZE_OPTIONS}
         />
       </div>
 

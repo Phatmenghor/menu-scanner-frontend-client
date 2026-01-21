@@ -26,6 +26,10 @@ import { workScheduleTypeTableColumns } from "@/redux/features/hr/table/work-sch
 import WorkScheduleTypeModal from "@/redux/features/hr/components/work-schedule-type-modal";
 import { WorkScheduleTypeDetailModal } from "@/redux/features/hr/components/work-schedule-type-detail-modal";
 import { useAdminCleanup } from "@/hooks/use-cleanup-on-unmount";
+import { AppDefault } from "@/constants/app-resource/default/default";
+import { setGlobalPageSize } from "@/redux/store/slices/global-settings-slice";
+import { selectGlobalPageSize } from "@/redux/store/selectors/global-settings-selectors";
+import { useAppSelector } from "@/redux/store";
 
 export default function WorkScheduleTypePage() {
   useAdminCleanup(resetState);
@@ -60,6 +64,9 @@ export default function WorkScheduleTypePage() {
     workSchedule: null as WorkScheduleTypeResponseModel | null,
   });
 
+  // Global page size from global settings (synced across all admin pages)
+  const globalPageSize = useAppSelector(selectGlobalPageSize);
+
   const debouncedSearch = useDebounce(filters.search, 400);
 
   const { updateUrlWithPage, handlePageChange } = usePagination({
@@ -83,9 +90,10 @@ export default function WorkScheduleTypePage() {
       fetchAllWorkSchedulesTypeService({
         search: debouncedSearch,
         pageNo: filters.pageNo,
+        pageSize: globalPageSize,
       }),
     );
-  }, [dispatch, debouncedSearch, filters.pageNo]);
+  }, [dispatch, debouncedSearch, filters.pageNo, globalPageSize]);
 
   // Event handlers
   const handleCreate = () => {
@@ -143,6 +151,11 @@ export default function WorkScheduleTypePage() {
   const handlePageChangeWrapper = (page: number) => {
     dispatch(setPageNo(page));
     handlePageChange(page);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    dispatch(setGlobalPageSize(size));
+    dispatch(setPageNo(1));
   };
 
   const handleDelete = async () => {
@@ -222,6 +235,9 @@ export default function WorkScheduleTypePage() {
           currentPage={filters.pageNo}
           totalPages={pagination.totalPages}
           onPageChange={handlePageChangeWrapper}
+          pageSize={globalPageSize}
+          onPageSizeChange={handlePageSizeChange}
+          pageSizeOptions={AppDefault.PAGE_SIZE_OPTIONS}
         />
       </div>
 
