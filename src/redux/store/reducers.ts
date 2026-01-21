@@ -23,12 +23,16 @@ import publicProductReducer from "../features/main/store/slice/public-product-sl
 import publicBrandsReducer from "../features/main/store/slice/public-brands-slice";
 import publicCategoriesReducer from "../features/main/store/slice/public-categories-slice";
 import scrollReducer from "../features/main/store/slice/scroll-slice";
+import globalSettingsReducer from "./slices/global-settings-slice";
 
 /**
  * Root reducer configuration
  * Add new feature reducers here
  */
 export const reducers = {
+  // Global Settings
+  globalSettings: globalSettingsReducer,
+
   // Auth
   auth: authReducer,
   users: usersReducer,

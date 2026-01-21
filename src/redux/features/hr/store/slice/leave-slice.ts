@@ -8,7 +8,6 @@ import {
   fetchLeaveByIdService,
   updateLeaveService,
 } from "../thunks/leave-thunks";
-import { AppDefault } from "@/constants/app-resource/default/default";
 
 const initialState: LeaveManagementState = {
   data: null,
@@ -18,7 +17,6 @@ const initialState: LeaveManagementState = {
   filters: {
     search: "",
     pageNo: 1,
-    pageSize: AppDefault.PAGE_SIZE,
   },
   operations: {
     isCreating: false,
@@ -43,11 +41,6 @@ const leaveSlice = createSlice({
 
     setPageNo: (state, action: PayloadAction<number>) => {
       state.filters.pageNo = action.payload;
-    },
-
-    setPageSize: (state, action: PayloadAction<number>) => {
-      state.filters.pageSize = action.payload;
-      state.filters.pageNo = 1; // Reset to first page when changing page size
     },
 
     // Utility actions
@@ -199,7 +192,6 @@ const leaveSlice = createSlice({
 export const {
   setSearchFilter,
   setPageNo,
-  setPageSize,
   clearError,
   clearSelectedLeave,
   resetFilters,

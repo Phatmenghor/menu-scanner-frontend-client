@@ -40,6 +40,10 @@ import {
 } from "@/constants/status/status";
 import UserBusinessModal from "@/redux/features/auth/components/user-business-modal";
 import { UserBusinessDetailModal } from "@/redux/features/auth/components/user-business-detail-modal";
+import { AppDefault } from "@/constants/app-resource/default/default";
+import { setGlobalPageSize } from "@/redux/store/slices/global-settings-slice";
+import { selectGlobalPageSize } from "@/redux/store/selectors/global-settings-selectors";
+import { useAppSelector } from "@/redux/store";
 
 export default function UserBusinessPage() {
   // Clean up state when leaving admin area (performance optimization)
@@ -82,6 +86,9 @@ export default function UserBusinessPage() {
     user: null as UserResponseModel | null,
   });
 
+  // Global page size from global settings (synced across all admin pages)
+  const globalPageSize = useAppSelector(selectGlobalPageSize);
+
   const debouncedSearch = useDebounce(filters.search, 400);
 
   const { updateUrlWithPage, handlePageChange } = usePagination({
@@ -105,6 +112,7 @@ export default function UserBusinessPage() {
       fetchAllUsersService({
         search: debouncedSearch,
         pageNo: filters.pageNo,
+        pageSize: globalPageSize,
         roles: filters.role === UserRole.ALL ? [] : [filters.role],
         userTypes: [UserGropeType.BUSINESS_USER],
         accountStatus:
@@ -119,6 +127,7 @@ export default function UserBusinessPage() {
     filters.accountStatus,
     filters.role,
     filters.pageNo,
+    globalPageSize,
   ]);
 
   // Event handlers
@@ -206,6 +215,11 @@ export default function UserBusinessPage() {
   const handlePageChangeWrapper = (page: number) => {
     dispatch(setPageNo(page));
     handlePageChange(page);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    dispatch(setGlobalPageSize(size)); // Update global settings (syncs to all pages)
+    dispatch(setPageNo(1)); // Reset to first page
   };
 
   const handleDelete = async () => {
@@ -310,6 +324,9 @@ export default function UserBusinessPage() {
           currentPage={filters.pageNo}
           totalPages={pagination.totalPages}
           onPageChange={handlePageChangeWrapper}
+          pageSize={globalPageSize}
+          onPageSizeChange={handlePageSizeChange}
+          pageSizeOptions={AppDefault.PAGE_SIZE_OPTIONS}
         />
       </div>
 
