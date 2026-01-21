@@ -174,29 +174,25 @@ export function BaseCombobox<T>({
     }
   };
 
-  // Fetch on search change (handles initial load when enableSearch is true)
+  // Fetch on search change (only when dropdown is open and user is searching)
   useEffect(() => {
-    if (enableSearch) {
+    if (enableSearch && open && searchTerm !== "") {
       setPage(1);
       setLastPage(false);
       setData([]);
       loadData(debouncedSearch, 1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch]);
+  }, [debouncedSearch, open]);
 
-  // Fetch on open (if search is disabled and not already loaded)
+  // Fetch on open (initial load when dropdown opens)
   useEffect(() => {
-    if (open) {
-      // Opening: fetch if needed when search is disabled
-      if (!enableSearch && data.length === 0) {
-        loadData("", 1);
-      }
-    } else {
-      // Closing: reset search term
-      if (searchTerm !== "") {
-        setSearchTerm("");
-      }
+    if (open && data.length === 0) {
+      // Load initial data when opening dropdown
+      loadData("", 1);
+    } else if (!open && searchTerm !== "") {
+      // Reset search when closing
+      setSearchTerm("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
