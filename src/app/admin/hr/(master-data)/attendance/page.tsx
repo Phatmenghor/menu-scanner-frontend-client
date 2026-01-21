@@ -232,6 +232,7 @@ export default function AttendancePage() {
           emptyMessage="No attendances found"
           getRowKey={(attendance) => attendance.id}
           currentPage={filters.pageNo}
+          totalElements={pagination.totalElements}
           totalPages={pagination.totalPages}
           onPageChange={handlePageChangeWrapper}
           pageSize={globalPageSize}

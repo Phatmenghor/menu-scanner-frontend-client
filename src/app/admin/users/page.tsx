@@ -118,7 +118,7 @@ export default function UserBusinessPage() {
           filters.accountStatus === AccountStatus.ALL
             ? []
             : [filters.accountStatus],
-      })
+      }),
     );
   }, [
     dispatch,
@@ -187,7 +187,7 @@ export default function UserBusinessPage() {
       handleDeleteUser,
       handleToggleStatus,
     }),
-    []
+    [],
   );
 
   const columns = useMemo(
@@ -196,7 +196,7 @@ export default function UserBusinessPage() {
         data: usersData,
         handlers: tableHandlers,
       }),
-    [userState, tableHandlers]
+    [userState, tableHandlers],
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -230,7 +230,7 @@ export default function UserBusinessPage() {
       showToast.success(
         `User business "${
           deleteState.user.fullName ?? ""
-        }" deleted successfully`
+        }" deleted successfully`,
       );
 
       closeDeleteModal();
@@ -321,6 +321,7 @@ export default function UserBusinessPage() {
           emptyMessage="No users business found"
           getRowKey={(user) => user.id}
           currentPage={filters.pageNo}
+          totalElements={pagination.totalElements}
           totalPages={pagination.totalPages}
           onPageChange={handlePageChangeWrapper}
           pageSize={globalPageSize}

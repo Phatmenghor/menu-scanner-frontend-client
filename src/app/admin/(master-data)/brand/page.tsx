@@ -94,9 +94,15 @@ export default function BrandPage() {
         pageNo: filters.pageNo,
         pageSize: globalPageSize,
         status: filters.status == Status.ALL ? undefined : filters.status,
-      })
+      }),
     );
-  }, [dispatch, debouncedSearch, filters.status, filters.pageNo, globalPageSize]);
+  }, [
+    dispatch,
+    debouncedSearch,
+    filters.status,
+    filters.pageNo,
+    globalPageSize,
+  ]);
 
   // Event handlers
   const handleCreateBrand = () => {
@@ -135,7 +141,7 @@ export default function BrandPage() {
       handleBrandViewDetail,
       handleDeleteBrand,
     }),
-    []
+    [],
   );
 
   const columns = useMemo(
@@ -144,7 +150,7 @@ export default function BrandPage() {
         data: brandData,
         handlers: tableHandlers,
       }),
-    [brandState, tableHandlers]
+    [brandState, tableHandlers],
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -172,7 +178,7 @@ export default function BrandPage() {
       await dispatch(deleteBrandService(deleteState.brand.id)).unwrap();
 
       showToast.success(
-        `Brand "${deleteState.brand.businessName ?? ""}" deleted successfully`
+        `Brand "${deleteState.brand.businessName ?? ""}" deleted successfully`,
       );
 
       closeDeleteModal();
@@ -246,6 +252,7 @@ export default function BrandPage() {
           emptyMessage="No brand found"
           getRowKey={(brand) => brand.id}
           currentPage={filters.pageNo}
+          totalElements={pagination.totalElements}
           totalPages={pagination.totalPages}
           onPageChange={handlePageChangeWrapper}
           pageSize={globalPageSize}
