@@ -31,6 +31,10 @@ import {
 import { exchangeRateTableColumns } from "@/redux/features/master-data/table/exchange-rate-table";
 import { EXCHAGE_RATE_FILTER } from "@/constants/status/filter-status";
 import { useAdminCleanup } from "@/hooks/use-cleanup-on-unmount";
+import { AppDefault } from "@/constants/app-resource/default/default";
+import { setGlobalPageSize } from "@/redux/store/slices/global-settings-slice";
+import { selectGlobalPageSize } from "@/redux/store/selectors/global-settings-selectors";
+import { useAppSelector } from "@/redux/store";
 
 export default function ExchangeRatePage() {
   // Clean up state when leaving admin area (performance optimization)
@@ -66,6 +70,9 @@ export default function ExchangeRatePage() {
     exchage: null as ExchangeRateResponseModel | null,
   });
 
+  // Global page size from global settings (synced across all admin pages)
+  const globalPageSize = useAppSelector(selectGlobalPageSize);
+
   const debouncedSearch = useDebounce(filters.search, 400);
 
   const { updateUrlWithPage, handlePageChange } = usePagination({
@@ -89,6 +96,7 @@ export default function ExchangeRatePage() {
       fetchAllExchangeRateService({
         search: debouncedSearch,
         pageNo: filters.pageNo,
+        pageSize: globalPageSize,
         isActive:
           filters.isActive === ExchangeRateStatus.ALL
             ? undefined
@@ -97,7 +105,7 @@ export default function ExchangeRatePage() {
             : false,
       })
     );
-  }, [dispatch, debouncedSearch, filters.isActive, filters.pageNo]);
+  }, [dispatch, debouncedSearch, filters.isActive, filters.pageNo, globalPageSize]);
 
   // Event handlers
   const handleCreateUser = () => {
@@ -159,6 +167,11 @@ export default function ExchangeRatePage() {
   const handlePageChangeWrapper = (page: number) => {
     dispatch(setPageNo(page));
     handlePageChange(page);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    dispatch(setGlobalPageSize(size));
+    dispatch(setPageNo(1));
   };
 
   const handleDelete = async () => {
@@ -250,6 +263,9 @@ export default function ExchangeRatePage() {
           currentPage={filters.pageNo}
           totalPages={pagination.totalPages}
           onPageChange={handlePageChangeWrapper}
+          pageSize={globalPageSize}
+          onPageSizeChange={handlePageSizeChange}
+          pageSizeOptions={AppDefault.PAGE_SIZE_OPTIONS}
         />
       </div>
 
