@@ -6,6 +6,7 @@ import {
 export interface LeaveFilters {
   search: string;
   pageNo: number;
+  pageSize: number;
 }
 
 export interface OperationStates {
