@@ -75,7 +75,6 @@ export default function BannerPage() {
 
   const { updateUrlWithPage, handlePageChange } = usePagination({
     baseRoute: ROUTES.ADMIN.BANNER,
-    defaultPageSize: 15,
   });
 
   // Initialize URL and Redux state on mount

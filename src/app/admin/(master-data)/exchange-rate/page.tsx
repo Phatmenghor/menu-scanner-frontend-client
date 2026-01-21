@@ -77,7 +77,6 @@ export default function ExchangeRatePage() {
 
   const { updateUrlWithPage, handlePageChange } = usePagination({
     baseRoute: ROUTES.ADMIN.EXCHANGE_RATE,
-    defaultPageSize: 15,
   });
 
   // Initialize URL and Redux state on mount

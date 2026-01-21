@@ -3,7 +3,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 interface UsePaginationOptions {
   baseRoute: string;
-  defaultPageSize?: number;
   totalPages?: number;
   onPageChange?: (page: number) => void;
 }
@@ -12,12 +11,11 @@ interface UsePaginationReturn {
   currentPage: number;
   updateUrlWithPage: (newPage: number, replace?: boolean) => void;
   handlePageChange: (newPage: number) => void;
-  getDisplayIndex: (index: number, pageSize?: number) => number;
+  getDisplayIndex: (index: number, pageSize: number) => number;
 }
 
 export function usePagination({
   baseRoute,
-  defaultPageSize = 15,
   totalPages,
   onPageChange,
 }: UsePaginationOptions): UsePaginationReturn {
@@ -79,10 +77,10 @@ export function usePagination({
 
   // Calculate display index for table rows
   const getDisplayIndex = useCallback(
-    (index: number, pageSize: number = defaultPageSize) => {
+    (index: number, pageSize: number) => {
       return (currentPage - 1) * pageSize + index + 1;
     },
-    [currentPage, defaultPageSize]
+    [currentPage]
   );
 
   return {

@@ -93,7 +93,6 @@ export default function UserBusinessPage() {
 
   const { updateUrlWithPage, handlePageChange } = usePagination({
     baseRoute: ROUTES.ADMIN.USERS,
-    defaultPageSize: 15,
   });
 
   // Initialize URL and Redux state on mount
