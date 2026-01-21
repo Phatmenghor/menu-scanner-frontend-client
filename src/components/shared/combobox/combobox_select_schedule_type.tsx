@@ -119,13 +119,7 @@ export function ComboboxSelectScheduleType({
             )}
             disabled={disabled}
           >
-<<<<<<< HEAD
-            {selectedScheduleType
-              ? selectedScheduleType.enumName
-              : value || placeholder}
-=======
             {displayValue}
->>>>>>> 0b444d5d4b3ef9088bbfdaa19ea6e7b0797e10eb
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
