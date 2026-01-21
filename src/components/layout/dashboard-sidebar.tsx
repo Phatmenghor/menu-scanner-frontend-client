@@ -27,6 +27,7 @@ export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     "Master Data": true,
+    HR: true,
     Business: true,
   });
   const [collapsed, setCollapsed] = useState(false);
@@ -105,14 +106,14 @@ export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
                         <div
                           className={cn(
                             "absolute left-0 top-1/2 w-4 h-px z-0 transition-colors duration-200",
-                            isSubItemActive ? "bg-primary/40" : "bg-gray-300"
+                            isSubItemActive ? "bg-primary/40" : "bg-gray-300",
                           )}
                         ></div>
 
                         <div
                           className={cn(
                             "absolute left-0 top-1/2 w-1.5 h-1.5 rounded-full transform -translate-x-0.5 -translate-y-0.5 z-10 transition-colors duration-200",
-                            isSubItemActive ? "bg-primary" : "bg-gray-400"
+                            isSubItemActive ? "bg-primary" : "bg-gray-400",
                           )}
                         ></div>
 
@@ -124,7 +125,7 @@ export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
                           className={cn(
                             "relative w-full justify-start hover:bg-primary/10 hover:text-primary pl-6 rounded z-20 border-l border-transparent hover:border-l-primary/30 transition-all duration-200",
                             isSubItemActive &&
-                              "bg-primary/15 text-primary font-medium border-l-2 border-primary shadow-sm"
+                              "bg-primary/15 text-primary font-medium border-l-2 border-primary shadow-sm",
                           )}
                         >
                           <Link
@@ -151,7 +152,7 @@ export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
             className={cn(
               "w-full justify-start hover:bg-primary/10 hover:text-primary rounded transition-all duration-200",
               isActive &&
-                "bg-primary/15 text-primary font-medium border-l-2 border-primary"
+                "bg-primary/15 text-primary font-medium border-l-2 border-primary",
             )}
           >
             <Link
@@ -181,7 +182,7 @@ export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-border/50 bg-background/95 backdrop-blur-xl transition-all duration-300 ease-out shadow-xl",
           collapsed ? "w-16" : "w-60",
-          isMobile && !isOpen && "hidden"
+          isMobile && !isOpen && "hidden",
         )}
       >
         <div className="relative flex h-20 items-center justify-between border-b border-border/50 px-4 bg-gradient-to-br from-primary/5 via-background/50 to-accent/5">
@@ -222,14 +223,14 @@ export function DashboardSidebar({ isOpen, onToggle }: SidebarProps) {
             onClick={toggleCollapsed}
             className={cn(
               "relative h-9 w-9 rounded-xl transition-all duration-300 hover:bg-accent/50 hover:scale-110 group",
-              collapsed && "ml-auto"
+              collapsed && "ml-auto",
             )}
           >
             <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <ChevronLeft
               className={cn(
                 "h-4 w-4 relative z-10 transition-transform duration-300",
-                collapsed && "rotate-180"
+                collapsed && "rotate-180",
               )}
             />
           </Button>

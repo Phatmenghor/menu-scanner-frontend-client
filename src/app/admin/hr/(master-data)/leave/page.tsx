@@ -11,21 +11,22 @@ import { DataTableWithPagination } from "@/components/shared/common/data-table";
 import { showToast } from "@/components/shared/common/show-toast";
 import { usePagination } from "@/redux/store/use-pagination";
 import { ModalMode } from "@/constants/status/status";
-import { useLeaveTypeState } from "@/redux/features/hr/store/state/leave-type-state";
-import {
-  deleteLeaveTypeService,
-  fetchAllLeaveTypesService,
-} from "@/redux/features/hr/store/thunks/leave-type-thunks";
-import { LeaveTypeResponseModel } from "@/redux/features/hr/store/models/response/leave-type-response";
-import { leaveTypeTableColumns } from "@/redux/features/hr/table/leave-type-table";
-import LeaveTypeModal from "@/redux/features/hr/components/leave-type-modal";
-import { LeaveTypeDetailModal } from "@/redux/features/hr/components/leave-type-detail-modal";
+import { useAdminCleanup } from "@/hooks/use-cleanup-on-unmount";
+import { useLeaveState } from "@/redux/features/hr/store/state/leave-state";
+import { LeaveResponseModel } from "@/redux/features/hr/store/models/response/leave-response";
 import {
   resetState,
   setPageNo,
   setSearchFilter,
-} from "@/redux/features/hr/store/slice/leave-type-slice";
-import { useAdminCleanup } from "@/hooks/use-cleanup-on-unmount";
+} from "@/redux/features/hr/store/slice/leave-slice";
+import {
+  deleteLeaveService,
+  fetchAllLeaveService,
+} from "@/redux/features/hr/store/thunks/leave-thunks";
+import { leaveTableColumns } from "@/redux/features/hr/table/leave-table";
+import LeaveModal from "@/redux/features/hr/components/leave-modal";
+import { LeaveDetailModal } from "@/redux/features/hr/components/leave-detail-modal";
+
 export default function LeaveTypePage() {
   useAdminCleanup(resetState);
 
@@ -33,15 +34,15 @@ export default function LeaveTypePage() {
 
   // Redux state
   const {
-    leaveTypeState,
-    leaveTypeData,
-    leaveTypeContent,
+    leaveState,
+    leaveData,
+    leaveContent,
     isLoading,
     filters,
     operations,
     pagination,
     dispatch,
-  } = useLeaveTypeState();
+  } = useLeaveState();
 
   // Local UI state for modals only
   const [modalState, setModalState] = useState({
@@ -57,13 +58,13 @@ export default function LeaveTypePage() {
 
   const [deleteState, setDeleteState] = useState({
     isOpen: false,
-    leaveType: null as LeaveTypeResponseModel | null,
+    leave: null as LeaveResponseModel | null,
   });
 
   const debouncedSearch = useDebounce(filters.search, 400);
 
   const { updateUrlWithPage, handlePageChange } = usePagination({
-    baseRoute: ROUTES.HR.LEAVE_TYPE,
+    baseRoute: ROUTES.HR.LEAVE,
     defaultPageSize: 15,
   });
 
@@ -80,7 +81,7 @@ export default function LeaveTypePage() {
   // Fetch users when filters change
   useEffect(() => {
     dispatch(
-      fetchAllLeaveTypesService({
+      fetchAllLeaveService({
         search: debouncedSearch,
         pageNo: filters.pageNo,
       }),
@@ -96,25 +97,25 @@ export default function LeaveTypePage() {
     });
   };
 
-  const handleEditItem = (leaveType: LeaveTypeResponseModel) => {
+  const handleEditItem = (leave: LeaveResponseModel) => {
     setModalState({
       isOpen: true,
       mode: ModalMode.UPDATE_MODE,
-      id: leaveType?.id || "",
+      id: leave?.id || "",
     });
   };
 
-  const handleViewDetailItem = (leaveType: LeaveTypeResponseModel) => {
+  const handleViewDetailItem = (leave: LeaveResponseModel) => {
     setDetailModalState({
       isOpen: true,
-      id: leaveType.id || "",
+      id: leave.id || "",
     });
   };
 
-  const handleDeleteItem = (leaveType: LeaveTypeResponseModel) => {
+  const handleDeleteItem = (leave: LeaveResponseModel) => {
     setDeleteState({
       isOpen: true,
-      leaveType: leaveType,
+      leave: leave,
     });
   };
 
@@ -129,11 +130,11 @@ export default function LeaveTypePage() {
 
   const columns = useMemo(
     () =>
-      leaveTypeTableColumns({
-        data: leaveTypeData,
+      leaveTableColumns({
+        data: leaveData,
         handlers: tableHandlers,
       }),
-    [leaveTypeState, tableHandlers],
+    [leaveState, tableHandlers],
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,27 +147,25 @@ export default function LeaveTypePage() {
   };
 
   const handleDelete = async () => {
-    if (!deleteState.leaveType?.id) return;
+    if (!deleteState.leave?.id) return;
 
     try {
-      await dispatch(deleteLeaveTypeService(deleteState.leaveType.id)).unwrap();
+      await dispatch(deleteLeaveService(deleteState.leave.id)).unwrap();
 
       showToast.success(
-        `Leave Type "${
-          deleteState.leaveType.enumName ?? ""
-        }" deleted successfully`,
+        `Leave Type "${deleteState.leave.userInfo.fullName ?? ""}" deleted successfully`,
       );
 
       closeDeleteModal();
 
       // Navigate to previous page if this was the last item
-      if (leaveTypeContent.length === 1 && pagination.currentPage > 1) {
+      if (leaveContent.length === 1 && pagination.currentPage > 1) {
         const newPage = pagination.currentPage - 1;
         dispatch(setPageNo(newPage));
         updateUrlWithPage(newPage);
       }
     } catch (error: any) {
-      showToast.error(error || "Failed to delete leave type");
+      showToast.error(error || "Failed to delete leave");
     }
   };
 
@@ -188,7 +187,7 @@ export default function LeaveTypePage() {
   const closeDeleteModal = () => {
     setDeleteState({
       isOpen: false,
-      leaveType: null,
+      leave: null,
     });
   };
 
@@ -200,10 +199,10 @@ export default function LeaveTypePage() {
             { label: "Dashboard", href: ROUTES.ADMIN.ROOT },
             { label: "Leave Type", href: "" },
           ]}
-          title="Leave Type Information"
+          title="Leave Information"
           searchValue={filters.search}
-          searchPlaceholder="Search leave types..."
-          buttonTooltip="Create a new leave type"
+          searchPlaceholder="Search leave..."
+          buttonTooltip="Create a new leave"
           buttonIcon={<Plus className="w-3 h-3" />}
           buttonText="New"
           onSearchChange={handleSearchChange}
@@ -212,10 +211,10 @@ export default function LeaveTypePage() {
 
         {/* Data Table with Your Custom Pagination */}
         <DataTableWithPagination
-          data={leaveTypeContent}
+          data={leaveContent}
           columns={columns}
           loading={isLoading}
-          emptyMessage="No leave types found"
+          emptyMessage="No leave found"
           getRowKey={(leaveType) => leaveType.id}
           currentPage={filters.pageNo}
           totalPages={pagination.totalPages}
@@ -224,16 +223,16 @@ export default function LeaveTypePage() {
       </div>
 
       {/* Modals Add/Edit */}
-      <LeaveTypeModal
+      <LeaveModal
         isOpen={modalState.isOpen}
         onClose={closeModal}
         leaveTypeId={modalState.id}
         mode={modalState.mode}
       />
 
-      {/* Modals Leave type Detail */}
-      <LeaveTypeDetailModal
-        leaveTypeId={detailModalState.id}
+      {/* Modals Leave Detail */}
+      <LeaveDetailModal
+        leaveId={detailModalState.id}
         isOpen={detailModalState.isOpen}
         onClose={closeDetailModal}
       />
@@ -243,9 +242,9 @@ export default function LeaveTypePage() {
         isOpen={deleteState.isOpen}
         onClose={closeDeleteModal}
         onDelete={handleDelete}
-        title="Delete Leave Type"
-        description={`Are you sure you want to delete this leave type ${deleteState.leaveType?.enumName}?`}
-        itemName={deleteState.leaveType?.enumName || "this leave type"}
+        title="Delete Leave"
+        description={`Are you sure you want to delete this leave ${deleteState.leave?.userInfo.fullName}?`}
+        itemName={deleteState.leave?.userInfo.fullName || "this leave"}
         isSubmitting={operations.isDeleting}
       />
     </div>

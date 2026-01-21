@@ -1,3 +1,4 @@
+import { UserInfoModel } from "@/redux/features/auth/store/models/response/users-response";
 import { BasePagination } from "@/utils/common/pagination";
 
 export interface AllWorkScheduleResponseModel extends BasePagination {
@@ -10,7 +11,7 @@ export interface WorkScheduleResponseModel {
   updatedAt: string;
   createdBy: string;
   updatedBy: string;
-  userInfo: UserInfo;
+  userInfo: UserInfoModel;
   businessId: string;
   name: string;
   scheduleTypeEnum: string;
@@ -19,14 +20,4 @@ export interface WorkScheduleResponseModel {
   endTime: string;
   breakStartTime: string;
   breakEndTime: string;
-}
-
-interface UserInfo {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phoneNumber: string;
-  profileImageUrl: string;
-  fullName: string;
 }

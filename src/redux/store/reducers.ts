@@ -15,6 +15,7 @@ import deliveryOptionsReducer from "../features/master-data/store/slice/delivery
 import workScheduleTypeReducer from "../features/hr/store/slice/work-schedule-type-slice";
 import leaveTypeReducer from "../features/hr/store/slice/leave-type-slice";
 import workScheduleReducer from "../features/hr/store/slice/work-schedule-slice";
+import leaveReducer from "../features/hr/store/slice/leave-slice";
 
 import productReducer from "../features/business/store/slice/product-slice";
 import homeReducer from "../features/main/store/slice/home-slice";
@@ -45,6 +46,7 @@ export const reducers = {
   // HR
   workScheduleType: workScheduleTypeReducer,
   leaveType: leaveTypeReducer,
+  leave: leaveReducer,
   workSchedule: workScheduleReducer,
 
   // Main/Public
