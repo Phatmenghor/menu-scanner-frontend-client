@@ -222,13 +222,7 @@ export default function LeaveTypePage() {
       leaveId: "",
       action: "APPROVED",
     });
-    // Refresh the leave list after approve/reject
-    dispatch(
-      fetchAllLeaveService({
-        search: debouncedSearch,
-        pageNo: filters.pageNo,
-      }),
-    );
+    // No need to refresh - Redux store updates automatically from approveLeaveService
   };
 
   return (
