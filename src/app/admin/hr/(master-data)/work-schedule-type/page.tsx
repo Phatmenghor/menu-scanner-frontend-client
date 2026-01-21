@@ -71,7 +71,6 @@ export default function WorkScheduleTypePage() {
 
   const { updateUrlWithPage, handlePageChange } = usePagination({
     baseRoute: ROUTES.HR.WORK_SCHEDULE_TYPE,
-    defaultPageSize: 15,
   });
 
   // Initialize URL and Redux state on mount

@@ -85,7 +85,6 @@ export default function ProdyuctPage() {
 
   const { updateUrlWithPage, handlePageChange } = usePagination({
     baseRoute: ROUTES.ADMIN.PRODUCTS,
-    defaultPageSize: 15,
   });
 
   // Initialize URL and Redux state on mount

@@ -79,7 +79,6 @@ export default function LeaveTypePage() {
 
   const { updateUrlWithPage, handlePageChange } = usePagination({
     baseRoute: ROUTES.HR.LEAVE,
-    defaultPageSize: 15,
   });
 
   // Initialize URL and Redux state on mount
