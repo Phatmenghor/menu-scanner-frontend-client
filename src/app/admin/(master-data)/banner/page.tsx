@@ -94,9 +94,15 @@ export default function BannerPage() {
         pageNo: filters.pageNo,
         pageSize: globalPageSize,
         status: filters.status == Status.ALL ? undefined : filters.status,
-      })
+      }),
     );
-  }, [dispatch, debouncedSearch, filters.status, filters.pageNo, globalPageSize]);
+  }, [
+    dispatch,
+    debouncedSearch,
+    filters.status,
+    filters.pageNo,
+    globalPageSize,
+  ]);
 
   // Event handlers
   const handleCreateBanner = () => {
@@ -135,7 +141,7 @@ export default function BannerPage() {
       handleBannerViewDetail,
       handleDeleteBanner,
     }),
-    []
+    [],
   );
 
   const columns = useMemo(
@@ -144,7 +150,7 @@ export default function BannerPage() {
         data: bannerData,
         handlers: tableHandlers,
       }),
-    [bannerState, tableHandlers]
+    [bannerState, tableHandlers],
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -172,7 +178,7 @@ export default function BannerPage() {
       await dispatch(deleteBannerService(deleteState.banner.id)).unwrap();
 
       showToast.success(
-        `Banner "${deleteState.banner.businessName ?? ""}" deleted successfully`
+        `Banner "${deleteState.banner.businessName ?? ""}" deleted successfully`,
       );
 
       closeDeleteModal();
@@ -246,6 +252,7 @@ export default function BannerPage() {
           emptyMessage="No banners found"
           getRowKey={(user) => user.id}
           currentPage={filters.pageNo}
+          totalElements={pagination.totalElements}
           totalPages={pagination.totalPages}
           onPageChange={handlePageChangeWrapper}
           pageSize={globalPageSize}

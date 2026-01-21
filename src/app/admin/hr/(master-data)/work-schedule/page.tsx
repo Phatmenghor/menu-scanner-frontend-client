@@ -232,6 +232,7 @@ export default function WorkSchedulePage() {
           emptyMessage="No work schedules found"
           getRowKey={(workSchedule) => workSchedule.id}
           currentPage={filters.pageNo}
+          totalElements={pagination.totalElements}
           totalPages={pagination.totalPages}
           onPageChange={handlePageChangeWrapper}
           pageSize={globalPageSize}

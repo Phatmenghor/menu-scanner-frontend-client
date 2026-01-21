@@ -32,6 +32,7 @@ interface DataTableWithPaginationProps<T = any> {
   // Pagination props
   currentPage: number;
   totalPages: number;
+  totalElements?: number;
   onPageChange: (page: number) => void;
   paginationSize?: "sm" | "md" | "lg";
   showPagination?: boolean;
@@ -57,6 +58,7 @@ export function DataTableWithPagination<T = any>({
   paginationSize = "md",
   showPagination = true,
   pageSize = 10,
+  totalElements = 10,
   onPageSizeChange = () => {},
   pageSizeOptions = [10, 20, 50, 100],
   showPageSizeSelector = true,
@@ -261,10 +263,10 @@ export function DataTableWithPagination<T = any>({
       </div>
 
       {/* Pagination */}
-      {showPagination && totalPages > 1 && (
+      {showPagination && (
         <div className="flex items-center justify-between gap-4 p-4 flex-wrap">
           {/* Page Size Selector */}
-          {showPageSizeSelector && (
+          {showPageSizeSelector && totalElements >= 5 && (
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground whitespace-nowrap">
                 Rows per page:
@@ -288,12 +290,13 @@ export function DataTableWithPagination<T = any>({
           )}
 
           {/* Page Navigation */}
-          <div className="flex items-center gap-2">
-            {/* Previous Button */}
-            <button
-              onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className={`
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              {/* Previous Button */}
+              <button
+                onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`
                 ${classes.button}
                 flex items-center gap-2 rounded-lg border font-medium transition-all duration-200
                 ${
@@ -302,30 +305,30 @@ export function DataTableWithPagination<T = any>({
                     : "text-foreground border-border hover:bg-muted hover:border-border-strong"
                 }
               `}
-            >
-              <ChevronLeft className={classes.icon} />
-              <span className="hidden sm:inline">Previous</span>
-            </button>
+              >
+                <ChevronLeft className={classes.icon} />
+                <span className="hidden sm:inline">Previous</span>
+              </button>
 
-            {/* Page Numbers */}
-            <div className="flex items-center gap-1">
-              {getPaginationItems().map((item, index) => {
-                if (item === "ellipsis") {
+              {/* Page Numbers */}
+              <div className="flex items-center gap-1">
+                {getPaginationItems().map((item, index) => {
+                  if (item === "ellipsis") {
+                    return (
+                      <span
+                        key={`ellipsis-${index}`}
+                        className="px-2 text-muted-foreground"
+                      >
+                        ...
+                      </span>
+                    );
+                  }
+
                   return (
-                    <span
-                      key={`ellipsis-${index}`}
-                      className="px-2 text-muted-foreground"
-                    >
-                      ...
-                    </span>
-                  );
-                }
-
-                return (
-                  <button
-                    key={item}
-                    onClick={() => onPageChange(item)}
-                    className={`
+                    <button
+                      key={item}
+                      onClick={() => onPageChange(item)}
+                      className={`
                       ${classes.pageButton}
                       rounded-lg font-medium px-2 transition-all duration-200
                       ${
@@ -334,20 +337,20 @@ export function DataTableWithPagination<T = any>({
                           : "text-foreground border border-border hover:bg-muted hover:border-border-strong"
                       }
                     `}
-                  >
-                    {item}
-                  </button>
-                );
-              })}
-            </div>
+                    >
+                      {item}
+                    </button>
+                  );
+                })}
+              </div>
 
-            {/* Next Button */}
-            <button
-              onClick={() =>
-                currentPage < totalPages && onPageChange(currentPage + 1)
-              }
-              disabled={currentPage === totalPages}
-              className={`
+              {/* Next Button */}
+              <button
+                onClick={() =>
+                  currentPage < totalPages && onPageChange(currentPage + 1)
+                }
+                disabled={currentPage === totalPages}
+                className={`
                 ${classes.button}
                 flex items-center gap-2 rounded-lg border font-medium transition-all duration-200
                 ${
@@ -356,11 +359,12 @@ export function DataTableWithPagination<T = any>({
                     : "text-foreground border-border hover:bg-muted hover:border-border-strong"
                 }
               `}
-            >
-              <span className="hidden sm:inline">Next</span>
-              <ChevronRight className={classes.icon} />
-            </button>
-          </div>
+              >
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight className={classes.icon} />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

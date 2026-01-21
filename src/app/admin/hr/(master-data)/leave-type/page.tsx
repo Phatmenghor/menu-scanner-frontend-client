@@ -231,6 +231,7 @@ export default function LeaveTypePage() {
           emptyMessage="No leave types found"
           getRowKey={(leaveType) => leaveType.id}
           currentPage={filters.pageNo}
+          totalElements={pagination.totalElements}
           totalPages={pagination.totalPages}
           onPageChange={handlePageChangeWrapper}
           pageSize={globalPageSize}

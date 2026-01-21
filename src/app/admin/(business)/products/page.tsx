@@ -63,7 +63,7 @@ export default function ProdyuctPage() {
   });
 
   const [selectedBrand, setSelectedBrand] = useState<BrandResponseModel | null>(
-    null
+    null,
   );
   const [selectedCategories, setSelectedCategories] =
     useState<CategoriesResponseModel | null>(null);
@@ -105,9 +105,15 @@ export default function ProdyuctPage() {
         pageSize: globalPageSize,
         status:
           filters.status == ProductStatus.ALL ? undefined : filters.status,
-      })
+      }),
     );
-  }, [dispatch, debouncedSearch, filters.pageNo, filters.status, globalPageSize]);
+  }, [
+    dispatch,
+    debouncedSearch,
+    filters.pageNo,
+    filters.status,
+    globalPageSize,
+  ]);
 
   // Event handlers
   const handleCreateBrand = () => {
@@ -146,7 +152,7 @@ export default function ProdyuctPage() {
       handleProductViewDetail,
       handleDeleteProduct,
     }),
-    []
+    [],
   );
 
   const columns = useMemo(
@@ -155,7 +161,7 @@ export default function ProdyuctPage() {
         data: productData,
         handlers: tableHandlers,
       }),
-    [productState, tableHandlers]
+    [productState, tableHandlers],
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -179,7 +185,7 @@ export default function ProdyuctPage() {
       await dispatch(deleteProductService(deleteState.product.id)).unwrap();
 
       showToast.success(
-        `Product "${deleteState.product.name ?? ""}" deleted successfully`
+        `Product "${deleteState.product.name ?? ""}" deleted successfully`,
       );
 
       closeDeleteModal();
@@ -226,7 +232,7 @@ export default function ProdyuctPage() {
   };
 
   const handleCategoriesChange = (
-    categories: CategoriesResponseModel | null
+    categories: CategoriesResponseModel | null,
   ) => {
     setSelectedCategories(categories);
   };
@@ -283,6 +289,7 @@ export default function ProdyuctPage() {
           emptyMessage="No product found"
           getRowKey={(product) => product.id}
           currentPage={filters.pageNo}
+          totalElements={pagination.totalElements}
           totalPages={pagination.totalPages}
           onPageChange={handlePageChangeWrapper}
           pageSize={globalPageSize}

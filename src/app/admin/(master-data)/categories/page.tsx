@@ -94,9 +94,15 @@ export default function CategoriesPage() {
         pageNo: filters.pageNo,
         pageSize: globalPageSize,
         status: filters.status == Status.ALL ? undefined : filters.status,
-      })
+      }),
     );
-  }, [dispatch, debouncedSearch, filters.status, filters.pageNo, globalPageSize]);
+  }, [
+    dispatch,
+    debouncedSearch,
+    filters.status,
+    filters.pageNo,
+    globalPageSize,
+  ]);
 
   // Event handlers
   const handleCreateCategories = () => {
@@ -135,7 +141,7 @@ export default function CategoriesPage() {
       handleCategoriesViewDetail,
       handleDeleteCategories,
     }),
-    []
+    [],
   );
 
   const columns = useMemo(
@@ -144,7 +150,7 @@ export default function CategoriesPage() {
         data: categoriesData,
         handlers: tableHandlers,
       }),
-    [categoriesState, tableHandlers]
+    [categoriesState, tableHandlers],
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -170,11 +176,11 @@ export default function CategoriesPage() {
 
     try {
       await dispatch(
-        deleteCategoriesService(deleteState.categories.id)
+        deleteCategoriesService(deleteState.categories.id),
       ).unwrap();
 
       showToast.success(
-        `Categories "${deleteState.categories.name ?? ""}" deleted successfully`
+        `Categories "${deleteState.categories.name ?? ""}" deleted successfully`,
       );
 
       closeDeleteModal();
@@ -248,6 +254,7 @@ export default function CategoriesPage() {
           emptyMessage="No Categories found"
           getRowKey={(categories) => categories.id}
           currentPage={filters.pageNo}
+          totalElements={pagination.totalElements}
           totalPages={pagination.totalPages}
           onPageChange={handlePageChangeWrapper}
           pageSize={globalPageSize}

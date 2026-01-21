@@ -26,7 +26,7 @@ import {
 } from "@/redux/features/master-data/store/thunks/exchange-rate-thunks";
 import {
   setExchangeRateStatusFilter,
-  resetState
+  resetState,
 } from "@/redux/features/master-data/store/slice/exchange-rate-slice";
 import { exchangeRateTableColumns } from "@/redux/features/master-data/table/exchange-rate-table";
 import { EXCHAGE_RATE_FILTER } from "@/constants/status/filter-status";
@@ -100,11 +100,17 @@ export default function ExchangeRatePage() {
           filters.isActive === ExchangeRateStatus.ALL
             ? undefined
             : filters.isActive == ExchangeRateStatus.ACTIVE
-            ? true
-            : false,
-      })
+              ? true
+              : false,
+      }),
     );
-  }, [dispatch, debouncedSearch, filters.isActive, filters.pageNo, globalPageSize]);
+  }, [
+    dispatch,
+    debouncedSearch,
+    filters.isActive,
+    filters.pageNo,
+    globalPageSize,
+  ]);
 
   // Event handlers
   const handleCreateUser = () => {
@@ -143,7 +149,7 @@ export default function ExchangeRatePage() {
       handleViewRateDetail,
       handleDeleteRate,
     }),
-    []
+    [],
   );
 
   const columns = useMemo(
@@ -152,7 +158,7 @@ export default function ExchangeRatePage() {
         data: exchangeRateData,
         handlers: tableHandlers,
       }),
-    [exchangeRateState, tableHandlers]
+    [exchangeRateState, tableHandlers],
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -178,13 +184,13 @@ export default function ExchangeRatePage() {
 
     try {
       await dispatch(
-        deleteExchangeRateService(deleteState.exchage.id)
+        deleteExchangeRateService(deleteState.exchage.id),
       ).unwrap();
 
       showToast.success(
         `Exchange Rate "${
           deleteState.exchage.usdToKhrRate ?? ""
-        }" deleted successfully`
+        }" deleted successfully`,
       );
 
       closeDeleteModal();
@@ -260,6 +266,7 @@ export default function ExchangeRatePage() {
           emptyMessage="No Exchange Rate found"
           getRowKey={(exchange) => exchange.id}
           currentPage={filters.pageNo}
+          totalElements={pagination.totalElements}
           totalPages={pagination.totalPages}
           onPageChange={handlePageChangeWrapper}
           pageSize={globalPageSize}

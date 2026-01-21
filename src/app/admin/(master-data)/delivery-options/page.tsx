@@ -95,9 +95,15 @@ export default function DeliveryOptionsPage() {
         pageNo: filters.pageNo,
         pageSize: globalPageSize,
         statuses: filters.status == Status.ALL ? [] : [filters.status],
-      })
+      }),
     );
-  }, [dispatch, debouncedSearch, filters.status, filters.pageNo, globalPageSize]);
+  }, [
+    dispatch,
+    debouncedSearch,
+    filters.status,
+    filters.pageNo,
+    globalPageSize,
+  ]);
 
   // Event handlers
   const handleCreateDeliveryOptions = () => {
@@ -109,7 +115,7 @@ export default function DeliveryOptionsPage() {
   };
 
   const handleEditDeliveryOptions = (
-    deliveryOptions: DeliveryOptionsResponseModel
+    deliveryOptions: DeliveryOptionsResponseModel,
   ) => {
     setModalState({
       isOpen: true,
@@ -119,7 +125,7 @@ export default function DeliveryOptionsPage() {
   };
 
   const handleDeliveryOptionsViewDetail = (
-    deliveryOptions: DeliveryOptionsResponseModel
+    deliveryOptions: DeliveryOptionsResponseModel,
   ) => {
     setDetailModalState({
       isOpen: true,
@@ -128,7 +134,7 @@ export default function DeliveryOptionsPage() {
   };
 
   const handleDeleteDeliveryOptions = (
-    deliveryOptions: DeliveryOptionsResponseModel
+    deliveryOptions: DeliveryOptionsResponseModel,
   ) => {
     setDeleteState({
       isOpen: true,
@@ -142,7 +148,7 @@ export default function DeliveryOptionsPage() {
       handleDeliveryOptionsViewDetail,
       handleDeleteDeliveryOptions,
     }),
-    []
+    [],
   );
 
   const columns = useMemo(
@@ -151,7 +157,7 @@ export default function DeliveryOptionsPage() {
         data: deliveryOptionsData,
         handlers: tableHandlers,
       }),
-    [deliveryOptionsState, tableHandlers]
+    [deliveryOptionsState, tableHandlers],
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -177,13 +183,13 @@ export default function DeliveryOptionsPage() {
 
     try {
       await dispatch(
-        deleteDeliveryOptionsService(deleteState.deliveryOptions.id)
+        deleteDeliveryOptionsService(deleteState.deliveryOptions.id),
       ).unwrap();
 
       showToast.success(
         `Delivery options "${
           deleteState.deliveryOptions.name ?? ""
-        }" deleted successfully`
+        }" deleted successfully`,
       );
 
       closeDeleteModal();
@@ -257,6 +263,7 @@ export default function DeliveryOptionsPage() {
           emptyMessage="No Delivery options found"
           getRowKey={(deliveryOptions) => deliveryOptions.id}
           currentPage={filters.pageNo}
+          totalElements={pagination.totalElements}
           totalPages={pagination.totalPages}
           onPageChange={handlePageChangeWrapper}
           pageSize={globalPageSize}
