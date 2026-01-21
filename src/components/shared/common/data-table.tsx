@@ -58,7 +58,7 @@ export function DataTableWithPagination<T = any>({
   paginationSize = "md",
   showPagination = true,
   pageSize = 10,
-  totalElements = 10,
+  totalElements = 0,
   onPageSizeChange = () => {},
   pageSizeOptions = [10, 20, 50, 100],
   showPageSizeSelector = true,
