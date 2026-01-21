@@ -14,17 +14,26 @@ import {
   selectSelectedLeave,
 } from "../store/selectors/leave-selectors";
 import { clearSelectedLeave } from "../store/slice/leave-slice";
+import { Button } from "@/components/ui/button";
+import { Check, X, Edit } from "lucide-react";
+import { LeaveResponseModel } from "../store/models/response/leave-response";
 
 interface LeaveDetailModalProps {
   leaveId?: string;
   isOpen: boolean;
   onClose: () => void;
+  onApprove?: (leave: LeaveResponseModel) => void;
+  onReject?: (leave: LeaveResponseModel) => void;
+  onEdit?: (leave: LeaveResponseModel) => void;
 }
 
 export function LeaveDetailModal({
   leaveId,
   isOpen,
   onClose,
+  onApprove,
+  onReject,
+  onEdit,
 }: LeaveDetailModalProps) {
   const dispatch = useAppDispatch();
   const isFetchingDetail = useAppSelector(selectIsFetchingDetail);
@@ -46,6 +55,29 @@ export function LeaveDetailModal({
   const handleClose = () => {
     dispatch(clearSelectedLeave());
     onClose();
+  };
+
+  const isPending = leaveData?.status === "PENDING";
+
+  const handleApprove = () => {
+    if (leaveData && onApprove) {
+      onApprove(leaveData);
+      handleClose();
+    }
+  };
+
+  const handleReject = () => {
+    if (leaveData && onReject) {
+      onReject(leaveData);
+      handleClose();
+    }
+  };
+
+  const handleEdit = () => {
+    if (leaveData && onEdit) {
+      onEdit(leaveData);
+      handleClose();
+    }
   };
 
   return (
@@ -155,6 +187,39 @@ export function LeaveDetailModal({
               isLast
             />
           </DetailSection>
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end gap-3 pt-4 border-t">
+            {onEdit && (
+              <Button
+                variant="outline"
+                onClick={handleEdit}
+                className="flex items-center gap-2"
+              >
+                <Edit className="w-4 h-4" />
+                Edit
+              </Button>
+            )}
+            {isPending && onApprove && (
+              <Button
+                onClick={handleApprove}
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+              >
+                <Check className="w-4 h-4" />
+                Approve
+              </Button>
+            )}
+            {isPending && onReject && (
+              <Button
+                onClick={handleReject}
+                variant="destructive"
+                className="flex items-center gap-2"
+              >
+                <X className="w-4 h-4" />
+                Reject
+              </Button>
+            )}
+          </div>
         </div>
       ) : (
         <div className="text-center py-12">
