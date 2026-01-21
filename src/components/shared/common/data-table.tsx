@@ -1,5 +1,12 @@
 import { ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export interface TableColumn<T = any> {
   key: string;
@@ -28,6 +35,12 @@ interface DataTableWithPaginationProps<T = any> {
   onPageChange: (page: number) => void;
   paginationSize?: "sm" | "md" | "lg";
   showPagination?: boolean;
+
+  // Page size selector props
+  pageSize?: number;
+  onPageSizeChange?: (size: number) => void;
+  pageSizeOptions?: number[];
+  showPageSizeSelector?: boolean;
 }
 
 export function DataTableWithPagination<T = any>({
@@ -43,6 +56,10 @@ export function DataTableWithPagination<T = any>({
   onPageChange,
   paginationSize = "md",
   showPagination = true,
+  pageSize = 10,
+  onPageSizeChange = () => {},
+  pageSizeOptions = [10, 20, 50, 100],
+  showPageSizeSelector = true,
 }: DataTableWithPaginationProps<T>) {
   const tableData: T[] = Array.isArray(data) ? data : [];
 
@@ -51,16 +68,19 @@ export function DataTableWithPagination<T = any>({
       button: "h-8 px-3 text-xs",
       icon: "h-3 w-3",
       pageButton: "h-8 min-w-8 text-xs",
+      select: "h-8 text-xs",
     },
     md: {
       button: "h-9 px-4 text-sm",
       icon: "h-4 w-4",
       pageButton: "h-9 min-w-9 text-sm",
+      select: "h-9 text-sm",
     },
     lg: {
       button: "h-10 px-5 text-base",
       icon: "h-5 w-5",
       pageButton: "h-10 min-w-10 text-base",
+      select: "h-10 text-base",
     },
   };
 
@@ -242,78 +262,105 @@ export function DataTableWithPagination<T = any>({
 
       {/* Pagination */}
       {showPagination && totalPages > 1 && (
-        <div className="flex items-center justify-end gap-2 p-4">
-          {/* Previous Button */}
-          <button
-            onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className={`
-              ${classes.button}
-              flex items-center gap-2 rounded-lg border font-medium transition-all duration-200
-              ${
-                currentPage === 1
-                  ? "opacity-50 cursor-not-allowed text-muted-foreground border-border"
-                  : "text-foreground border-border hover:bg-muted hover:border-border-strong"
-              }
-            `}
-          >
-            <ChevronLeft className={classes.icon} />
-            <span className="hidden sm:inline">Previous</span>
-          </button>
+        <div className="flex items-center justify-between gap-4 p-4 flex-wrap">
+          {/* Page Size Selector */}
+          {showPageSizeSelector && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground whitespace-nowrap">
+                Rows per page:
+              </span>
+              <Select
+                value={pageSize.toString()}
+                onValueChange={(value) => onPageSizeChange(Number(value))}
+              >
+                <SelectTrigger className={`w-[70px] ${classes.select}`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {pageSizeOptions.map((size) => (
+                    <SelectItem key={size} value={size.toString()}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
-          {/* Page Numbers */}
-          <div className="flex items-center gap-1">
-            {getPaginationItems().map((item, index) => {
-              if (item === "ellipsis") {
+          {/* Page Navigation */}
+          <div className="flex items-center gap-2">
+            {/* Previous Button */}
+            <button
+              onClick={() => currentPage > 1 && onPageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`
+                ${classes.button}
+                flex items-center gap-2 rounded-lg border font-medium transition-all duration-200
+                ${
+                  currentPage === 1
+                    ? "opacity-50 cursor-not-allowed text-muted-foreground border-border"
+                    : "text-foreground border-border hover:bg-muted hover:border-border-strong"
+                }
+              `}
+            >
+              <ChevronLeft className={classes.icon} />
+              <span className="hidden sm:inline">Previous</span>
+            </button>
+
+            {/* Page Numbers */}
+            <div className="flex items-center gap-1">
+              {getPaginationItems().map((item, index) => {
+                if (item === "ellipsis") {
+                  return (
+                    <span
+                      key={`ellipsis-${index}`}
+                      className="px-2 text-muted-foreground"
+                    >
+                      ...
+                    </span>
+                  );
+                }
+
                 return (
-                  <span
-                    key={`ellipsis-${index}`}
-                    className="px-2 text-muted-foreground"
+                  <button
+                    key={item}
+                    onClick={() => onPageChange(item)}
+                    className={`
+                      ${classes.pageButton}
+                      rounded-lg font-medium px-2 transition-all duration-200
+                      ${
+                        currentPage === item
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-foreground border border-border hover:bg-muted hover:border-border-strong"
+                      }
+                    `}
                   >
-                    ...
-                  </span>
+                    {item}
+                  </button>
                 );
-              }
+              })}
+            </div>
 
-              return (
-                <button
-                  key={item}
-                  onClick={() => onPageChange(item)}
-                  className={`
-                    ${classes.pageButton}
-                    rounded-lg font-medium px-2 transition-all duration-200 
-                    ${
-                      currentPage === item
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-foreground border border-border hover:bg-muted hover:border-border-strong"
-                    }
-                  `}
-                >
-                  {item}
-                </button>
-              );
-            })}
+            {/* Next Button */}
+            <button
+              onClick={() =>
+                currentPage < totalPages && onPageChange(currentPage + 1)
+              }
+              disabled={currentPage === totalPages}
+              className={`
+                ${classes.button}
+                flex items-center gap-2 rounded-lg border font-medium transition-all duration-200
+                ${
+                  currentPage === totalPages
+                    ? "opacity-50 cursor-not-allowed text-muted-foreground border-border"
+                    : "text-foreground border-border hover:bg-muted hover:border-border-strong"
+                }
+              `}
+            >
+              <span className="hidden sm:inline">Next</span>
+              <ChevronRight className={classes.icon} />
+            </button>
           </div>
-
-          {/* Next Button */}
-          <button
-            onClick={() =>
-              currentPage < totalPages && onPageChange(currentPage + 1)
-            }
-            disabled={currentPage === totalPages}
-            className={`
-              ${classes.button}
-              flex items-center gap-2 rounded-lg border font-medium transition-all duration-200
-              ${
-                currentPage === totalPages
-                  ? "opacity-50 cursor-not-allowed text-muted-foreground border-border"
-                  : "text-foreground border-border hover:bg-muted hover:border-border-strong"
-              }
-            `}
-          >
-            <span className="hidden sm:inline">Next</span>
-            <ChevronRight className={classes.icon} />
-          </button>
         </div>
       )}
     </div>

@@ -92,6 +92,11 @@ export function ComboboxSelectScheduleType({
     (type) => type.enumName === value,
   );
 
+  // FIX: Display value even before data loads (for edit mode)
+  const displayValue = selectedScheduleType
+    ? selectedScheduleType.enumName
+    : value || placeholder;
+
   return (
     <div className="space-y-2 w-full">
       {label && (
@@ -114,9 +119,13 @@ export function ComboboxSelectScheduleType({
             )}
             disabled={disabled}
           >
+<<<<<<< HEAD
             {selectedScheduleType
               ? selectedScheduleType.enumName
               : value || placeholder}
+=======
+            {displayValue}
+>>>>>>> 0b444d5d4b3ef9088bbfdaa19ea6e7b0797e10eb
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
