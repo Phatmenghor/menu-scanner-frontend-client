@@ -115,6 +115,7 @@ export function BaseCombobox<T>({
 
   const loadingRef = useRef(false);
   const lastPageRef = useRef(false);
+  const initialMountRef = useRef(true);
 
   useEffect(() => {
     loadingRef.current = loading;
@@ -186,6 +187,14 @@ export function BaseCombobox<T>({
 
   // Fetch on search change
   useEffect(() => {
+    // Skip initial mount if fetchOnMount is handling it
+    if (initialMountRef.current && fetchOnMount) {
+      initialMountRef.current = false;
+      return;
+    }
+
+    initialMountRef.current = false;
+
     if (enableSearch) {
       setPage(1);
       setLastPage(false);
@@ -195,10 +204,18 @@ export function BaseCombobox<T>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
 
-  // Fetch on open (if not already loaded)
+  // Fetch on open (if not already loaded) and reset search when closing
   useEffect(() => {
-    if (open && !fetchOnMount && data.length === 0) {
-      loadData("", 1);
+    if (open) {
+      // Opening: fetch if needed
+      if (!fetchOnMount && data.length === 0) {
+        loadData("", 1);
+      }
+    } else {
+      // Closing: reset search term
+      if (searchTerm !== "") {
+        setSearchTerm("");
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
