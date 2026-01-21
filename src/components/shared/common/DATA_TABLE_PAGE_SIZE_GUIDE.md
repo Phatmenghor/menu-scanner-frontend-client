@@ -68,14 +68,14 @@ export function ProductTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Fetch data
+  // Fetch data - IMPORTANT: Include pageSize in dependencies
   useEffect(() => {
     dispatch(fetchProducts({
       search: searchTerm,
       pageNo: currentPage,
       pageSize: pageSize, // Use the pageSize from hook
     }));
-  }, [currentPage, pageSize, searchTerm, dispatch]);
+  }, [currentPage, pageSize, searchTerm, dispatch]); // ← pageSize in dependencies!
 
   // Get data from Redux
   const { data, loading, totalPages } = useAppSelector((state) => state.products);
@@ -95,10 +95,10 @@ export function ProductTable() {
     },
   ];
 
-  // Handle page size change
+  // Handle page size change - IMPORTANT: Reset to page 1 and it will trigger refetch
   const handlePageSizeChange = (newSize: number) => {
     setPageSize(newSize); // Saves to cookie automatically
-    setCurrentPage(1); // Reset to first page when page size changes
+    setCurrentPage(1); // Reset to first page - this triggers useEffect to fetch new data!
   };
 
   return (
@@ -127,10 +127,12 @@ export function ProductTable() {
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `pageSize` | `number` | **Required** | Current page size |
-| `onPageSizeChange` | `(size: number) => void` | **Required** | Callback when page size changes |
+| `pageSize` | `number` | `10` | Current page size (optional, defaults to 10) |
+| `onPageSizeChange` | `(size: number) => void` | `() => {}` | Callback when page size changes (optional) |
 | `pageSizeOptions` | `number[]` | `[10, 20, 50, 100]` | Available page size options |
 | `showPageSizeSelector` | `boolean` | `true` | Show/hide the page size selector |
+
+**Note:** Both `pageSize` and `onPageSizeChange` are now **optional** for backward compatibility. If not provided, the selector shows 10 but won't function.
 
 ### Existing Props (No Changes)
 
@@ -169,6 +171,34 @@ If you don't want to show the selector on a specific table:
 />
 ```
 
+## How Auto-Refetch Works
+
+When page size changes, new data is automatically fetched if you set it up correctly:
+
+```tsx
+// 1. Add pageSize to useEffect dependencies
+useEffect(() => {
+  dispatch(fetchData({
+    pageNo: currentPage,
+    pageSize: pageSize, // ← Pass to API
+  }));
+}, [currentPage, pageSize]); // ← Include pageSize here!
+
+// 2. Reset page to 1 when size changes
+const handlePageSizeChange = (newSize: number) => {
+  setPageSize(newSize); // Update page size
+  setCurrentPage(1);    // Reset page → triggers useEffect above
+};
+```
+
+**How it works:**
+1. User selects new page size (e.g., 20 instead of 10)
+2. `handlePageSizeChange` is called
+3. `setPageSize(20)` updates the page size state
+4. `setCurrentPage(1)` updates the current page state
+5. **useEffect detects both changes** and fetches new data
+6. New data displayed with the new page size!
+
 ## Important: Reset Page When Size Changes
 
 Always reset to page 1 when page size changes to avoid edge cases:
@@ -176,9 +206,15 @@ Always reset to page 1 when page size changes to avoid edge cases:
 ```tsx
 const handlePageSizeChange = (newSize: number) => {
   setPageSize(newSize);
-  setCurrentPage(1); // ← Important!
+  setCurrentPage(1); // ← Important! This triggers refetch
 };
 ```
+
+**Why reset to page 1?**
+- If you're on page 5 with 10 items per page (showing items 41-50)
+- Change to 20 items per page
+- Page 5 with 20 items per page would show items 81-100 (probably empty!)
+- Resetting to page 1 avoids this issue
 
 ## Cookie Details
 
