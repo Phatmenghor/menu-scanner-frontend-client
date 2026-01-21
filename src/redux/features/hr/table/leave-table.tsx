@@ -1,6 +1,6 @@
 import { indexDisplay } from "@/utils/common/common";
 import { dateTimeFormat, formatDate } from "@/utils/date/date-time-format";
-import { Edit, Eye, Trash } from "lucide-react";
+import { Edit, Eye, Trash, Check, X } from "lucide-react";
 import { TableColumn } from "@/components/shared/common/data-table";
 import { ActionButton } from "@/components/shared/button/action-button";
 import {
@@ -12,6 +12,8 @@ interface LeaveTableHandlers {
   handleEditItem: (leave: LeaveResponseModel) => void;
   handleViewDetailItem: (leave: LeaveResponseModel) => void;
   handleDeleteItem: (leave: LeaveResponseModel) => void;
+  handleApproveItem: (leave: LeaveResponseModel) => void;
+  handleRejectItem: (leave: LeaveResponseModel) => void;
 }
 
 interface LeaveTableOptions {
@@ -23,7 +25,13 @@ export const leaveTableColumns = ({
   data,
   handlers,
 }: LeaveTableOptions): TableColumn<LeaveResponseModel>[] => {
-  const { handleEditItem, handleViewDetailItem, handleDeleteItem } = handlers;
+  const {
+    handleEditItem,
+    handleViewDetailItem,
+    handleDeleteItem,
+    handleApproveItem,
+    handleRejectItem,
+  } = handlers;
 
   return [
     {
@@ -142,26 +150,46 @@ export const leaveTableColumns = ({
       label: "Actions",
       minWidth: "10px",
       maxWidth: "400px",
-      render: (leave) => (
-        <div className="flex items-center gap-2">
-          <ActionButton
-            icon={<Eye className="w-4 h-4" />}
-            tooltip="View Details"
-            onClick={() => handleViewDetailItem(leave)}
-          />
-          <ActionButton
-            icon={<Edit className="w-4 h-4" />}
-            tooltip="Edit Leave Type"
-            onClick={() => handleEditItem(leave)}
-          />
-          <ActionButton
-            icon={<Trash className="w-4 h-4" />}
-            tooltip="Delete Leave Type"
-            onClick={() => handleDeleteItem(leave)}
-            variant="destructive"
-          />
-        </div>
-      ),
+      render: (leave) => {
+        const isPending = leave.status === "PENDING";
+
+        return (
+          <div className="flex items-center gap-2">
+            <ActionButton
+              icon={<Eye className="w-4 h-4" />}
+              tooltip="View Details"
+              onClick={() => handleViewDetailItem(leave)}
+            />
+            {isPending && (
+              <>
+                <ActionButton
+                  icon={<Check className="w-4 h-4" />}
+                  tooltip="Approve Leave"
+                  onClick={() => handleApproveItem(leave)}
+                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                />
+                <ActionButton
+                  icon={<X className="w-4 h-4" />}
+                  tooltip="Reject Leave"
+                  onClick={() => handleRejectItem(leave)}
+                  variant="destructive"
+                />
+              </>
+            )}
+            <ActionButton
+              icon={<Edit className="w-4 h-4" />}
+              tooltip="Edit Leave"
+              onClick={() => handleEditItem(leave)}
+            />
+            <ActionButton
+              icon={<Trash className="w-4 h-4" />}
+              tooltip="Delete Leave"
+              onClick={() => handleDeleteItem(leave)}
+              variant="destructive"
+            />
+          </div>
+        );
+      },
     },
   ];
 };

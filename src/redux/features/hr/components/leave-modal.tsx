@@ -2,11 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Loading from "@/components/shared/common/loading";
 import { TextField } from "@/components/shared/form-field/text-field";
 import { TextareaField } from "@/components/shared/form-field/text-area-field";
+import { DateTimePickerField } from "@/components/shared/form-field/date-picker-field";
 import { CancelButton } from "@/components/shared/form-field/cancel-button";
 import { SubmitButton } from "@/components/shared/form-field/submid-button";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
@@ -14,10 +15,7 @@ import { showToast } from "@/components/shared/common/show-toast";
 import { FormBody } from "@/components/shared/form-field/form-body";
 import { FormFooter } from "@/components/shared/form-field/form-footer";
 import { ModalMode } from "@/constants/status/status";
-import {
-  clearError,
-  clearSelectedWorkSchedule,
-} from "../store/slice/work-schedule-type-slice";
+import { clearError, clearSelectedLeave } from "../store/slice/leave-slice";
 import { FormHeader } from "@/components/shared/form-field/form-header";
 import {
   selectError,
@@ -28,8 +26,17 @@ import {
   createLeaveSchema,
   LeaveFormData,
   updateLeaveSchema,
-  updateLeaveTypeSchema,
 } from "../store/models/schema/leave.schema";
+import { ComboboxSelectLeaveType } from "@/components/shared/combobox/combobox_select_leave_type";
+import {
+  createLeaveService,
+  fetchLeaveByIdService,
+  updateLeaveService,
+} from "../store/thunks/leave-thunks";
+import {
+  CreateLeaveRequest,
+  UpdateLeaveRequest,
+} from "../store/models/request/leave-request";
 
 type Props = {
   mode: ModalMode;
@@ -61,87 +68,92 @@ export default function LeaveModal({ isOpen, onClose, leaveId, mode }: Props) {
     ) as any,
     defaultValues: {
       id: "",
-      enumName: "",
-      description: "",
+      leaveTypeEnum: "",
+      startDate: "",
+      endDate: "",
+      reason: "",
     },
     mode: "onChange",
   });
 
   useEffect(() => {
-    const fetchLeaveTypeData = async () => {
-      if (!leaveTypeId || !isOpen || isCreate) return;
+    const fetchLeaveData = async () => {
+      if (!leaveId || !isOpen || isCreate) return;
 
       try {
-        const resultAction = await dispatch(
-          fetchLeaveTypeByIdService(leaveTypeId),
-        );
+        const resultAction = await dispatch(fetchLeaveByIdService(leaveId));
 
-        if (fetchLeaveTypeByIdService.fulfilled.match(resultAction)) {
+        if (fetchLeaveByIdService.fulfilled.match(resultAction)) {
           const data = resultAction.payload;
 
           reset({
             id: data.id,
-            enumName: data.enumName || "",
-            description: data.description || "",
+            leaveTypeEnum: data.leaveTypeEnum || "",
+            startDate: data.startDate || "",
+            endDate: data.endDate || "",
+            reason: data.reason || "",
           });
         }
       } catch (error) {
-        console.error("Error fetching leave type data:", error);
+        console.error("Error fetching leave data:", error);
       }
     };
 
-    fetchLeaveTypeData();
-  }, [leaveTypeId, isOpen, isCreate]);
+    fetchLeaveData();
+  }, [leaveId, isOpen, isCreate, dispatch, reset]);
 
   // Reset form for create mode
   useEffect(() => {
     if (isOpen && isCreate) {
       reset({
-        enumName: "",
-        description: "",
+        id: "",
+        leaveTypeEnum: "",
+        startDate: "",
+        endDate: "",
+        reason: "",
       });
     }
-  }, [isOpen, isCreate]);
+  }, [isOpen, isCreate, reset]);
 
   // Clear errors when modal opens
   useEffect(() => {
     if (isOpen) {
       dispatch(clearError());
     }
-  }, [isOpen]);
+  }, [isOpen, dispatch]);
 
-  const onSubmit = async (data: LeaveTypeFormData) => {
+  const onSubmit = async (data: LeaveFormData) => {
     try {
       if (isCreate) {
-        const payload: CreateLeaveTypeRequest = {
-          enumName: data.enumName,
-          description: data.description,
+        const payload: CreateLeaveRequest = {
+          leaveTypeEnum: data.leaveTypeEnum,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          reason: data.reason,
         };
 
-        const result = await dispatch(createLeaveTypeService(payload)).unwrap();
+        const result = await dispatch(createLeaveService(payload)).unwrap();
 
-        showToast.success(
-          `Leave type "${result.enumName}" created successfully`,
-        );
+        showToast.success(`Leave request created successfully`);
         handleClose();
       } else {
-        const payload: UpdateLeaveTypeRequest = {
-          enumName: data.enumName,
-          description: data.description,
+        const payload: UpdateLeaveRequest = {
+          leaveTypeEnum: data.leaveTypeEnum,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          reason: data.reason,
         };
 
         const result = await dispatch(
-          updateLeaveTypeService({ id: data.id, param: payload }),
+          updateLeaveService({ id: data.id, param: payload }),
         ).unwrap();
 
-        showToast.success(
-          `Leave type "${result.enumName}" updated successfully`,
-        );
+        showToast.success(`Leave request updated successfully`);
         handleClose();
       }
     } catch (error: any) {
       showToast.error(
-        error || `Failed to ${isCreate ? "create" : "update"} leave type`,
+        error || `Failed to ${isCreate ? "create" : "update"} leave request`,
       );
     }
   };
@@ -149,7 +161,7 @@ export default function LeaveModal({ isOpen, onClose, leaveId, mode }: Props) {
   const handleClose = () => {
     reset();
     dispatch(clearError());
-    dispatch(clearSelectedWorkSchedule());
+    dispatch(clearSelectedLeave());
     onClose();
   };
 
@@ -159,11 +171,11 @@ export default function LeaveModal({ isOpen, onClose, leaveId, mode }: Props) {
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="w-[90%] max-w-4xl max-h-[90vh] p-0 flex flex-col">
         <FormHeader
-          title={isCreate ? "Create New Leave Type" : "Edit Leave Type"}
+          title={isCreate ? "Create New Leave Request" : "Edit Leave Request"}
           description={
             isCreate
-              ? "Fill out the form to create a new leave type"
-              : "Update leave type information below"
+              ? "Fill out the form to create a new leave request"
+              : "Update leave request information below"
           }
         />
 
@@ -185,24 +197,53 @@ export default function LeaveModal({ isOpen, onClose, leaveId, mode }: Props) {
                 </div>
               )}
 
-              <TextField
+              <Controller
                 control={control}
-                name="enumName"
-                label="Leave Type Name"
-                placeholder="Enter Leave Type Name"
+                name="leaveTypeEnum"
+                render={({ field }) => (
+                  <ComboboxSelectLeaveType
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={isSubmitting}
+                    label="Leave Type"
+                    required
+                    placeholder="Select leave type..."
+                    error={errors.leaveTypeEnum?.message}
+                  />
+                )}
+              />
+
+              <DateTimePickerField
+                control={control}
+                name="startDate"
+                label="Start Date"
+                placeholder="Select start date"
                 required
                 disabled={isSubmitting}
-                error={errors.enumName}
+                error={errors.startDate}
+                mode="date"
+              />
+
+              <DateTimePickerField
+                control={control}
+                name="endDate"
+                label="End Date"
+                placeholder="Select end date"
+                required
+                disabled={isSubmitting}
+                error={errors.endDate}
+                mode="date"
               />
 
               <TextareaField
                 control={control}
-                name="description"
-                label="Description"
-                placeholder="Enter any additional description (optional)"
+                name="reason"
+                label="Reason"
+                placeholder="Enter reason for leave request"
                 rows={5}
+                required
                 disabled={isSubmitting}
-                error={errors.description}
+                error={errors.reason}
               />
             </FormBody>
 
@@ -210,16 +251,16 @@ export default function LeaveModal({ isOpen, onClose, leaveId, mode }: Props) {
               isSubmitting={isSubmitting}
               isDirty={isDirty}
               isCreate={isCreate}
-              createMessage="Creating leave type..."
-              updateMessage="Updating leave type..."
+              createMessage="Creating leave request..."
+              updateMessage="Updating leave request..."
             >
               <CancelButton onClick={handleClose} disabled={isSubmitting} />
               <SubmitButton
                 isSubmitting={isSubmitting}
                 isDirty={isDirty}
                 isCreate={isCreate}
-                createText="Create Leave Type"
-                updateText="Update Leave Type"
+                createText="Create Leave Request"
+                updateText="Update Leave Request"
                 submittingCreateText="Creating..."
                 submittingUpdateText="Updating..."
               />
