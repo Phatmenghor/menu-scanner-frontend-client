@@ -76,7 +76,6 @@ export function ComboboxSelectUser({
       size={size}
       labelClassName="text-sm font-medium"
       enablePagination={true}
-      fetchOnMount={true}
     />
   );
 }

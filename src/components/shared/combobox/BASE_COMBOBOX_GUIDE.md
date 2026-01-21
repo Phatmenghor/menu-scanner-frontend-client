@@ -183,7 +183,6 @@ export function ComboboxSelectBrand({
       label="Brand"
       labelClassName="text-[12px] font-normal text-gray-300"
       enablePagination={true}
-      fetchOnMount={true}
     />
   );
 }
@@ -192,7 +191,7 @@ export function ComboboxSelectBrand({
 **Key Points:**
 - Custom "All" option at the top
 - Pagination enabled
-- Fetch on mount for immediate use
+- Data fetches automatically on mount (via enableSearch)
 - ~80 lines vs ~250+ lines before
 
 ### Example 3: Custom Item Rendering (User)
@@ -248,7 +247,6 @@ export function ComboboxSelectUser({
       placeholder="Select a user..."
       label="User"
       enablePagination={true}
-      fetchOnMount={true}
     />
   );
 }
@@ -322,11 +320,10 @@ fetchData: (params: {
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `fetchOnMount` | `boolean` | `false` | Fetch data on component mount |
 | `pageSize` | `number` | `10` | Items per page |
-| `debounceMs` | `number` | `400` | Search debounce delay |
-| `enablePagination` | `boolean` | `true` | Enable infinite scroll |
-| `enableSearch` | `boolean` | `true` | Enable search functionality |
+| `debounceMs` | `number` | `400` | Search debounce delay (ms) |
+| `enablePagination` | `boolean` | `true` | Enable infinite scroll pagination |
+| `enableSearch` | `boolean` | `true` | Enable search (also fetches data on mount) |
 
 ## Creating Your Own Combobox - Step by Step
 
@@ -402,7 +399,6 @@ export function ComboboxSelectDepartment({
       emptyMessage="No departments found."
       label="Department"
       enablePagination={true}
-      fetchOnMount={true}
     />
   );
 }

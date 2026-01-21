@@ -66,7 +66,6 @@ export interface BaseComboboxProps<T> {
   popoverClassName?: string;
 
   // Behavior
-  fetchOnMount?: boolean;
   pageSize?: number;
   debounceMs?: number;
   enablePagination?: boolean;
@@ -97,7 +96,6 @@ export function BaseCombobox<T>({
   labelClassName,
   buttonClassName,
   popoverClassName,
-  fetchOnMount = false,
   pageSize = 10,
   debounceMs = 400,
   enablePagination = true,
@@ -115,7 +113,6 @@ export function BaseCombobox<T>({
 
   const loadingRef = useRef(false);
   const lastPageRef = useRef(false);
-  const initialMountRef = useRef(true);
 
   useEffect(() => {
     loadingRef.current = loading;
@@ -177,24 +174,8 @@ export function BaseCombobox<T>({
     }
   };
 
-  // Fetch on mount
+  // Fetch on search change (handles initial load when enableSearch is true)
   useEffect(() => {
-    if (fetchOnMount) {
-      loadData("", 1);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchOnMount]);
-
-  // Fetch on search change
-  useEffect(() => {
-    // Skip initial mount if fetchOnMount is handling it
-    if (initialMountRef.current && fetchOnMount) {
-      initialMountRef.current = false;
-      return;
-    }
-
-    initialMountRef.current = false;
-
     if (enableSearch) {
       setPage(1);
       setLastPage(false);
@@ -204,11 +185,11 @@ export function BaseCombobox<T>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
 
-  // Fetch on open (if not already loaded) and reset search when closing
+  // Fetch on open (if search is disabled and not already loaded)
   useEffect(() => {
     if (open) {
-      // Opening: fetch if needed
-      if (!fetchOnMount && data.length === 0) {
+      // Opening: fetch if needed when search is disabled
+      if (!enableSearch && data.length === 0) {
         loadData("", 1);
       }
     } else {
