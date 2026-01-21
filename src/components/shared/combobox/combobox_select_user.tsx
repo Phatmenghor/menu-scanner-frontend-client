@@ -136,7 +136,7 @@ export function ComboboxSelectUser({
       fetchData(debouncedSearch, page + 1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inView]);
+  }, [inView, page, data.length]);
 
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
