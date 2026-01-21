@@ -17,6 +17,7 @@ import { LeaveResponseModel } from "@/redux/features/hr/store/models/response/le
 import {
   resetState,
   setPageNo,
+  setPageSize,
   setSearchFilter,
 } from "@/redux/features/hr/store/slice/leave-slice";
 import {
@@ -27,6 +28,7 @@ import { leaveTableColumns } from "@/redux/features/hr/table/leave-table";
 import LeaveModal from "@/redux/features/hr/components/leave-modal";
 import { LeaveDetailModal } from "@/redux/features/hr/components/leave-detail-modal";
 import ApproveRejectLeaveModal from "@/redux/features/hr/components/approve-reject-leave-modal";
+import { AppDefault } from "@/constants/app-resource/default/default";
 
 export default function LeaveTypePage() {
   useAdminCleanup(resetState);
@@ -91,9 +93,10 @@ export default function LeaveTypePage() {
       fetchAllLeaveService({
         search: debouncedSearch,
         pageNo: filters.pageNo,
+        pageSize: filters.pageSize,
       }),
     );
-  }, [dispatch, debouncedSearch, filters.pageNo]);
+  }, [dispatch, debouncedSearch, filters.pageNo, filters.pageSize]);
 
   // Event handlers
   const handleCreate = () => {
@@ -169,6 +172,10 @@ export default function LeaveTypePage() {
   const handlePageChangeWrapper = (page: number) => {
     dispatch(setPageNo(page));
     handlePageChange(page);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    dispatch(setPageSize(size));
   };
 
   const handleDelete = async () => {
@@ -253,6 +260,9 @@ export default function LeaveTypePage() {
           currentPage={filters.pageNo}
           totalPages={pagination.totalPages}
           onPageChange={handlePageChangeWrapper}
+          pageSize={filters.pageSize}
+          onPageSizeChange={handlePageSizeChange}
+          pageSizeOptions={AppDefault.PAGE_SIZE_OPTIONS}
         />
       </div>
 
