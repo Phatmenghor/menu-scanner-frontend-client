@@ -72,7 +72,6 @@ export function ComboboxSelectBrand({
       size={size}
       labelClassName="text-[12px] font-normal text-gray-300"
       enablePagination={true}
-      fetchOnMount={true}
     />
   );
 }
