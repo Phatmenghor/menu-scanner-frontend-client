@@ -26,3 +26,13 @@ export interface UserResponseModel {
   businessId: string;
   businessName: string;
 }
+
+export interface UserInfoModel {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  profileImageUrl: string;
+  fullName: string;
+}

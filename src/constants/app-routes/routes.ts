@@ -30,6 +30,7 @@ export const ROUTES = {
     WORK_SCHEDULE: "/admin/hr/work-schedule",
     WORK_SCHEDULE_TYPE: "/admin/hr/work-schedule-type",
     LEAVE_TYPE: "/admin/hr/leave-type",
+    LEAVE: "/admin/hr/leave",
   },
 } as const;
 
@@ -64,16 +65,20 @@ export const SIDEBAR_MENU: MenuItem[] = [
     icon: Database,
     items: [
       {
-        title: "Work Schedules",
-        href: ROUTES.HR.WORK_SCHEDULE,
-      },
-      {
         title: "Work Schedule Types",
         href: ROUTES.HR.WORK_SCHEDULE_TYPE,
       },
       {
         title: "Leave Type",
         href: ROUTES.HR.LEAVE_TYPE,
+      },
+      {
+        title: "Work Schedules",
+        href: ROUTES.HR.WORK_SCHEDULE,
+      },
+      {
+        title: "Leave",
+        href: ROUTES.HR.LEAVE,
       },
     ],
   },
