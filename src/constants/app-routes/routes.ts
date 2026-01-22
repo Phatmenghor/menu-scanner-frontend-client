@@ -24,6 +24,7 @@ export const ROUTES = {
     EXCHANGE_RATE: "/admin/exchange-rate",
     DELIVERY_OPTIONS: "/admin/delivery-options",
     PRODUCTS: "/admin/products",
+    PRODUCTS_PROMOTION: "/admin/product-promotion",
   },
 
   HR: {
@@ -121,6 +122,10 @@ export const SIDEBAR_MENU: MenuItem[] = [
       {
         title: "Products",
         href: ROUTES.ADMIN.PRODUCTS,
+      },
+      {
+        title: "Products Promotion",
+        href: ROUTES.ADMIN.PRODUCTS_PROMOTION,
       },
     ],
   },
