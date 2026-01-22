@@ -24,6 +24,8 @@ import { CustomAvatar } from "@/components/shared/avator/custom-avator";
 import { Badge } from "@/components/ui/badge";
 import { CustomButton } from "../shared/button/custom-button";
 import { useAuthState } from "@/redux/features/auth/store/state/auth-state";
+import { useCartState } from "@/redux/features/main/store/state/cart-state";
+import { useWishlistState } from "@/redux/features/main/store/state/wishlist-state";
 import { logout } from "@/redux/features/auth/store/slice/auth-slice";
 import { showToast } from "@/components/shared/common/show-toast";
 import { clearToken } from "@/utils/local-storage/token";
@@ -31,6 +33,7 @@ import { removeUserInfo } from "@/utils/local-storage/userInfo";
 import { useDebounce } from "@/utils/debounce/debounce";
 import { LoginModal } from "../shared/modal/login-modal";
 import { CustomDropdownMenu } from "../shared/common/custom-dropdown-menu";
+import { cn } from "@/lib/utils";
 
 const navigationLinks = [
   { name: "Home", href: "/" },
@@ -53,10 +56,12 @@ export function Navbar() {
   const { isAuthenticated, profile, fullName, email, profileImage, dispatch } =
     useAuthState();
 
+  // Cart and wishlist state
+  const { totalItems: cartItemCount } = useCartState();
+  const { totalItems: wishlistItemCount } = useWishlistState();
+
   // Debounce search query
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
-
-  const cartItemCount = 3; // TODO: Get from cart state
 
   // Initialize search query from URL on mount
   useEffect(() => {
@@ -224,16 +229,23 @@ export function Navbar() {
               </Link>
 
               <div className="hidden lg:flex items-center gap-1">
-                {navigationLinks.map((link) => (
-                  <Link key={link.name} href={link.href}>
-                    <Button
-                      variant="ghost"
-                      className="text-foreground hover:text-primary hover:bg-primary/10"
-                    >
-                      {link.name}
-                    </Button>
-                  </Link>
-                ))}
+                {navigationLinks.map((link) => {
+                  const isActive = pathname === link.href ||
+                    (link.href === "/products" && pathname.startsWith("/products"));
+                  return (
+                    <Link key={link.name} href={link.href}>
+                      <Button
+                        variant="ghost"
+                        className={cn(
+                          "text-foreground hover:text-primary hover:bg-primary/10 relative",
+                          isActive && "text-primary after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-3/4 after:h-0.5 after:bg-primary after:rounded-full"
+                        )}
+                      >
+                        {link.name}
+                      </Button>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
 
@@ -265,7 +277,24 @@ export function Navbar() {
               <CustomButton
                 variant="ghost"
                 size="icon"
-                className="relative"
+                className="relative hover:text-primary"
+                onClick={() => router.push("/wishlist")}
+              >
+                <Heart className="h-5 w-5" />
+                {wishlistItemCount > 0 && (
+                  <Badge
+                    variant="destructive"
+                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                  >
+                    {wishlistItemCount}
+                  </Badge>
+                )}
+              </CustomButton>
+
+              <CustomButton
+                variant="ghost"
+                size="icon"
+                className="relative hover:text-primary"
                 onClick={() => router.push("/cart")}
               >
                 <ShoppingCart className="h-5 w-5" />
@@ -335,17 +364,27 @@ export function Navbar() {
         {isMobileMenuOpen && (
           <div className="lg:hidden border-t bg-background">
             <div className="container mx-auto px-4 py-4 space-y-2">
-              {navigationLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  href={link.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <Button variant="ghost" className="w-full justify-start">
-                    {link.name}
-                  </Button>
-                </Link>
-              ))}
+              {navigationLinks.map((link) => {
+                const isActive = pathname === link.href ||
+                  (link.href === "/products" && pathname.startsWith("/products"));
+                return (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Button
+                      variant="ghost"
+                      className={cn(
+                        "w-full justify-start",
+                        isActive && "bg-primary/10 text-primary border-l-4 border-primary"
+                      )}
+                    >
+                      {link.name}
+                    </Button>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}

@@ -24,6 +24,8 @@ import publicProductReducer from "../features/main/store/slice/public-product-sl
 import publicBrandsReducer from "../features/main/store/slice/public-brands-slice";
 import publicCategoriesReducer from "../features/main/store/slice/public-categories-slice";
 import scrollReducer from "../features/main/store/slice/scroll-slice";
+import cartReducer from "../features/main/store/slice/cart-slice";
+import wishlistReducer from "../features/main/store/slice/wishlist-slice";
 import globalSettingsReducer from "./slices/global-settings-slice";
 
 /**
@@ -61,4 +63,6 @@ export const reducers = {
   publicBrands: publicBrandsReducer,
   publicCategories: publicCategoriesReducer,
   scroll: scrollReducer,
+  cart: cartReducer,
+  wishlist: wishlistReducer,
 };
