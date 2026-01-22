@@ -104,6 +104,7 @@ export default function ProductPromotionPage() {
         search: debouncedSearch,
         pageNo: filters.pageNo,
         pageSize: globalPageSize,
+        hasPromotion: true,
         status:
           filters.status == ProductStatus.ALL ? undefined : filters.status,
       }),
