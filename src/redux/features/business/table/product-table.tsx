@@ -102,7 +102,7 @@ export const productTableColumns = ({
       truncate: true,
       render: (product) => (
         <span className="text-xs text-muted-foreground">
-          {product?.hasSizes || "---"}
+          {product?.hasSizes ? "Have Size" : "None Size"}
         </span>
       ),
     },
