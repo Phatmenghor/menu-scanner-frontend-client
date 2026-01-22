@@ -3,12 +3,10 @@
 import { useEffect, useCallback } from "react";
 import { usePublicBrandsState } from "@/redux/features/main/store/state/public-brands-state";
 import { Button } from "@/components/ui/button";
-import { Loader2, PackageOpen } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { PackageOpen } from "lucide-react";
+import { BrandCard } from "@/components/shared/card/brand-card";
+import { BrandCardSkeleton } from "@/components/shared/skeletons/brand-card-skeleton";
 import { useInfiniteScroll } from "@/components/shared/common/use-infinite-scroll";
-import Link from "next/link";
-import Image from "next/image";
-import { Card, CardContent } from "@/components/ui/card";
 import { useScrollRestoration } from "@/hooks/use-scroll-restoration";
 import { useSkeletonCount, SkeletonPresets } from "@/hooks/use-skeleton-count";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -77,12 +75,7 @@ export default function BrandsPage() {
         {isInitialLoading && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {Array.from({ length: skeletonCount }).map((_, i) => (
-              <Card key={i} className="overflow-hidden">
-                <CardContent className="p-6 flex flex-col items-center justify-center">
-                  <Skeleton className="w-32 h-32 rounded-full mb-4" />
-                  <Skeleton className="h-5 w-24" />
-                </CardContent>
-              </Card>
+              <BrandCardSkeleton key={i} />
             ))}
           </div>
         )}
@@ -102,48 +95,19 @@ export default function BrandsPage() {
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {brands.map((brand) => (
-                <Link
-                  key={brand.id}
-                  href={`/products?brandId=${brand.id}`}
-                  className="group"
-                >
-                  <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                    <CardContent className="p-6 flex flex-col items-center justify-center min-h-[200px]">
-                      <div className="relative w-32 h-32 mb-4">
-                        <Image
-                          src={brand.imageUrl || "https://picsum.photos/200"}
-                          alt={brand.name}
-                          fill
-                          className="object-contain group-hover:scale-110 transition-transform duration-300"
-                        />
-                      </div>
-                      <h3 className="font-semibold text-center text-sm group-hover:text-primary transition-colors">
-                        {brand.name}
-                      </h3>
-                      {brand.totalProducts !== undefined && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {brand.totalProducts} products
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-                </Link>
+                <BrandCard key={brand.id} brand={brand} />
               ))}
+
+              {/* Show skeleton cards while loading more - smooth inline loading */}
+              {isLoadingMore &&
+                Array.from({ length: 6 }).map((_, i) => (
+                  <BrandCardSkeleton key={`loading-${i}`} />
+                ))}
             </div>
 
-            {/* Infinite Scroll Trigger */}
-            {hasMore && (
-              <div
-                ref={observerTarget}
-                className="flex justify-center items-center py-8"
-              >
-                {isLoadingMore && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    <span>Loading more brands...</span>
-                  </div>
-                )}
-              </div>
+            {/* Infinite Scroll Trigger - hidden */}
+            {hasMore && !isLoadingMore && (
+              <div ref={observerTarget} className="h-10" />
             )}
 
             {/* Load More Button (fallback) */}

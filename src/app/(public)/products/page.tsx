@@ -186,20 +186,16 @@ export default function ProductsPage() {
                   <ProductCard key={product.id} product={product} />
                 ))}
 
+                {/* Show skeleton cards while loading more */}
                 {isPaginationLoading &&
-                  Array.from({ length: skeletonCount }).map((_, index) => (
+                  Array.from({ length: 8 }).map((_, index) => (
                     <ProductCardSkeleton key={`loading-${index}`} />
                   ))}
               </div>
 
-              {isPaginationLoading && (
-                <div className="flex items-center justify-center mt-6 py-4">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              )}
-
+              {/* Infinite scroll trigger - hidden */}
               {pagination.hasMore && !loading.list && (
-                <div ref={observerRef} className="h-20" />
+                <div ref={observerRef} className="h-10" />
               )}
 
               {!pagination.hasMore && products.length > 0 && (

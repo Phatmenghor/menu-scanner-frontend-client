@@ -109,22 +109,15 @@ export const ProductsSection = ({
           <ProductCard key={product.id + "-" + index} product={product} />
         ))}
 
-        {isPaginationLoading && (
-          <>
-            {Array.from({ length: skeletonCount }).map((_, index) => (
-              <ProductCardSkeleton key={`loading-skeleton-${index}`} />
-            ))}
-          </>
-        )}
+        {/* Show skeleton cards while loading more - smooth inline loading */}
+        {isPaginationLoading &&
+          Array.from({ length: 8 }).map((_, index) => (
+            <ProductCardSkeleton key={`loading-skeleton-${index}`} />
+          ))}
       </div>
 
-      {isPaginationLoading && (
-        <div className="flex items-center justify-center mt-6 py-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      )}
-
-      {hasMore && !loading && <div ref={observerRef} className="h-20" />}
+      {/* Infinite scroll trigger - hidden */}
+      {hasMore && !loading && <div ref={observerRef} className="h-10" />}
 
       {!hasMore && products.length > 0 && (
         <div className="flex flex-col items-center justify-center mt-10 py-8">
