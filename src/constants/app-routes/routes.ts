@@ -24,7 +24,7 @@ export const ROUTES = {
     EXCHANGE_RATE: "/admin/exchange-rate",
     DELIVERY_OPTIONS: "/admin/delivery-options",
     PRODUCTS: "/admin/products",
-    PRODUCTS_PROMOTION: "/admin/product-promotion",
+    PRODUCTS_PROMOTION: "/admin/product-promotions",
   },
 
   HR: {
