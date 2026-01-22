@@ -23,7 +23,6 @@ import {
   setSearchFilter,
   resetState,
 } from "@/redux/features/business/store/slice/product-slice";
-import { productTableColumns } from "@/redux/features/business/table/product-table";
 import ProductModal from "@/redux/features/business/components/product-modal";
 import { ProductDetailModal } from "@/redux/features/business/components/product-detail-modal";
 import { CustomSelect } from "@/components/shared/common/custom-select";
