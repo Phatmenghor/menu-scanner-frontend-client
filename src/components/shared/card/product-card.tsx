@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, ShoppingCart, Plus, Minus } from "lucide-react";
@@ -10,6 +10,12 @@ import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/utils/common/currency-format";
 import { CustomButton } from "../button/custom-button";
 import { ProductDetailResponseModel } from "@/redux/features/business/store/models/response/product-response";
+import { useCartState } from "@/redux/features/main/store/state/cart-state";
+import { useWishlistState } from "@/redux/features/main/store/state/wishlist-state";
+import { addToCart, updateCartItem, removeFromCart } from "@/redux/features/main/store/thunks/cart-thunks";
+import { addToWishlist, removeFromWishlist } from "@/redux/features/main/store/thunks/wishlist-thunks";
+import { showToast } from "../common/show-toast";
+import { useAuthState } from "@/redux/features/auth/store/state/auth-state";
 
 interface ProductCardProps {
   product: ProductDetailResponseModel;
@@ -20,9 +26,19 @@ interface ProductCardProps {
 const imageLoadedCache = new Set<string>();
 
 export function ProductCard({ product, className }: ProductCardProps) {
+  const { dispatch: cartDispatch, items: cartItems } = useCartState();
+  const { dispatch: wishlistDispatch, items: wishlistItems } = useWishlistState();
+  const { isAuthenticated } = useAuthState();
+
   const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const [quantity, setQuantity] = useState(0);
-  const [isFavorite, setIsFavorite] = useState(product.isFavorited || false);
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
+
+  // Get current cart item for this product
+  const cartItem = cartItems.find((item) => item.productId === product.id);
+  const quantity = cartItem?.quantity || product.quantityInCart || 0;
+
+  // Get favorite status from product or wishlist
+  const isFavorited = product.isFavorited || wishlistItems.some((item) => item.productId === product.id);
 
   // Get image URL
   const imageUrl =
@@ -37,32 +53,87 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!isAuthenticated) {
+      showToast.error("Please login to add items to cart");
+      return;
+    }
+
     setIsAddingToCart(true);
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    setIsAddingToCart(false);
-    setQuantity(1);
-  };
-
-  const handleIncrement = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setQuantity((prev) => prev + 1);
-  };
-
-  const handleDecrement = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (quantity > 1) {
-      setQuantity((prev) => prev - 1);
-    } else if (quantity === 1) {
-      setQuantity(0);
+    try {
+      await cartDispatch(addToCart({ productId: product.id, quantity: 1 })).unwrap();
+      showToast.success("Added to cart");
+    } catch (error: any) {
+      showToast.error(error?.message || "Failed to add to cart");
+    } finally {
+      setIsAddingToCart(false);
     }
   };
 
-  const handleToggleFavorite = (e: React.MouseEvent) => {
+  const handleIncrement = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsFavorite(!isFavorite);
+
+    if (!cartItem) return;
+
+    setIsAddingToCart(true);
+    try {
+      await cartDispatch(
+        updateCartItem({ cartItemId: cartItem.id, quantity: quantity + 1 })
+      ).unwrap();
+    } catch (error: any) {
+      showToast.error(error?.message || "Failed to update cart");
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
+
+  const handleDecrement = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!cartItem) return;
+
+    setIsAddingToCart(true);
+    try {
+      if (quantity > 1) {
+        await cartDispatch(
+          updateCartItem({ cartItemId: cartItem.id, quantity: quantity - 1 })
+        ).unwrap();
+      } else if (quantity === 1) {
+        await cartDispatch(removeFromCart({ cartItemId: cartItem.id })).unwrap();
+        showToast.success("Removed from cart");
+      }
+    } catch (error: any) {
+      showToast.error(error?.message || "Failed to update cart");
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
+
+  const handleToggleFavorite = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!isAuthenticated) {
+      showToast.error("Please login to add to wishlist");
+      return;
+    }
+
+    setIsTogglingFavorite(true);
+    try {
+      if (isFavorited) {
+        await wishlistDispatch(removeFromWishlist({ productId: product.id })).unwrap();
+        showToast.success("Removed from wishlist");
+      } else {
+        await wishlistDispatch(addToWishlist({ productId: product.id })).unwrap();
+        showToast.success("Added to wishlist");
+      }
+    } catch (error: any) {
+      showToast.error(error?.message || "Failed to update wishlist");
+    } finally {
+      setIsTogglingFavorite(false);
+    }
   };
 
   const handleImageLoad = () => {
@@ -138,13 +209,14 @@ export function ProductCard({ product, className }: ProductCardProps) {
               variant="secondary"
               className={cn(
                 "h-8 w-8 rounded-full shadow-lg transition-all duration-200",
-                isFavorite
+                isFavorited
                   ? "bg-red-500 text-white hover:bg-red-600 scale-110"
                   : "bg-white hover:bg-red-50 hover:text-red-500"
               )}
               onClick={handleToggleFavorite}
+              disabled={isTogglingFavorite}
             >
-              <Heart className={cn("h-4 w-4", isFavorite && "fill-current")} />
+              <Heart className={cn("h-4 w-4", isFavorited && "fill-current")} />
             </CustomButton>
           </div>
         </div>
