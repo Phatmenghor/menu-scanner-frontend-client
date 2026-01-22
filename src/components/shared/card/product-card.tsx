@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, ShoppingCart, Plus, Minus } from "lucide-react";
+import { Heart, ShoppingCart, Plus, Minus, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -153,8 +153,9 @@ export function ProductCard({ product, className }: ProductCardProps) {
     <Link href={`/products/${product.id}`}>
       <div
         className={cn(
-          "group relative bg-card rounded-lg border overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1 flex flex-col",
+          "group relative bg-card rounded-lg border-2 border-transparent hover:border-primary/20 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-primary/15 hover:-translate-y-2 flex flex-col",
           isOutOfStock && "opacity-75",
+          hasActivePromotion && "ring-1 ring-amber-500/20",
           className
         )}
       >
@@ -177,16 +178,24 @@ export function ProductCard({ product, className }: ProductCardProps) {
             sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
           />
 
-          <div className="absolute top-2 left-2 right-2 flex justify-between items-start z-10 pointer-events-none">
-            {product.status === "NEW" && (
-              <Badge className="bg-blue-600 hover:bg-blue-600 text-xs px-2 py-0.5 shadow-md pointer-events-auto">
-                NEW
-              </Badge>
-            )}
+          <div className="absolute top-2 left-2 right-2 flex justify-between items-start z-10 pointer-events-none gap-2">
+            <div className="flex flex-col gap-1.5">
+              {product.status === "NEW" && (
+                <Badge className="bg-blue-600 hover:bg-blue-600 text-xs px-2 py-0.5 shadow-md pointer-events-auto font-semibold">
+                  NEW
+                </Badge>
+              )}
+              {hasActivePromotion && (
+                <Badge className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0 text-xs px-2 py-0.5 shadow-md pointer-events-auto font-semibold flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  <span>SALE</span>
+                </Badge>
+              )}
+            </div>
             {hasActivePromotion && (
               <Badge
                 variant="destructive"
-                className="text-xs font-bold px-2 py-0.5 shadow-md ml-auto pointer-events-auto"
+                className="text-xs font-bold px-2 py-0.5 shadow-md pointer-events-auto"
               >
                 {product.displayPromotionType === "PERCENTAGE"
                   ? `-${product.displayPromotionValue}%`

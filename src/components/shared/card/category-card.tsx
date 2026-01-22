@@ -22,28 +22,29 @@ export function CategoryCard({ category, className }: CategoryCardProps) {
     <Link href={`/products?categoryId=${category.id}`} className="group">
       <Card
         className={cn(
-          "overflow-hidden hover:shadow-xl hover:border-primary/50 transition-all duration-300 cursor-pointer h-full relative hover:-translate-y-1",
+          "overflow-hidden hover:shadow-2xl hover:shadow-primary/20 border-2 border-transparent hover:border-primary/30 transition-all duration-300 cursor-pointer h-full relative hover:-translate-y-2 bg-gradient-to-br from-card to-card/50",
           className
         )}
       >
-        <CardContent className="p-4 sm:p-5 flex flex-col items-center justify-center relative">
-          {/* Background gradient effect */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <CardContent className="p-5 sm:p-6 flex flex-col items-center justify-center relative">
+          {/* Background gradient effect - Enhanced */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-          {/* Icon/Image Container */}
-          <div className="relative w-16 h-16 sm:w-18 sm:h-18 flex items-center justify-center mb-3 overflow-hidden rounded-xl bg-gradient-to-br from-muted/50 to-muted group-hover:scale-110 transition-transform duration-300 shadow-md">
+          {/* Icon/Image Container - Enhanced with ring */}
+          <div className="relative w-20 h-20 sm:w-22 sm:h-22 flex items-center justify-center mb-4 overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 group-hover:from-primary/20 group-hover:to-primary/10 group-hover:scale-110 transition-all duration-300 shadow-lg group-hover:shadow-xl ring-2 ring-primary/10 group-hover:ring-primary/30">
             {!imageError && category.imageUrl ? (
               <>
                 {!imageLoaded && (
-                  <Skeleton className="absolute inset-0 w-full h-full rounded-xl" />
+                  <Skeleton className="absolute inset-0 w-full h-full rounded-2xl" />
                 )}
                 <Image
                   src={category.imageUrl}
                   alt={category.name}
-                  width={72}
-                  height={72}
+                  width={88}
+                  height={88}
                   className={cn(
-                    "w-full h-full object-cover transition-opacity duration-500",
+                    "w-full h-full object-cover transition-all duration-500 group-hover:scale-110",
                     imageLoaded ? "opacity-100" : "opacity-0"
                   )}
                   onLoad={() => setImageLoaded(true)}
@@ -51,22 +52,25 @@ export function CategoryCard({ category, className }: CategoryCardProps) {
                 />
               </>
             ) : (
-              <span className="text-3xl sm:text-4xl font-bold text-primary/60 group-hover:text-primary transition-colors">
+              <span className="text-4xl sm:text-5xl font-bold bg-gradient-to-br from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent group-hover:scale-110 transition-transform duration-300">
                 {category.name.charAt(0)}
               </span>
             )}
+            {/* Decorative corner accent */}
+            <div className="absolute top-0 right-0 w-6 h-6 bg-primary/20 rounded-bl-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </div>
 
           {/* Category Name */}
-          <h3 className="font-semibold text-center text-xs sm:text-sm line-clamp-2 mb-1.5 group-hover:text-primary transition-colors min-h-[32px] flex items-center z-10 px-1">
+          <h3 className="font-bold text-center text-sm sm:text-base line-clamp-2 mb-2 group-hover:text-primary transition-colors min-h-[40px] flex items-center z-10 px-2 leading-tight">
             {category.name}
           </h3>
 
-          {/* Product Count */}
+          {/* Product Count with enhanced design */}
           {category.activeProducts > 0 && (
-            <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground group-hover:text-primary transition-colors z-10">
-              <span className="font-medium">{category.activeProducts} Products</span>
-              <ArrowRight className="h-2.5 w-2.5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground group-hover:text-primary transition-all duration-300 z-10 bg-primary/5 px-3 py-1 rounded-full group-hover:bg-primary/10">
+              <span className="font-semibold">{category.activeProducts}</span>
+              <span className="font-medium">Products</span>
+              <ArrowRight className="h-3 w-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
             </div>
           )}
         </CardContent>
