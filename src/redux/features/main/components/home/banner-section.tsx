@@ -12,6 +12,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
+import Autoplay from "embla-carousel-autoplay";
 
 interface BannerSectionProps {
   banners: BannerResponseModel[];
@@ -29,18 +30,16 @@ export const BannerSection = ({
   const [loadedImages, setLoadedImages] = React.useState<Set<number>>(
     new Set()
   );
-  const [isHovered, setIsHovered] = React.useState(false);
 
-  // Custom auto-scroll implementation
-  React.useEffect(() => {
-    if (!carouselApi || banners.length <= 1 || isHovered) return;
-
-    const intervalId = setInterval(() => {
-      carouselApi.scrollNext();
-    }, 1000); // 4 seconds delay
-
-    return () => clearInterval(intervalId);
-  }, [carouselApi, banners.length, isHovered]);
+  // Create autoplay plugin with smooth settings
+  const autoplayPlugin = React.useRef(
+    Autoplay({
+      delay: 5000,
+      stopOnInteraction: true,
+      stopOnMouseEnter: true,
+      playOnInit: true,
+    })
+  );
 
   React.useEffect(() => {
     if (!carouselApi) return;
@@ -76,17 +75,16 @@ export const BannerSection = ({
 
   return (
     <div className="w-full mb-8">
-      <div
-        className="relative"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
+      <div className="relative">
         <Carousel
           setApi={setCarouselApi}
+          plugins={[autoplayPlugin.current]}
           className="w-full"
           opts={{
             loop: true,
             align: "start",
+            duration: 25,
+            skipSnaps: false,
           }}
         >
           <CarouselContent>
@@ -94,7 +92,9 @@ export const BannerSection = ({
               <CarouselItem key={banner.id + "-" + index}>
                 <div className="relative w-full h-[200px] sm:h-[280px] md:h-[320px] lg:h-[360px] rounded-2xl overflow-hidden group">
                   {!loadedImages.has(index) && (
-                    <div className="absolute inset-0 bg-muted animate-pulse" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-muted via-muted/50 to-muted">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
+                    </div>
                   )}
 
                   <Image
@@ -105,21 +105,26 @@ export const BannerSection = ({
                     alt={banner.businessName || "Banner"}
                     fill
                     className={cn(
-                      "object-cover transition-all duration-500 group-hover:scale-105",
+                      "object-cover transition-all duration-700 ease-in-out group-hover:scale-105",
                       loadedImages.has(index) ? "opacity-100" : "opacity-0"
                     )}
                     onLoad={() => handleImageLoad(index)}
                     priority={index === 0}
                   />
 
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent transition-opacity duration-500" />
 
-                  <div className="absolute inset-0 flex items-end pb-12">
+                  <div className="absolute inset-0 flex items-end pb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <div className="p-4 sm:p-6 md:p-8 w-full">
                       <div className="max-w-2xl">
-                        <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white drop-shadow-lg">
+                        <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white drop-shadow-2xl tracking-tight">
                           {banner.businessName}
                         </h2>
+                        {banner.description && (
+                          <p className="text-sm sm:text-base text-white/90 mt-2 drop-shadow-lg line-clamp-2">
+                            {banner.description}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
