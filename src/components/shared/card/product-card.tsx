@@ -144,7 +144,10 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
   const isOutOfStock = product.status === "OUT_OF_STOCK";
   const isInCart = quantity > 0;
-  const hasDiscount = product.hasPromotion;
+  // Check for active promotion
+  const hasActivePromotion = product.hasPromotion &&
+    product.displayPromotionValue > 0 &&
+    product.displayPrice < product.displayOriginPrice;
 
   return (
     <Link href={`/products/${product.id}`}>
@@ -180,7 +183,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
                 NEW
               </Badge>
             )}
-            {hasDiscount && product.displayPromotionValue > 0 && (
+            {hasActivePromotion && (
               <Badge
                 variant="destructive"
                 className="text-xs font-bold px-2 py-0.5 shadow-md ml-auto pointer-events-auto"
@@ -231,12 +234,11 @@ export function ProductCard({ product, className }: ProductCardProps) {
               <span className="text-lg font-bold text-primary">
                 {formatCurrency(product.displayPrice)}
               </span>
-              {hasDiscount &&
-                product.displayOriginPrice > product.displayPrice && (
-                  <span className="text-xs text-muted-foreground line-through">
-                    {formatCurrency(product.displayOriginPrice)}
-                  </span>
-                )}
+              {hasActivePromotion && (
+                <span className="text-xs text-muted-foreground line-through">
+                  {formatCurrency(product.displayOriginPrice)}
+                </span>
+              )}
             </div>
 
             {isInCart ? (
