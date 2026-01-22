@@ -28,7 +28,7 @@ export const BannerSection = ({
   const [current, setCurrent] = React.useState(0);
   const [carouselApi, setCarouselApi] = React.useState<any>();
   const [loadedImages, setLoadedImages] = React.useState<Set<number>>(
-    new Set()
+    new Set(),
   );
 
   // Create autoplay plugin with smooth settings
@@ -38,7 +38,7 @@ export const BannerSection = ({
       stopOnInteraction: true,
       stopOnMouseEnter: true,
       playOnInit: true,
-    })
+    }),
   );
 
   React.useEffect(() => {
@@ -106,7 +106,7 @@ export const BannerSection = ({
                     fill
                     className={cn(
                       "object-cover transition-all duration-700 ease-in-out group-hover:scale-105",
-                      loadedImages.has(index) ? "opacity-100" : "opacity-0"
+                      loadedImages.has(index) ? "opacity-100" : "opacity-0",
                     )}
                     onLoad={() => handleImageLoad(index)}
                     priority={index === 0}
@@ -174,7 +174,7 @@ export const BannerSection = ({
                       "h-2 rounded-full transition-all duration-300 pointer-events-auto",
                       current === idx
                         ? "w-8 bg-primary"
-                        : "w-2 bg-white/50 hover:bg-white/80"
+                        : "w-2 bg-white/50 hover:bg-white/80",
                     )}
                     aria-label={`Go to slide ${idx + 1}`}
                   />
@@ -205,7 +205,7 @@ export const BannerSection = ({
                       "h-2 rounded-full transition-all duration-300 pointer-events-auto",
                       current === idx
                         ? "w-8 bg-primary"
-                        : "w-2 bg-white/50 hover:bg-white/80"
+                        : "w-2 bg-white/50 hover:bg-white/80",
                     )}
                     aria-label={`Go to slide ${idx + 1}`}
                   />
