@@ -4,8 +4,8 @@ import { useEffect, useCallback } from "react";
 import { usePublicCategoriesState } from "@/redux/features/main/store/state/public-categories-state";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { CategoryCard } from "@/components/shared/card/category-card";
+import { CategoryCardSkeleton } from "@/components/shared/skeletons/category-card-skeleton";
 import { useInfiniteScroll } from "@/components/shared/common/use-infinite-scroll";
 import { useScrollRestoration } from "@/hooks/use-scroll-restoration";
 import { useSkeletonCount, SkeletonPresets } from "@/hooks/use-skeleton-count";
@@ -81,15 +81,7 @@ export default function CategoriesPage() {
         {isInitialLoading && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
             {Array.from({ length: skeletonCount }).map((_, i) => (
-              <div
-                key={i}
-                className="h-[180px] flex flex-col rounded-lg border overflow-hidden"
-              >
-                <Skeleton className="h-[120px] w-full" />
-                <div className="p-3 flex-1 flex items-center justify-center">
-                  <Skeleton className="h-3 w-20" />
-                </div>
-              </div>
+              <CategoryCardSkeleton key={i} />
             ))}
           </div>
         )}
@@ -106,21 +98,17 @@ export default function CategoriesPage() {
               {categories.map((category) => (
                 <CategoryCard key={category.id} category={category} />
               ))}
+
+              {/* Show skeleton cards while loading more - smooth inline loading */}
+              {isLoadingMore &&
+                Array.from({ length: 6 }).map((_, i) => (
+                  <CategoryCardSkeleton key={`loading-${i}`} />
+                ))}
             </div>
 
-            {/* Infinite Scroll Trigger */}
-            {hasMore && (
-              <div
-                ref={observerTarget}
-                className="flex justify-center items-center py-8"
-              >
-                {isLoadingMore && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    <span>Loading more categories...</span>
-                  </div>
-                )}
-              </div>
+            {/* Infinite Scroll Trigger - hidden */}
+            {hasMore && !isLoadingMore && (
+              <div ref={observerTarget} className="h-10" />
             )}
 
             {/* Load More Button (fallback) */}
