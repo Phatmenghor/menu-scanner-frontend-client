@@ -39,7 +39,7 @@ import { selectGlobalPageSize } from "@/redux/store/selectors/global-settings-se
 import { useAppSelector } from "@/redux/store";
 import { productPromotionTableColumns } from "@/redux/features/business/table/product-promotion-table";
 
-export default function ProdyuctPage() {
+export default function ProductPromotionPage() {
   // Clean up state when leaving admin area (performance optimization)
   useAdminCleanup(resetState);
   const searchParams = useSearchParams();
