@@ -16,6 +16,7 @@ import { ProductCard } from "@/components/shared/card/product-card";
 import { ProductCardSkeleton } from "@/components/shared/skeletons/product-card-skeleton";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { ProductFilters } from "@/redux/features/main/components/product/product-filters";
+import { PageContainer } from "@/components/shared/common/page-container";
 import { useScrollRestoration } from "@/hooks/use-scroll-restoration";
 import { useSkeletonCount, SkeletonPresets } from "@/hooks/use-skeleton-count";
 
@@ -81,10 +82,10 @@ export default function ProductsPage() {
           ...(brandId && { brandId }),
           ...(status && { status }),
           ...(sortBy && { sortBy }),
-        })
+        }),
       );
     },
-    [dispatch, search, hasPromotion, categoryId, brandId, status, sortBy]
+    [dispatch, search, hasPromotion, categoryId, brandId, status, sortBy],
   );
 
   // Smart loading based on Redux loadedFilters
@@ -94,16 +95,12 @@ export default function ProductsPage() {
 
     // Case 1: Have products with matching filters -> Do nothing (coming back from detail)
     if (hasProducts && filtersMatch) {
-      console.log(
-        "✅ Products exist with matching filters - keeping existing products"
-      );
       return;
     }
 
     // Case 2: Filters changed OR no products -> Load/Reload
     if (!filtersMatch || !hasProducts) {
       if (!filtersMatch && hasProducts) {
-        console.log("🔄 Filters changed - clearing and reloading");
         dispatch(clearProducts());
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
@@ -134,7 +131,7 @@ export default function ProductsPage() {
           handleLoadMore();
         }
       },
-      { threshold: 0.1, rootMargin: "200px" }
+      { threshold: 0.1, rootMargin: "200px" },
     );
 
     observer.observe(observerRef.current);
@@ -145,7 +142,7 @@ export default function ProductsPage() {
   const isPaginationLoading = products.length > 0 && loading.list;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <PageContainer className="py-8 max-w-8xl">
       <div className="flex gap-6 lg:gap-8">
         {/* Desktop Sidebar Filters */}
         <aside className="hidden lg:block w-64 flex-shrink-0">
@@ -231,6 +228,6 @@ export default function ProductsPage() {
           )}
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

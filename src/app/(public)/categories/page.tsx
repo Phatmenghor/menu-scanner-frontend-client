@@ -10,6 +10,7 @@ import { useInfiniteScroll } from "@/components/shared/common/use-infinite-scrol
 import { useScrollRestoration } from "@/hooks/use-scroll-restoration";
 import { useSkeletonCount, SkeletonPresets } from "@/hooks/use-skeleton-count";
 import { EmptyState, EmptyStatePresets } from "@/components/shared/empty-state";
+import { PageContainer } from "@/components/shared/common/page-container";
 
 export default function CategoriesPage() {
   const {
@@ -66,7 +67,7 @@ export default function CategoriesPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
+      <PageContainer className="py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">All Categories</h1>
@@ -121,7 +122,7 @@ export default function CategoriesPage() {
             )}
           </>
         )}
-      </div>
+      </PageContainer>
     </div>
   );
 }
