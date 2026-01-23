@@ -5,7 +5,9 @@
 
 import { AppDefault } from "@/constants/app-resource/default/default";
 import { Status } from "@/constants/status/status";
+import { AllProductRequest } from "@/redux/features/business/store/models/request/product-request";
 import { AllBannerRequest } from "@/redux/features/master-data/store/models/request/banner-request";
+import { AllCategoriesRequest } from "@/redux/features/master-data/store/models/request/categories-request";
 import { axiosClient, axiosClientWithAuth } from "@/utils/axios";
 import { createApiThunk } from "@/utils/axios/api-wrapper";
 
@@ -18,36 +20,36 @@ export const fetchHomeBanners = createApiThunk<any, AllBannerRequest>(
       ...request,
     });
     return response.data.data;
-  }
+  },
 );
 
-export const fetchHomeCategories = createApiThunk<any, void>(
+export const fetchHomeCategories = createApiThunk<any, AllCategoriesRequest>(
   "home/fetchCategories",
-  async () => {
+  async (request) => {
     const response = await axiosClient.post("/api/v1/public/categories/all", {
-      pageSize: 16,
       status: Status.ACTIVE,
       businessId: AppDefault.BUSINESS_ID,
+      ...request,
     });
     return response.data.data;
-  }
+  },
 );
 
-export const fetchHomePromotionProducts = createApiThunk<any, void>(
-  "home/fetchPromotionProducts",
-  async () => {
-    const response = await axiosClientWithAuth.post(
-      "/api/v1/public/products/all",
-      {
-        pageSize: 30,
-        hasPromotion: true,
-        status: Status.ACTIVE,
-        businessId: AppDefault.BUSINESS_ID,
-      }
-    );
-    return response.data.data;
-  }
-);
+export const fetchHomePromotionProducts = createApiThunk<
+  any,
+  AllProductRequest
+>("home/fetchPromotionProducts", async (request) => {
+  const response = await axiosClientWithAuth.post(
+    "/api/v1/public/products/all",
+    {
+      hasPromotion: true,
+      status: Status.ACTIVE,
+      businessId: AppDefault.BUSINESS_ID,
+      ...request,
+    },
+  );
+  return response.data.data;
+});
 
 // Paginated Featured Products
 export const fetchHomeFeaturedProducts = createApiThunk<
@@ -61,7 +63,7 @@ export const fetchHomeFeaturedProducts = createApiThunk<
       pageSize,
       status: Status.ACTIVE,
       businessId: AppDefault.BUSINESS_ID,
-    }
+    },
   );
   return response.data.data;
 });
@@ -75,8 +77,8 @@ export const fetchHomeBrands = createApiThunk<any, void>(
         pageSize: 30,
         status: Status.ACTIVE,
         businessId: AppDefault.BUSINESS_ID,
-      }
+      },
     );
     return response.data.data;
-  }
+  },
 );
