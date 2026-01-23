@@ -105,16 +105,16 @@ export const BannerSection = ({
                     alt={banner.businessName || "Banner"}
                     fill
                     className={cn(
-                      "object-cover transition-all duration-700 ease-in-out group-hover:scale-105",
+                      "object-cover transition-opacity duration-300",
                       loadedImages.has(index) ? "opacity-100" : "opacity-0",
                     )}
                     onLoad={() => handleImageLoad(index)}
                     priority={index === 0}
                   />
 
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent transition-opacity duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
-                  <div className="absolute inset-0 flex items-end pb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                  <div className="absolute inset-0 flex items-end pb-12">
                     <div className="p-4 sm:p-6 md:p-8 w-full">
                       <div className="max-w-2xl">
                         <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white drop-shadow-2xl tracking-tight">
@@ -171,7 +171,7 @@ export const BannerSection = ({
                       carouselApi?.scrollTo(idx);
                     }}
                     className={cn(
-                      "h-2 rounded-full transition-all duration-300 pointer-events-auto",
+                      "h-2 rounded-full transition-all duration-200 pointer-events-auto",
                       current === idx
                         ? "w-8 bg-primary"
                         : "w-2 bg-white/50 hover:bg-white/80",
@@ -202,7 +202,7 @@ export const BannerSection = ({
                       carouselApi?.scrollTo(idx);
                     }}
                     className={cn(
-                      "h-2 rounded-full transition-all duration-300 pointer-events-auto",
+                      "h-2 rounded-full transition-all duration-200 pointer-events-auto",
                       current === idx
                         ? "w-8 bg-primary"
                         : "w-2 bg-white/50 hover:bg-white/80",

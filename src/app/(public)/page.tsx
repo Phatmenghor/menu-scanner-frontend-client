@@ -98,10 +98,9 @@ export default function HomePage() {
   ]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
+    <div className="min-h-screen bg-background">
       {/* Hero Banner Section */}
       <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
         <PageContainer className="pt-8">
           <BannerSection
             banners={banners}
@@ -112,9 +111,8 @@ export default function HomePage() {
       </div>
 
       {/* Categories Section - With Background */}
-      <div className="relative py-12 bg-gradient-to-br from-background via-muted/10 to-background">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent pointer-events-none" />
-        <PageContainer className="relative z-10">
+      <div className="relative py-12 bg-muted/5">
+        <PageContainer>
           <CategoriesSection
             categories={categories}
             loading={categoriesSection.loading}
@@ -125,9 +123,8 @@ export default function HomePage() {
       </div>
 
       {/* Promotions Section - Highlighted Background */}
-      <div className="relative py-12 bg-gradient-to-r from-amber-50/50 via-orange-50/30 to-amber-50/50 dark:from-amber-950/20 dark:via-orange-950/10 dark:to-amber-950/20">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
-        <PageContainer className="relative z-10">
+      <div className="relative py-12 bg-amber-50/30 dark:bg-amber-950/10">
+        <PageContainer>
           <PromotionsSection
             products={promotionProducts}
             loading={promotionProductsSection.loading}

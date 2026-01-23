@@ -103,8 +103,6 @@ export default function ProductsPage() {
       if (!filtersMatch && hasProducts) {
         dispatch(clearProducts());
         window.scrollTo({ top: 0, behavior: "smooth" });
-      } else {
-        console.log("📦 Loading products for current filters");
       }
 
       setPage(1);
