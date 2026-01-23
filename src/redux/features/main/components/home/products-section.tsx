@@ -7,6 +7,7 @@ import {
   SectionHeader,
   SectionWrapper,
 } from "@/components/shared/common/section-header";
+import { useScrollAnchor } from "@/hooks/use-scroll-anchor";
 
 interface ProductsSectionProps {
   products: ProductDetailResponseModel[];
@@ -37,6 +38,9 @@ export const ProductsSection = ({
   const onLoadMoreRef = useRef(onLoadMore);
   const isPaginationLoading = loading && products.length > 0;
   const [skeletonCount, setSkeletonCount] = useState(30);
+
+  // Maintain scroll position during load more (YouTube-like)
+  const { containerRef } = useScrollAnchor(isPaginationLoading);
 
   useEffect(() => {
     const updateSkeletonCount = () => {
@@ -81,12 +85,12 @@ export const ProductsSection = ({
       (entries) => {
         const first = entries[0];
         // Use refs to get latest values without recreating observer
+        // Prevent multiple simultaneous fetches with loadingRef check
         if (
           first.isIntersecting &&
           hasMoreRef.current &&
           !loadingRef.current
         ) {
-          loadingRef.current = true;
           onLoadMoreRef.current();
         }
       },
@@ -141,39 +145,47 @@ export const ProductsSection = ({
         icon={showIcon ? Sparkles : undefined}
       />
 
-      {/* Product Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
-        {products.map((product, index) => (
-          <ProductCard key={product.id + "-" + index} product={product} />
-        ))}
+      <div ref={containerRef}>
+        {/* Product Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+          {products.map((product, index) => (
+            <ProductCard key={product.id + "-" + index} product={product} />
+          ))}
+
+          {/* Show skeleton cards while loading more - smooth inline loading (like YouTube) */}
+          {isPaginationLoading &&
+            Array.from({ length: skeletonCount }).map((_, index) => (
+              <ProductCardSkeleton key={`loading-${index}`} />
+            ))}
+        </div>
+
+        {/* Loading indicator with icon */}
+        {isPaginationLoading && (
+          <div className="flex items-center justify-center py-6 mt-2">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span className="text-sm">Loading more products...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Infinite scroll trigger - hidden */}
+        {hasMore && !loading && <div ref={observerRef} className="h-10" />}
+
+        {/* End of products message */}
+        {!hasMore && products.length > 0 && (
+          <div className="flex flex-col items-center justify-center mt-10 py-8">
+            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+              <CheckCircle2 className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">You've seen it all!</h3>
+            <p className="text-sm text-muted-foreground text-center max-w-md">
+              You've reached the end of our featured products. Check back later
+              for new arrivals!
+            </p>
+          </div>
+        )}
       </div>
-
-      {/* Loading indicator for pagination - smooth and centered */}
-      {isPaginationLoading && (
-        <div className="flex items-center justify-center py-8 mt-4">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Loading more products...</p>
-          </div>
-        </div>
-      )}
-
-      {/* Infinite scroll trigger - hidden */}
-      {hasMore && !loading && <div ref={observerRef} className="h-10" />}
-
-      {/* End of products message */}
-      {!hasMore && products.length > 0 && (
-        <div className="flex flex-col items-center justify-center mt-10 py-8">
-          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-            <CheckCircle2 className="h-8 w-8 text-primary" />
-          </div>
-          <h3 className="text-lg font-semibold mb-2">You've seen it all!</h3>
-          <p className="text-sm text-muted-foreground text-center max-w-md">
-            You've reached the end of our featured products. Check back later
-            for new arrivals!
-          </p>
-        </div>
-      )}
     </SectionWrapper>
   );
 };

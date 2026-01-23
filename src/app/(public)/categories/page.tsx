@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { usePublicCategoriesState } from "@/redux/features/main/store/state/public-categories-state";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -11,8 +11,11 @@ import { useScrollRestoration } from "@/hooks/use-scroll-restoration";
 import { useSkeletonCount, SkeletonPresets } from "@/hooks/use-skeleton-count";
 import { EmptyState, EmptyStatePresets } from "@/components/shared/empty-state";
 import { PageContainer } from "@/components/shared/common/page-container";
+import { useScrollAnchor } from "@/hooks/use-scroll-anchor";
 
 export default function CategoriesPage() {
+  const isLoadingRef = useRef(false);
+
   const {
     categories,
     pagination,
@@ -34,6 +37,9 @@ export default function CategoriesPage() {
     customKey: "categories",
   });
 
+  // Maintain scroll position during load more (YouTube-like)
+  const { containerRef } = useScrollAnchor(isLoadingMore);
+
   // Initial load - only if not already loaded (caching!)
   useEffect(() => {
     if (!loaded) {
@@ -43,12 +49,15 @@ export default function CategoriesPage() {
 
   // Load more handler
   const handleLoadMore = useCallback(() => {
-    if (!isLoadingMore && hasMore) {
+    if (!isLoadingMore && hasMore && !isLoadingRef.current) {
+      isLoadingRef.current = true;
       fetchCategories({
         pageNo: pagination.currentPage + 1,
         pageSize,
         status: "ACTIVE",
         append: true,
+      }).finally(() => {
+        isLoadingRef.current = false;
       });
     }
   }, [
@@ -94,7 +103,7 @@ export default function CategoriesPage() {
 
         {/* Categories Grid */}
         {!isInitialLoading && categories.length > 0 && (
-          <>
+          <div ref={containerRef}>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
               {categories.map((category) => (
                 <CategoryCard key={category.id} category={category} />
@@ -106,6 +115,16 @@ export default function CategoriesPage() {
                   <CategoryCardSkeleton key={`loading-${i}`} />
                 ))}
             </div>
+
+            {/* Loading indicator with icon */}
+            {isLoadingMore && (
+              <div className="flex items-center justify-center py-6 mt-2">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span className="text-sm">Loading more categories...</span>
+                </div>
+              </div>
+            )}
 
             {/* Infinite Scroll Trigger - hidden */}
             {hasMore && !isLoadingMore && (
@@ -120,7 +139,7 @@ export default function CategoriesPage() {
                 </Button>
               </div>
             )}
-          </>
+          </div>
         )}
       </PageContainer>
     </div>
