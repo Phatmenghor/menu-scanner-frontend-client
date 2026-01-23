@@ -64,7 +64,7 @@ export default function HomePage() {
       }
       if (!featuredProductsSection.loaded) {
         promises.push(
-          dispatch(fetchHomeFeaturedProducts({ pageNo: 1, pageSize: 15 }))
+          dispatch(fetchHomeFeaturedProducts({ pageNo: 1, pageSize: 15 })),
         );
       }
 
@@ -101,7 +101,7 @@ export default function HomePage() {
       {/* Hero Banner Section */}
       <div className="relative">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
-        <PageContainer>
+        <PageContainer className="pt-8">
           <BannerSection
             banners={banners}
             loading={bannersSection.loading}
