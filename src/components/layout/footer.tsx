@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Facebook, Instagram, Mail, MapPin, Phone, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PageContainer } from "../shared/common/page-container";
 import { useState } from "react";
 
 const footerLinks = {
@@ -80,7 +81,7 @@ export function Footer() {
 
   return (
     <footer className="bg-muted/50 border-t mt-auto">
-      <div className="container mx-auto px-4">
+      <PageContainer>
         {/* Main Footer Content */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 py-12">
           {/* Company Info & Newsletter */}
@@ -374,7 +375,7 @@ export function Footer() {
             </div>
           </div>
         </div>
-      </div>
+      </PageContainer>
     </footer>
   );
 }

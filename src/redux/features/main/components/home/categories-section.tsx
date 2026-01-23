@@ -20,17 +20,18 @@ export const CategoriesSection = ({
   error,
   title = "Shop by Category",
 }: CategoriesSectionProps) => {
-  const [limit, setLimit] = useState(16);
+  const [limit, setLimit] = useState(12);
 
   useEffect(() => {
     const updateLimit = () => {
       const width = window.innerWidth;
 
-      if (width < 640) setLimit(4);
-      else if (width < 768) setLimit(6);
-      else if (width < 1024) setLimit(8);
-      else if (width < 1280) setLimit(12);
-      else setLimit(16);
+      // Show only 2 rows for better UI/UX
+      if (width < 640) setLimit(4); // 2 columns × 2 rows
+      else if (width < 768) setLimit(6); // 3 columns × 2 rows
+      else if (width < 1024) setLimit(8); // 4 columns × 2 rows
+      else if (width < 1280) setLimit(10); // 5 columns × 2 rows
+      else setLimit(12); // 6 columns × 2 rows
     };
 
     updateLimit();

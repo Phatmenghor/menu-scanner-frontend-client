@@ -33,6 +33,7 @@ import { removeUserInfo } from "@/utils/local-storage/userInfo";
 import { useDebounce } from "@/utils/debounce/debounce";
 import { LoginModal } from "../shared/modal/login-modal";
 import { CustomDropdownMenu } from "../shared/common/custom-dropdown-menu";
+import { PageContainer } from "../shared/common/page-container";
 import { cn } from "@/lib/utils";
 
 const navigationLinks = [
@@ -191,7 +192,7 @@ export function Navbar() {
   return (
     <>
       <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
-        <div className="container mx-auto px-4">
+        <PageContainer>
           <div className="flex h-16 items-center justify-between gap-4">
             <div className="flex items-center gap-8">
               <CustomButton
@@ -359,11 +360,11 @@ export function Navbar() {
               />
             </div>
           </form>
-        </div>
+        </PageContainer>
 
         {isMobileMenuOpen && (
           <div className="lg:hidden border-t bg-background">
-            <div className="container mx-auto px-4 py-4 space-y-2">
+            <PageContainer className="py-4 space-y-2">
               {navigationLinks.map((link) => {
                 const isActive = pathname === link.href ||
                   (link.href === "/products" && pathname.startsWith("/products"));
@@ -385,7 +386,7 @@ export function Navbar() {
                   </Link>
                 );
               })}
-            </div>
+            </PageContainer>
           </div>
         )}
       </nav>
