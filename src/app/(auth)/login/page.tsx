@@ -23,6 +23,7 @@ import { loginService } from "@/redux/features/auth/store/thunks/auth-thunks";
 import { ROUTES } from "@/constants/app-routes/routes";
 import { showToast } from "@/components/shared/common/show-toast";
 import { appImages } from "@/constants/app-resource/icons/app-images";
+import { AppDefault } from "@/constants/app-resource/default/default";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -36,6 +37,8 @@ export default function LoginPage() {
     password: z.string().min(6, {
       message: "Password must be at least 6 characters",
     }),
+    userType: z.string().min(1, "User type is required"),
+    businessId: z.string().optional(),
   });
 
   type FormData = z.infer<typeof formSchema>;
@@ -45,6 +48,8 @@ export default function LoginPage() {
     defaultValues: {
       userIdentifier: "phatmenghor20@gmail.com",
       password: "88889999",
+      userType: "BUSINESS_USER",
+      businessId: AppDefault.BUSINESS_ID,
     },
   });
 
@@ -54,7 +59,7 @@ export default function LoginPage() {
         loginService({
           userIdentifier: values.userIdentifier || "",
           password: values.password,
-        })
+        }),
       ).unwrap();
 
       if (result) {
