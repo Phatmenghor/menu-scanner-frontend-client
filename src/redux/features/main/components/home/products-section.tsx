@@ -7,6 +7,7 @@ import {
   SectionHeader,
   SectionWrapper,
 } from "@/components/shared/common/section-header";
+import { LoadingPagination } from "@/components/shared/common/loading";
 
 interface ProductsSectionProps {
   products: ProductDetailResponseModel[];
@@ -33,7 +34,7 @@ export const ProductsSection = ({
 }: ProductsSectionProps) => {
   const observerRef = useRef<HTMLDivElement>(null);
   const isPaginationLoading = loading && products.length > 0;
-  const [skeletonCount, setSkeletonCount] = useState(12);
+  const [skeletonCount, setSkeletonCount] = useState(30);
 
   useEffect(() => {
     const updateSkeletonCount = () => {
@@ -67,7 +68,7 @@ export const ProductsSection = ({
           onLoadMore();
         }
       },
-      { threshold: 0.1, rootMargin: "200px" }
+      { threshold: 0.1, rootMargin: "200px" },
     );
 
     observer.observe(observerRef.current);
@@ -84,7 +85,7 @@ export const ProductsSection = ({
           icon={showIcon ? Sparkles : undefined}
         />
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
-          {Array.from({ length: 30 }).map((_, index) => (
+          {Array.from({ length: skeletonCount }).map((_, index) => (
             <ProductCardSkeleton key={index} />
           ))}
         </div>
@@ -104,16 +105,22 @@ export const ProductsSection = ({
         icon={showIcon ? Sparkles : undefined}
       />
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
-        {products.map((product, index) => (
-          <ProductCard key={product.id + "-" + index} product={product} />
-        ))}
-
-        {/* Show skeleton cards while loading more - smooth inline loading */}
-        {isPaginationLoading &&
-          Array.from({ length: 8 }).map((_, index) => (
-            <ProductCardSkeleton key={`loading-skeleton-${index}`} />
+      <div className="flex flex-col items-center">
+        {/* Product Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+          {products.map((product, index) => (
+            <ProductCard key={product.id + "-" + index} product={product} />
           ))}
+
+          {/* Skeleton cards while loading */}
+          {isPaginationLoading &&
+            Array.from({ length: skeletonCount }).map((_, index) => (
+              <ProductCardSkeleton key={`loading-skeleton-${index}`} />
+            ))}
+        </div>
+
+        {/* Centered loading icon under the grid */}
+        {isPaginationLoading && <LoadingPagination />}
       </div>
 
       {/* Infinite scroll trigger - hidden */}

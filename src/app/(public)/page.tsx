@@ -56,12 +56,13 @@ export default function HomePage() {
       }
 
       if (!categoriesSection.loaded) {
-        promises.push(dispatch(fetchHomeCategories()));
+        promises.push(dispatch(fetchHomeCategories({ pageSize: 12 })));
       }
 
       if (!promotionProductsSection.loaded) {
-        promises.push(dispatch(fetchHomePromotionProducts()));
+        promises.push(dispatch(fetchHomePromotionProducts({ pageSize: 20 })));
       }
+
       if (!featuredProductsSection.loaded) {
         promises.push(
           dispatch(fetchHomeFeaturedProducts({ pageNo: 1, pageSize: 15 })),
@@ -87,7 +88,7 @@ export default function HomePage() {
   const handleLoadMoreFeatured = useCallback(() => {
     if (featuredPagination.hasMore && !featuredProductsSection.loading) {
       const nextPage = featuredPagination.currentPage + 1;
-      dispatch(fetchHomeFeaturedProducts({ pageNo: nextPage, pageSize: 30 }));
+      dispatch(fetchHomeFeaturedProducts({ pageNo: nextPage, pageSize: 20 }));
     }
   }, [
     dispatch,
