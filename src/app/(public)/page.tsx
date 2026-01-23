@@ -84,9 +84,14 @@ export default function HomePage() {
     featuredProductsSection.loaded,
   ]);
 
-  // Load more featured products
+  // Load more featured products - stable callback to prevent observer re-initialization
   const handleLoadMoreFeatured = useCallback(() => {
-    if (featuredPagination.hasMore && !featuredProductsSection.loading) {
+    // Check conditions inside the callback to avoid unnecessary re-renders
+    if (
+      featuredPagination.hasMore &&
+      !featuredProductsSection.loading &&
+      featuredProducts.length > 0
+    ) {
       const nextPage = featuredPagination.currentPage + 1;
       dispatch(fetchHomeFeaturedProducts({ pageNo: nextPage, pageSize: 20 }));
     }
@@ -95,6 +100,7 @@ export default function HomePage() {
     featuredPagination.hasMore,
     featuredPagination.currentPage,
     featuredProductsSection.loading,
+    featuredProducts.length,
   ]);
 
   return (

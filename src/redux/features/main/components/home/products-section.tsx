@@ -33,6 +33,9 @@ export const ProductsSection = ({
   isInitialLoading = false,
 }: ProductsSectionProps) => {
   const observerRef = useRef<HTMLDivElement>(null);
+  const loadingRef = useRef(false);
+  const hasMoreRef = useRef(hasMore);
+  const onLoadMoreRef = useRef(onLoadMore);
   const isPaginationLoading = loading && products.length > 0;
   const [skeletonCount, setSkeletonCount] = useState(30);
 
@@ -58,23 +61,51 @@ export const ProductsSection = ({
     return () => window.removeEventListener("resize", updateSkeletonCount);
   }, []);
 
+  // Keep refs updated
   useEffect(() => {
-    if (!observerRef.current || !hasMore || loading) return;
+    loadingRef.current = loading;
+  }, [loading]);
+
+  useEffect(() => {
+    hasMoreRef.current = hasMore;
+  }, [hasMore]);
+
+  useEffect(() => {
+    onLoadMoreRef.current = onLoadMore;
+  }, [onLoadMore]);
+
+  // Intersection observer - only recreate when necessary
+  useEffect(() => {
+    if (!observerRef.current) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         const first = entries[0];
-        if (first.isIntersecting && hasMore && !loading) {
-          onLoadMore();
+        // Use refs to get latest values without recreating observer
+        if (
+          first.isIntersecting &&
+          hasMoreRef.current &&
+          !loadingRef.current
+        ) {
+          loadingRef.current = true;
+          onLoadMoreRef.current();
         }
       },
       { threshold: 0.1, rootMargin: "200px" },
     );
 
-    observer.observe(observerRef.current);
+    const currentObserver = observerRef.current;
+    if (currentObserver && hasMore && !loading) {
+      observer.observe(currentObserver);
+    }
 
-    return () => observer.disconnect();
-  }, [hasMore, loading, onLoadMore]);
+    return () => {
+      if (currentObserver) {
+        observer.unobserve(currentObserver);
+      }
+      observer.disconnect();
+    };
+  }, [hasMore, loading]);
 
   if (isInitialLoading) {
     return (
@@ -93,7 +124,13 @@ export const ProductsSection = ({
     );
   }
 
-  if (error || products.length === 0) {
+  // Don't show section if there's an error
+  if (error) {
+    return null;
+  }
+
+  // Show empty state only if not loading and no products
+  if (products.length === 0 && !loading) {
     return null;
   }
 
