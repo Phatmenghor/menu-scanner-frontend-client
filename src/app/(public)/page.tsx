@@ -128,9 +128,9 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none" />
         <PageContainer className="relative z-10">
           <PromotionsSection
-            products={featuredProducts}
-            loading={featuredProductsSection.loading}
-            error={featuredProductsSection.error}
+            products={promotionProducts}
+            loading={promotionProductsSection.loading}
+            error={promotionProductsSection.error}
             title="Hot Deals & Promotions"
           />
         </PageContainer>
