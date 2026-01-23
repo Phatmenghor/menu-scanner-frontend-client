@@ -1,6 +1,8 @@
 /**
  * Scroll Restoration Hook
  * Automatically saves and restores scroll position for a page
+ * - On navigation (link click): Restores scroll position (good UX)
+ * - On browser refresh (F5): Resets to top (fresh start)
  */
 
 import { useEffect, useRef } from "react";
@@ -49,7 +51,32 @@ export interface UseScrollRestorationOptions {
 }
 
 /**
+ * Detect if the page was loaded via browser refresh (F5) or navigation
+ */
+function isPageRefresh(): boolean {
+  // Check if performance API is available
+  if (typeof window === "undefined" || !window.performance) {
+    return false;
+  }
+
+  // Modern browsers
+  const navigationEntries = performance.getEntriesByType("navigation") as PerformanceNavigationTiming[];
+  if (navigationEntries.length > 0) {
+    return navigationEntries[0].type === "reload";
+  }
+
+  // Fallback for older browsers
+  const navigation = (performance as any).navigation;
+  if (navigation) {
+    return navigation.type === 1; // TYPE_RELOAD
+  }
+
+  return false;
+}
+
+/**
  * Hook for automatic scroll position restoration
+ * Smart behavior: Keeps scroll on navigation, resets on browser refresh
  */
 export function useScrollRestoration(options: UseScrollRestorationOptions = {}) {
   const {
@@ -63,7 +90,7 @@ export function useScrollRestoration(options: UseScrollRestorationOptions = {}) 
 
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { saveScrollPosition, setCurrentRoute } = useScrollState();
+  const { saveScrollPosition, setCurrentRoute, clearScrollPosition } = useScrollState();
 
   const hasMounted = useRef(false);
   const timeoutRef = useRef<NodeJS.Timeout>();
@@ -79,14 +106,22 @@ export function useScrollRestoration(options: UseScrollRestorationOptions = {}) 
   // Get scroll position for this route
   const savedScrollPosition = useScrollPosition(routeKey);
 
-  // Restore scroll on mount
+  // Restore scroll on mount (or reset on refresh)
   useEffect(() => {
     if (!enabled || !restoreOnMount || hasMounted.current) return;
 
     hasMounted.current = true;
     setCurrentRoute(routeKey);
 
-    if (savedScrollPosition > 0) {
+    // Check if it's a browser refresh
+    const isRefresh = isPageRefresh();
+
+    if (isRefresh) {
+      // Browser refresh - clear scroll and reset to top
+      clearScrollPosition(routeKey);
+      window.scrollTo({ top: 0, behavior: "auto" });
+    } else if (savedScrollPosition > 0) {
+      // Navigation - restore scroll position
       restoreTimeoutRef.current = setTimeout(() => {
         window.scrollTo({
           top: savedScrollPosition,
@@ -100,7 +135,7 @@ export function useScrollRestoration(options: UseScrollRestorationOptions = {}) 
         clearTimeout(restoreTimeoutRef.current);
       }
     };
-  }, [enabled, restoreOnMount, routeKey, savedScrollPosition, restoreDelay, setCurrentRoute]);
+  }, [enabled, restoreOnMount, routeKey, savedScrollPosition, restoreDelay, setCurrentRoute, clearScrollPosition]);
 
   // Save scroll position on scroll
   useEffect(() => {

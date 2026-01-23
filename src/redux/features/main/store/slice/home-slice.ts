@@ -193,7 +193,23 @@ const homeSlice = createSlice({
       })
       .addCase(fetchHomeFeaturedProducts.fulfilled, (state, action) => {
         const newProducts = action.payload.content || [];
-        state.featuredProducts = [...state.featuredProducts, ...newProducts];
+        const pageSize = action.payload.pageSize || 20;
+
+        // Memory optimization: Keep only last 3 pages of data (like YouTube)
+        const MAX_PAGES_IN_MEMORY = 3;
+        const maxItems = MAX_PAGES_IN_MEMORY * pageSize;
+
+        // Append new products
+        const updatedProducts = [...state.featuredProducts, ...newProducts];
+
+        // If we exceed the limit, remove oldest items
+        if (updatedProducts.length > maxItems) {
+          const itemsToRemove = updatedProducts.length - maxItems;
+          state.featuredProducts = updatedProducts.slice(itemsToRemove);
+        } else {
+          state.featuredProducts = updatedProducts;
+        }
+
         state.featuredPagination.currentPage = action.payload.pageNo || 1;
         state.featuredPagination.totalPages = action.payload.totalPages || 1;
         state.featuredPagination.hasMore = !action.payload.last;

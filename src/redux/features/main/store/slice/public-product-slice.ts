@@ -92,7 +92,22 @@ const publicProductSlice = createSlice({
       })
       .addCase(fetchPublicProducts.fulfilled, (state, action) => {
         const newProducts = action.payload.content || [];
-        state.products = [...state.products, ...newProducts];
+        const pageSize = action.payload.pageSize;
+
+        // Memory optimization: Keep only last 3 pages of data (like YouTube)
+        const MAX_PAGES_IN_MEMORY = 3;
+        const maxItems = MAX_PAGES_IN_MEMORY * pageSize;
+
+        // Append new products
+        const updatedProducts = [...state.products, ...newProducts];
+
+        // If we exceed the limit, remove oldest items
+        if (updatedProducts.length > maxItems) {
+          const itemsToRemove = updatedProducts.length - maxItems;
+          state.products = updatedProducts.slice(itemsToRemove);
+        } else {
+          state.products = updatedProducts;
+        }
 
         state.loading.list = false;
         state.pagination = {

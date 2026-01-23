@@ -14,11 +14,11 @@ import {
 import { usePublicProductState } from "@/redux/features/main/store/state/public-product-state";
 import { ProductCard } from "@/components/shared/card/product-card";
 import { ProductCardSkeleton } from "@/components/shared/skeletons/product-card-skeleton";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { ProductFilters } from "@/redux/features/main/components/product/product-filters";
 import { PageContainer } from "@/components/shared/common/page-container";
-import { useScrollRestoration } from "@/hooks/use-scroll-restoration";
 import { useSkeletonCount, SkeletonPresets } from "@/hooks/use-skeleton-count";
+import { useScrollRestoration } from "@/hooks/use-scroll-restoration";
 
 export default function ProductsPage() {
   const searchParams = useSearchParams();
@@ -36,10 +36,10 @@ export default function ProductsPage() {
 
   const [page, setPage] = useState(1);
 
-  // Use responsive skeleton count
+  // Use responsive skeleton count for pagination
   const skeletonCount = useSkeletonCount(SkeletonPresets.productGrid);
 
-  // Scroll restoration
+  // Smart scroll: Keep position on navigation, reset on browser refresh
   useScrollRestoration({
     enabled: true,
     restoreOnMount: true,
@@ -181,9 +181,9 @@ export default function ProductsPage() {
                   <ProductCard key={product.id} product={product} />
                 ))}
 
-                {/* Show skeleton cards while loading more */}
+                {/* Show skeleton cards while loading more (smooth like YouTube) */}
                 {isPaginationLoading &&
-                  Array.from({ length: 8 }).map((_, index) => (
+                  Array.from({ length: skeletonCount }).map((_, index) => (
                     <ProductCardSkeleton key={`loading-${index}`} />
                   ))}
               </div>
