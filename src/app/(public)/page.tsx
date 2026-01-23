@@ -63,7 +63,7 @@ export default function HomePage() {
       }
       if (!featuredProductsSection.loaded) {
         promises.push(
-          dispatch(fetchHomeFeaturedProducts({ pageNo: 1, pageSize: 15 }))
+          dispatch(fetchHomeFeaturedProducts({ pageNo: 1, pageSize: 15 })),
         );
       }
 
