@@ -5,7 +5,6 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2 } from "lucide-react";
-import Loading from "@/components/shared/common/loading";
 import { TextField } from "@/components/shared/form-field/text-field";
 import { TextareaField } from "@/components/shared/form-field/text-area-field";
 import { SelectField } from "@/components/shared/form-field/select-field";
@@ -47,6 +46,7 @@ import {
   updateProductSchema,
 } from "../store/models/schema/product-schema";
 import { DateTimePickerField } from "@/components/shared/form-field/date-picker-field";
+import { Loading } from "@/components/shared/common/loading";
 
 type Props = {
   mode: ModalMode;
@@ -76,7 +76,7 @@ export default function ProductModal({
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isProcessingImages, setIsProcessingImages] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState<BrandResponseModel | null>(
-    null
+    null,
   );
   const [selectedCategory, setSelectedCategory] =
     useState<CategoriesResponseModel | null>(null);
@@ -90,7 +90,7 @@ export default function ProductModal({
     formState: { errors, isDirty },
   } = useForm<ProductFormData>({
     resolver: zodResolver(
-      isCreate ? createProductSchema : updateProductSchema
+      isCreate ? createProductSchema : updateProductSchema,
     ) as any,
     defaultValues: {
       id: "",
@@ -142,7 +142,7 @@ export default function ProductModal({
 
   // Handle multiple image uploads with max limit
   const handleMultipleImageUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -164,7 +164,7 @@ export default function ProductModal({
           availableSlots > 1 ? "s" : ""
         } remaining. Processing first ${availableSlots} image${
           availableSlots > 1 ? "s" : ""
-        }.`
+        }.`,
       );
     }
 
@@ -195,14 +195,14 @@ export default function ProductModal({
           } catch {
             return { success: false, error: `Failed to process ${file.name}` };
           }
-        })
+        }),
       );
 
       const successfulImages = results.filter(
-        (r): r is { success: true; base64: string } => r.success
+        (r): r is { success: true; base64: string } => r.success,
       );
       const failedImages = results.filter(
-        (r): r is { success: false; error: string } => !r.success
+        (r): r is { success: false; error: string } => !r.success,
       );
 
       if (successfulImages.length > 0) {
@@ -212,7 +212,7 @@ export default function ProductModal({
         showToast.success(
           `Added ${successfulImages.length} image${
             successfulImages.length > 1 ? "s" : ""
-          }`
+          }`,
         );
       }
 
@@ -313,7 +313,7 @@ export default function ProductModal({
     promotionType?: string,
     promotionValue?: number,
     promotionFromDate?: string,
-    promotionToDate?: string
+    promotionToDate?: string,
   ) => {
     if (!promotionType || promotionType === "NONE") {
       return {
@@ -367,12 +367,12 @@ export default function ProductModal({
             id: img.id,
             imageUrl,
           };
-        })
+        }),
       );
 
       const validImages = processedImages.filter(
         (img: any): img is { id?: string; imageUrl: string } =>
-          img !== null && !!img.imageUrl
+          img !== null && !!img.imageUrl,
       );
 
       setIsUploadingImage(false);
@@ -386,7 +386,7 @@ export default function ProductModal({
           size.promotionType,
           size.promotionValue,
           size.promotionFromDate,
-          size.promotionToDate
+          size.promotionToDate,
         ),
       }));
 
@@ -419,7 +419,7 @@ export default function ProductModal({
               data.promotionType,
               data.promotionValue,
               data.promotionFromDate,
-              data.promotionToDate
+              data.promotionToDate,
             ),
           };
 
@@ -432,14 +432,14 @@ export default function ProductModal({
           updateProductService({
             productId: data.id!,
             productData: payload as any,
-          })
+          }),
         ).unwrap();
         showToast.success("Product updated successfully");
         handleClose();
       }
     } catch (error: any) {
       showToast.error(
-        error?.message || `Failed to ${isCreate ? "create" : "update"} product`
+        error?.message || `Failed to ${isCreate ? "create" : "update"} product`,
       );
     }
   };
@@ -753,7 +753,7 @@ export default function ProductModal({
                                         base64,
                                         {
                                           shouldDirty: true,
-                                        }
+                                        },
                                       )
                                     }
                                     aspectRatio="square"
@@ -865,7 +865,7 @@ export default function ProductModal({
                     <div className="space-y-4">
                       {sizeFields.map((field, index) => {
                         const sizePromotionType = watch(
-                          `sizes.${index}.promotionType`
+                          `sizes.${index}.promotionType`,
                         );
                         const showSizePromotionFields =
                           sizePromotionType && sizePromotionType !== "NONE";

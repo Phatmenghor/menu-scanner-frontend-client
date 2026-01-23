@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, ShoppingCart, Plus, Minus, Sparkles } from "lucide-react";
@@ -12,10 +12,18 @@ import { CustomButton } from "../button/custom-button";
 import { ProductDetailResponseModel } from "@/redux/features/business/store/models/response/product-response";
 import { useCartState } from "@/redux/features/main/store/state/cart-state";
 import { useWishlistState } from "@/redux/features/main/store/state/wishlist-state";
-import { addToCart, updateCartItem, removeFromCart } from "@/redux/features/main/store/thunks/cart-thunks";
-import { addToWishlist, removeFromWishlist } from "@/redux/features/main/store/thunks/wishlist-thunks";
+import {
+  addToCart,
+  updateCartItem,
+  removeFromCart,
+} from "@/redux/features/main/store/thunks/cart-thunks";
+import {
+  addToWishlist,
+  removeFromWishlist,
+} from "@/redux/features/main/store/thunks/wishlist-thunks";
 import { showToast } from "../common/show-toast";
 import { useAuthState } from "@/redux/features/auth/store/state/auth-state";
+import { appImages } from "@/constants/app-resource/icons/app-images";
 
 interface ProductCardProps {
   product: ProductDetailResponseModel;
@@ -27,7 +35,8 @@ const imageLoadedCache = new Set<string>();
 
 export function ProductCard({ product, className }: ProductCardProps) {
   const { dispatch: cartDispatch, items: cartItems } = useCartState();
-  const { dispatch: wishlistDispatch, items: wishlistItems } = useWishlistState();
+  const { dispatch: wishlistDispatch, items: wishlistItems } =
+    useWishlistState();
   const { isAuthenticated } = useAuthState();
 
   const [isAddingToCart, setIsAddingToCart] = useState(false);
@@ -38,18 +47,34 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const quantity = cartItem?.quantity || product.quantityInCart || 0;
 
   // Get favorite status from product or wishlist
-  const isFavorited = product.isFavorited || wishlistItems.some((item) => item.productId === product.id);
+  const isFavorited =
+    product.isFavorited ||
+    wishlistItems.some((item) => item.productId === product.id);
 
-  // Get image URL
-  const imageUrl =
-    product.mainImageUrl ||
-    `https://picsum.photos/300/300?random=${product.id}`;
+  // Image URL (fallback automatically handled)
+  const imageUrl = product.mainImageUrl || appImages.NoImage;
 
-  // Check if this image was already loaded before (from cache)
+  // Image load/error state
   const [imageLoaded, setImageLoaded] = useState(
-    imageLoadedCache.has(imageUrl)
+    imageLoadedCache.has(imageUrl),
   );
+  const [imageError, setImageError] = useState(false);
 
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+    setImageError(false);
+    imageLoadedCache.add(imageUrl);
+  };
+
+  const handleImageError = () => {
+    if (imageUrl !== appImages.NoImage) {
+      setImageError(true);
+      setImageLoaded(true); // hide skeleton
+      imageLoadedCache.add(appImages.NoImage);
+    }
+  };
+
+  // Cart handlers
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -61,7 +86,9 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
     setIsAddingToCart(true);
     try {
-      await cartDispatch(addToCart({ productId: product.id, quantity: 1 })).unwrap();
+      await cartDispatch(
+        addToCart({ productId: product.id, quantity: 1 }),
+      ).unwrap();
       showToast.success("Added to cart");
     } catch (error: any) {
       showToast.error(error?.message || "Failed to add to cart");
@@ -73,13 +100,12 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const handleIncrement = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
     if (!cartItem) return;
 
     setIsAddingToCart(true);
     try {
       await cartDispatch(
-        updateCartItem({ cartItemId: cartItem.id, quantity: quantity + 1 })
+        updateCartItem({ cartItemId: cartItem.id, quantity: quantity + 1 }),
       ).unwrap();
     } catch (error: any) {
       showToast.error(error?.message || "Failed to update cart");
@@ -91,17 +117,18 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const handleDecrement = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
     if (!cartItem) return;
 
     setIsAddingToCart(true);
     try {
       if (quantity > 1) {
         await cartDispatch(
-          updateCartItem({ cartItemId: cartItem.id, quantity: quantity - 1 })
+          updateCartItem({ cartItemId: cartItem.id, quantity: quantity - 1 }),
         ).unwrap();
       } else if (quantity === 1) {
-        await cartDispatch(removeFromCart({ cartItemId: cartItem.id })).unwrap();
+        await cartDispatch(
+          removeFromCart({ cartItemId: cartItem.id }),
+        ).unwrap();
         showToast.success("Removed from cart");
       }
     } catch (error: any) {
@@ -111,6 +138,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
     }
   };
 
+  // Wishlist handler
   const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -123,10 +151,14 @@ export function ProductCard({ product, className }: ProductCardProps) {
     setIsTogglingFavorite(true);
     try {
       if (isFavorited) {
-        await wishlistDispatch(removeFromWishlist({ productId: product.id })).unwrap();
+        await wishlistDispatch(
+          removeFromWishlist({ productId: product.id }),
+        ).unwrap();
         showToast.success("Removed from wishlist");
       } else {
-        await wishlistDispatch(addToWishlist({ productId: product.id })).unwrap();
+        await wishlistDispatch(
+          addToWishlist({ productId: product.id }),
+        ).unwrap();
         showToast.success("Added to wishlist");
       }
     } catch (error: any) {
@@ -136,18 +168,14 @@ export function ProductCard({ product, className }: ProductCardProps) {
     }
   };
 
-  const handleImageLoad = () => {
-    setImageLoaded(true);
-    // Add to cache so it won't show skeleton next time
-    imageLoadedCache.add(imageUrl);
-  };
-
   const isOutOfStock = product.status === "OUT_OF_STOCK";
   const isInCart = quantity > 0;
-  // Check for active promotion
-  const hasActivePromotion = product.hasPromotion &&
-    product.displayPromotionValue > 0 &&
-    product.displayPrice < product.displayOriginPrice;
+
+  console.log(
+    "####Rendering ProductCard for:",
+    product.hasActivePromotion,
+    product.name,
+  );
 
   return (
     <Link href={`/products/${product.id}`}>
@@ -155,8 +183,8 @@ export function ProductCard({ product, className }: ProductCardProps) {
         className={cn(
           "group relative bg-card rounded-lg border-2 border-transparent hover:border-primary/20 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-primary/15 hover:-translate-y-2 flex flex-col",
           isOutOfStock && "opacity-75",
-          hasActivePromotion && "ring-1 ring-amber-500/20",
-          className
+          product?.hasActivePromotion && "ring-1 ring-amber-500/20",
+          className,
         )}
       >
         <div className="relative aspect-square overflow-hidden bg-muted/30">
@@ -165,43 +193,30 @@ export function ProductCard({ product, className }: ProductCardProps) {
           )}
 
           <Image
-            src={imageUrl}
-            alt={product.name}
+            src={imageError ? appImages.NoImage : imageUrl}
+            alt={product.name || "Product Image"}
             fill
-            priority={imageLoadedCache.has(imageUrl)} // Priority load for cached images
+            priority={imageLoadedCache.has(imageUrl)}
             loading={imageLoadedCache.has(imageUrl) ? undefined : "lazy"}
             className={cn(
               "object-cover transition-all duration-500 group-hover:scale-105",
-              imageLoaded ? "opacity-100" : "opacity-0"
+              imageLoaded ? "opacity-100" : "opacity-0",
             )}
             onLoad={handleImageLoad}
+            onError={handleImageError}
             sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
           />
 
+          {/* Top badges */}
           <div className="absolute top-2 left-2 right-2 flex justify-between items-start z-10 pointer-events-none gap-2">
-            <div className="flex flex-col gap-1.5">
-              {product.status === "NEW" && (
-                <Badge className="bg-blue-600 hover:bg-blue-600 text-xs px-2 py-0.5 shadow-md pointer-events-auto font-semibold">
-                  NEW
-                </Badge>
-              )}
-              {hasActivePromotion && (
-                <Badge className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0 text-xs px-2 py-0.5 shadow-md pointer-events-auto font-semibold flex items-center gap-1">
-                  <Sparkles className="h-3 w-3" />
-                  <span>SALE</span>
-                </Badge>
-              )}
-            </div>
-            {hasActivePromotion && (
-              <Badge
-                variant="destructive"
-                className="text-xs font-bold px-2 py-0.5 shadow-md pointer-events-auto"
-              >
-                {product.displayPromotionType === "PERCENTAGE"
-                  ? `-${product.displayPromotionValue}%`
-                  : `-${formatCurrency(product.displayPromotionValue)}`}
-              </Badge>
-            )}
+            <Badge
+              variant="destructive"
+              className="text-xs font-bold px-2 py-0.5 shadow-md pointer-events-auto"
+            >
+              {product.displayPromotionType === "PERCENTAGE"
+                ? `-${product.displayPromotionValue}%`
+                : `-${formatCurrency(product.displayPromotionValue)}`}
+            </Badge>
           </div>
 
           {isOutOfStock && (
@@ -215,6 +230,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
             </div>
           )}
 
+          {/* Favorite button */}
           <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <CustomButton
               size="icon"
@@ -223,7 +239,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
                 "h-8 w-8 rounded-full shadow-lg transition-all duration-200",
                 isFavorited
                   ? "bg-red-500 text-white hover:bg-red-600 scale-110"
-                  : "bg-white hover:bg-red-50 hover:text-red-500"
+                  : "bg-white hover:bg-red-50 hover:text-red-500",
               )}
               onClick={handleToggleFavorite}
               disabled={isTogglingFavorite}
@@ -233,6 +249,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
           </div>
         </div>
 
+        {/* Product info */}
         <div className="p-3 flex flex-col flex-1">
           <h3 className="font-medium text-sm line-clamp-2 mb-2 group-hover:text-primary transition-colors min-h-[40px]">
             {product.name}
@@ -243,11 +260,11 @@ export function ProductCard({ product, className }: ProductCardProps) {
               <span className="text-lg font-bold text-primary">
                 {formatCurrency(product.displayPrice)}
               </span>
-              {hasActivePromotion && (
-                <span className="text-xs text-muted-foreground line-through">
-                  {formatCurrency(product.displayOriginPrice)}
-                </span>
-              )}
+              {/* {product.hasPromotion == true && ( */}
+              <span className="text-xs text-muted-foreground line-through">
+                {formatCurrency(product.displayOriginPrice)}
+              </span>
+              {/* )} */}
             </div>
 
             {isInCart ? (
@@ -283,7 +300,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
               <CustomButton
                 className={cn(
                   "w-full gap-2 transition-all duration-300",
-                  isAddingToCart && "opacity-80"
+                  isAddingToCart && "opacity-80",
                 )}
                 onClick={handleAddToCart}
                 disabled={isAddingToCart || isOutOfStock}
