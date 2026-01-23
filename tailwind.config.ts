@@ -263,6 +263,10 @@ const config: Config = {
         normal: "var(--transition-normal)",
         slow: "var(--transition-slow)",
       },
+      maxWidth: {
+        "8xl": "1340px",
+        "9xl": "1600px",
+      },
       animation: {
         "fade-in": "fadeIn 0.5s ease-in-out",
         "slide-up": "slideUp 0.3s ease-out",

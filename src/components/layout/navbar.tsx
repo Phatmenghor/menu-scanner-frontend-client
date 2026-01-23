@@ -192,7 +192,7 @@ export function Navbar() {
   return (
     <>
       <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
-        <PageContainer>
+        <PageContainer className="max-w-8xl">
           <div className="flex h-16 items-center justify-between gap-4">
             <div className="flex items-center gap-8">
               <CustomButton
@@ -231,15 +231,18 @@ export function Navbar() {
 
               <div className="hidden lg:flex items-center gap-1">
                 {navigationLinks.map((link) => {
-                  const isActive = pathname === link.href ||
-                    (link.href === "/products" && pathname.startsWith("/products"));
+                  const isActive =
+                    pathname === link.href ||
+                    (link.href === "/products" &&
+                      pathname.startsWith("/products"));
                   return (
                     <Link key={link.name} href={link.href}>
                       <Button
                         variant="ghost"
                         className={cn(
                           "text-foreground hover:text-primary hover:bg-primary/10 relative",
-                          isActive && "text-primary after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-3/4 after:h-0.5 after:bg-primary after:rounded-full"
+                          isActive &&
+                            "text-primary after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-3/4 after:h-0.5 after:bg-primary after:rounded-full",
                         )}
                       >
                         {link.name}
@@ -262,10 +265,10 @@ export function Navbar() {
                     pathname === "/products"
                       ? "Search products..."
                       : pathname === "/categories"
-                      ? "Search categories..."
-                      : pathname === "/brands"
-                      ? "Search brands..."
-                      : "Search..."
+                        ? "Search categories..."
+                        : pathname === "/brands"
+                          ? "Search brands..."
+                          : "Search..."
                   }
                   className="pl-10 w-full bg-muted/50"
                   value={searchQuery}
@@ -349,10 +352,10 @@ export function Navbar() {
                   pathname === "/products"
                     ? "Search products..."
                     : pathname === "/categories"
-                    ? "Search categories..."
-                    : pathname === "/brands"
-                    ? "Search brands..."
-                    : "Search..."
+                      ? "Search categories..."
+                      : pathname === "/brands"
+                        ? "Search brands..."
+                        : "Search..."
                 }
                 className="pl-10 w-full"
                 value={searchQuery}
@@ -366,8 +369,10 @@ export function Navbar() {
           <div className="lg:hidden border-t bg-background">
             <PageContainer className="py-4 space-y-2">
               {navigationLinks.map((link) => {
-                const isActive = pathname === link.href ||
-                  (link.href === "/products" && pathname.startsWith("/products"));
+                const isActive =
+                  pathname === link.href ||
+                  (link.href === "/products" &&
+                    pathname.startsWith("/products"));
                 return (
                   <Link
                     key={link.name}
@@ -378,7 +383,8 @@ export function Navbar() {
                       variant="ghost"
                       className={cn(
                         "w-full justify-start",
-                        isActive && "bg-primary/10 text-primary border-l-4 border-primary"
+                        isActive &&
+                          "bg-primary/10 text-primary border-l-4 border-primary",
                       )}
                     >
                       {link.name}
