@@ -7,7 +7,6 @@ import {
   SectionHeader,
   SectionWrapper,
 } from "@/components/shared/common/section-header";
-import { LoadingPagination } from "@/components/shared/common/loading";
 
 interface ProductsSectionProps {
   products: ProductDetailResponseModel[];
@@ -105,27 +104,27 @@ export const ProductsSection = ({
         icon={showIcon ? Sparkles : undefined}
       />
 
-      <div className="flex flex-col items-center">
-        {/* Product Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
-          {products.map((product, index) => (
-            <ProductCard key={product.id + "-" + index} product={product} />
-          ))}
-
-          {/* Skeleton cards while loading */}
-          {isPaginationLoading &&
-            Array.from({ length: skeletonCount }).map((_, index) => (
-              <ProductCardSkeleton key={`loading-skeleton-${index}`} />
-            ))}
-        </div>
-
-        {/* Centered loading icon under the grid */}
-        {isPaginationLoading && <LoadingPagination />}
+      {/* Product Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+        {products.map((product, index) => (
+          <ProductCard key={product.id + "-" + index} product={product} />
+        ))}
       </div>
+
+      {/* Loading indicator for pagination - smooth and centered */}
+      {isPaginationLoading && (
+        <div className="flex items-center justify-center py-8 mt-4">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Loading more products...</p>
+          </div>
+        </div>
+      )}
 
       {/* Infinite scroll trigger - hidden */}
       {hasMore && !loading && <div ref={observerRef} className="h-10" />}
 
+      {/* End of products message */}
       {!hasMore && products.length > 0 && (
         <div className="flex flex-col items-center justify-center mt-10 py-8">
           <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
