@@ -26,7 +26,7 @@ export interface ProductDetailResponseModel {
   displayPromotionToDate: string;
   hasSizes: boolean;
   quantityInCart: number;
-  hasPromotion: boolean;
+  hasActivePromotion: boolean;
   mainImageUrl: string;
   viewCount: number;
   favoriteCount: number;
