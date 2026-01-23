@@ -16,6 +16,7 @@ import { ProductCard } from "@/components/shared/card/product-card";
 import { ProductCardSkeleton } from "@/components/shared/skeletons/product-card-skeleton";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { ProductFilters } from "@/redux/features/main/components/product/product-filters";
+import { PageContainer } from "@/components/shared/common/page-container";
 import { useScrollRestoration } from "@/hooks/use-scroll-restoration";
 import { useSkeletonCount, SkeletonPresets } from "@/hooks/use-skeleton-count";
 
@@ -145,7 +146,7 @@ export default function ProductsPage() {
   const isPaginationLoading = products.length > 0 && loading.list;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <PageContainer className="py-8">
       <div className="flex gap-6 lg:gap-8">
         {/* Desktop Sidebar Filters */}
         <aside className="hidden lg:block w-64 flex-shrink-0">
@@ -231,6 +232,6 @@ export default function ProductsPage() {
           )}
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }
