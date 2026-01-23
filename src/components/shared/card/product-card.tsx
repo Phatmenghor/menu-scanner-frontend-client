@@ -171,17 +171,11 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const isOutOfStock = product.status === "OUT_OF_STOCK";
   const isInCart = quantity > 0;
 
-  console.log(
-    "####Rendering ProductCard for:",
-    product.hasActivePromotion,
-    product.name,
-  );
-
   return (
     <Link href={`/products/${product.id}`}>
       <div
         className={cn(
-          "group relative bg-card rounded-lg border-2 border-transparent hover:border-primary/20 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-primary/15 hover:-translate-y-2 flex flex-col",
+          "group relative bg-card rounded-lg border border-border hover:border-primary/30 overflow-hidden transition-colors duration-200 flex flex-col",
           isOutOfStock && "opacity-75",
           product?.hasActivePromotion && "ring-1 ring-amber-500/20",
           className,
@@ -199,7 +193,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
             priority={imageLoadedCache.has(imageUrl)}
             loading={imageLoadedCache.has(imageUrl) ? undefined : "lazy"}
             className={cn(
-              "object-cover transition-all duration-500 group-hover:scale-105",
+              "object-cover transition-opacity duration-200",
               imageLoaded ? "opacity-100" : "opacity-0",
             )}
             onLoad={handleImageLoad}
@@ -231,14 +225,14 @@ export function ProductCard({ product, className }: ProductCardProps) {
           )}
 
           {/* Favorite button */}
-          <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
             <CustomButton
               size="icon"
               variant="secondary"
               className={cn(
-                "h-8 w-8 rounded-full shadow-lg transition-all duration-200",
+                "h-8 w-8 rounded-full shadow-md",
                 isFavorited
-                  ? "bg-red-500 text-white hover:bg-red-600 scale-110"
+                  ? "bg-red-500 text-white hover:bg-red-600"
                   : "bg-white hover:bg-red-50 hover:text-red-500",
               )}
               onClick={handleToggleFavorite}
@@ -251,7 +245,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
         {/* Product info */}
         <div className="p-3 flex flex-col flex-1">
-          <h3 className="font-medium text-sm line-clamp-2 mb-2 group-hover:text-primary transition-colors min-h-[40px]">
+          <h3 className="font-medium text-sm line-clamp-2 mb-2 min-h-[40px]">
             {product.name}
           </h3>
 
@@ -298,10 +292,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
               </div>
             ) : (
               <CustomButton
-                className={cn(
-                  "w-full gap-2 transition-all duration-300",
-                  isAddingToCart && "opacity-80",
-                )}
+                className="w-full gap-2"
                 onClick={handleAddToCart}
                 disabled={isAddingToCart || isOutOfStock}
                 size="sm"

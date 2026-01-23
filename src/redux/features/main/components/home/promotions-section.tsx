@@ -71,7 +71,7 @@ export const PromotionsSection = ({
 
         <div className="relative">
           <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2 mb-2">
-            <Flame className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-red-500 animate-pulse" />
+            <Flame className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-red-500" />
             {title}
           </h2>
           <p className="text-muted-foreground text-xs sm:text-sm">

@@ -550,7 +550,6 @@ export default function BusinessProfilePage() {
         businessName={profile.businessName}
         services={servicesList}
         onSubmit={(review) => {
-          console.log("New review submitted:", review);
           // TODO: API call to save review
         }}
       />
