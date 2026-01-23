@@ -14,15 +14,17 @@ import {
 import { usePublicProductState } from "@/redux/features/main/store/state/public-product-state";
 import { ProductCard } from "@/components/shared/card/product-card";
 import { ProductCardSkeleton } from "@/components/shared/skeletons/product-card-skeleton";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 import { ProductFilters } from "@/redux/features/main/components/product/product-filters";
 import { PageContainer } from "@/components/shared/common/page-container";
 import { useSkeletonCount, SkeletonPresets } from "@/hooks/use-skeleton-count";
 import { useScrollRestoration } from "@/hooks/use-scroll-restoration";
+import { useScrollAnchor } from "@/hooks/use-scroll-anchor";
 
 export default function ProductsPage() {
   const searchParams = useSearchParams();
   const observerRef = useRef<HTMLDivElement>(null);
+  const isLoadingRef = useRef(false);
 
   const {
     dispatch,
@@ -46,6 +48,10 @@ export default function ProductsPage() {
     customKey: "products",
     restoreDelay: 150,
   });
+
+  // Maintain scroll position during load more (YouTube-like)
+  const isPaginationLoading = products.length > 0 && loading.list;
+  const { containerRef } = useScrollAnchor(isPaginationLoading);
 
   const search = searchParams.get("q");
   const hasPromotion = searchParams.get("hasPromotion") === "true";
@@ -112,10 +118,13 @@ export default function ProductsPage() {
   }, [currentFilters, loadedFilters, products.length, loadProducts, dispatch]);
 
   const handleLoadMore = useCallback(() => {
-    if (pagination.hasMore && !loading.list) {
+    if (pagination.hasMore && !loading.list && !isLoadingRef.current) {
+      isLoadingRef.current = true;
       const nextPage = page + 1;
       setPage(nextPage);
-      loadProducts(nextPage);
+      loadProducts(nextPage).finally(() => {
+        isLoadingRef.current = false;
+      });
     }
   }, [pagination.hasMore, loading.list, page, loadProducts]);
 
@@ -125,7 +134,12 @@ export default function ProductsPage() {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && pagination.hasMore && !loading.list) {
+        if (
+          entries[0].isIntersecting &&
+          pagination.hasMore &&
+          !loading.list &&
+          !isLoadingRef.current
+        ) {
           handleLoadMore();
         }
       },
@@ -137,7 +151,6 @@ export default function ProductsPage() {
   }, [pagination.hasMore, loading.list, handleLoadMore]);
 
   const isInitialLoad = products.length === 0 && loading.list;
-  const isPaginationLoading = products.length > 0 && loading.list;
 
   return (
     <PageContainer className="py-8 max-w-8xl">
@@ -175,7 +188,7 @@ export default function ProductsPage() {
 
           {/* Products Grid */}
           {!isInitialLoad && products.length > 0 && (
-            <>
+            <div ref={containerRef}>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
                 {products.map((product) => (
                   <ProductCard key={product.id} product={product} />
@@ -187,6 +200,16 @@ export default function ProductsPage() {
                     <ProductCardSkeleton key={`loading-${index}`} />
                   ))}
               </div>
+
+              {/* Loading indicator with icon */}
+              {isPaginationLoading && (
+                <div className="flex items-center justify-center py-6 mt-2">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span className="text-sm">Loading more products...</span>
+                  </div>
+                </div>
+              )}
 
               {/* Infinite scroll trigger - hidden */}
               {pagination.hasMore && !loading.list && (
@@ -207,7 +230,7 @@ export default function ProductsPage() {
                   </p>
                 </div>
               )}
-            </>
+            </div>
           )}
 
           {/* No Results */}

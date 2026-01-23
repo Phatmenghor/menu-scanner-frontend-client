@@ -1,17 +1,20 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { usePublicBrandsState } from "@/redux/features/main/store/state/public-brands-state";
 import { Button } from "@/components/ui/button";
-import { PackageOpen } from "lucide-react";
+import { PackageOpen, Loader2 } from "lucide-react";
 import { BrandCard } from "@/components/shared/card/brand-card";
 import { BrandCardSkeleton } from "@/components/shared/skeletons/brand-card-skeleton";
 import { useInfiniteScroll } from "@/components/shared/common/use-infinite-scroll";
 import { useScrollRestoration } from "@/hooks/use-scroll-restoration";
 import { useSkeletonCount, SkeletonPresets } from "@/hooks/use-skeleton-count";
 import { EmptyState } from "@/components/shared/empty-state";
+import { useScrollAnchor } from "@/hooks/use-scroll-anchor";
 
 export default function BrandsPage() {
+  const isLoadingRef = useRef(false);
+
   const {
     brands,
     pagination,
@@ -33,6 +36,9 @@ export default function BrandsPage() {
     customKey: "brands",
   });
 
+  // Maintain scroll position during load more (YouTube-like)
+  const { containerRef } = useScrollAnchor(isLoadingMore);
+
   // Initial load - only if not already loaded (caching!)
   useEffect(() => {
     if (!loaded) {
@@ -42,12 +48,15 @@ export default function BrandsPage() {
 
   // Load more handler
   const handleLoadMore = useCallback(() => {
-    if (!isLoadingMore && hasMore) {
+    if (!isLoadingMore && hasMore && !isLoadingRef.current) {
+      isLoadingRef.current = true;
       fetchBrands({
         pageNo: pagination.currentPage + 1,
         pageSize,
         status: "ACTIVE",
         append: true, // Append to existing data
+      }).finally(() => {
+        isLoadingRef.current = false;
       });
     }
   }, [isLoadingMore, hasMore, pagination.currentPage, pageSize, fetchBrands]);
@@ -92,7 +101,7 @@ export default function BrandsPage() {
 
         {/* Brands Grid */}
         {!isInitialLoading && brands.length > 0 && (
-          <>
+          <div ref={containerRef}>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {brands.map((brand) => (
                 <BrandCard key={brand.id} brand={brand} />
@@ -104,6 +113,16 @@ export default function BrandsPage() {
                   <BrandCardSkeleton key={`loading-${i}`} />
                 ))}
             </div>
+
+            {/* Loading indicator with icon */}
+            {isLoadingMore && (
+              <div className="flex items-center justify-center py-6 mt-2">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span className="text-sm">Loading more brands...</span>
+                </div>
+              </div>
+            )}
 
             {/* Infinite Scroll Trigger - hidden */}
             {hasMore && !isLoadingMore && (
@@ -118,7 +137,7 @@ export default function BrandsPage() {
                 </Button>
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
     </div>
