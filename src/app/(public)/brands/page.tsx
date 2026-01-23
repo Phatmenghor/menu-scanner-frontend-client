@@ -26,7 +26,7 @@ export default function BrandsPage() {
   const pageSize = 12;
   const skeletonCount = useSkeletonCount(SkeletonPresets.categoryGrid);
 
-  // Scroll restoration
+  // Smart scroll: Keep position on navigation, reset on browser refresh
   useScrollRestoration({
     enabled: true,
     restoreOnMount: true,
@@ -98,9 +98,9 @@ export default function BrandsPage() {
                 <BrandCard key={brand.id} brand={brand} />
               ))}
 
-              {/* Show skeleton cards while loading more - smooth inline loading */}
+              {/* Show skeleton cards while loading more - smooth inline loading (like YouTube) */}
               {isLoadingMore &&
-                Array.from({ length: 6 }).map((_, i) => (
+                Array.from({ length: skeletonCount }).map((_, i) => (
                   <BrandCardSkeleton key={`loading-${i}`} />
                 ))}
             </div>

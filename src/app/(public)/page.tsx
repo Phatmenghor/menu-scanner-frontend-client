@@ -34,7 +34,7 @@ export default function HomePage() {
     featuredPagination,
   } = useHomeState();
 
-  // Scroll restoration
+  // Smart scroll: Keep position on navigation, reset on browser refresh
   useScrollRestoration({
     enabled: true,
     restoreOnMount: true,

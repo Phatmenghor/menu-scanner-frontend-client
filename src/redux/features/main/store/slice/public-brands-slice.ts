@@ -70,8 +70,20 @@ const publicBrandsSlice = createSlice({
         const isLoadMore = action.meta.arg.append;
 
         if (isLoadMore) {
+          // Memory optimization: Keep only last 3 pages of data (like YouTube)
+          const MAX_PAGES_IN_MEMORY = 3;
+          const maxItems = MAX_PAGES_IN_MEMORY * pageSize;
+
           // Append new brands
-          state.brands = [...state.brands, ...content];
+          const updatedBrands = [...state.brands, ...content];
+
+          // If we exceed the limit, remove oldest items
+          if (updatedBrands.length > maxItems) {
+            const itemsToRemove = updatedBrands.length - maxItems;
+            state.brands = updatedBrands.slice(itemsToRemove);
+          } else {
+            state.brands = updatedBrands;
+          }
         } else {
           // Replace brands
           state.brands = content;

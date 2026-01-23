@@ -70,7 +70,20 @@ const publicCategoriesSlice = createSlice({
         const isLoadMore = action.meta.arg.append;
 
         if (isLoadMore) {
-          state.categories = [...state.categories, ...content];
+          // Memory optimization: Keep only last 3 pages of data (like YouTube)
+          const MAX_PAGES_IN_MEMORY = 3;
+          const maxItems = MAX_PAGES_IN_MEMORY * pageSize;
+
+          // Append new categories
+          const updatedCategories = [...state.categories, ...content];
+
+          // If we exceed the limit, remove oldest items
+          if (updatedCategories.length > maxItems) {
+            const itemsToRemove = updatedCategories.length - maxItems;
+            state.categories = updatedCategories.slice(itemsToRemove);
+          } else {
+            state.categories = updatedCategories;
+          }
         } else {
           state.categories = content;
         }
