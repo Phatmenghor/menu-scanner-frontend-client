@@ -59,6 +59,8 @@ export default function LoginPage() {
         loginService({
           userIdentifier: values.userIdentifier || "",
           password: values.password,
+          userType: values.userType,
+          businessId: values.businessId,
         }),
       ).unwrap();
 
