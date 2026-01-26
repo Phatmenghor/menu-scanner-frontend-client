@@ -10,7 +10,8 @@ export const AppDefault = {
  */
 export const SocialAuthConfig = {
   // Telegram Bot username (without @) - used for widget script
-  TELEGRAM_BOT_NAME: process.env.NEXT_PUBLIC_TELEGRAM_BOT_NAME || "CambodiaEMenuBot",
+  TELEGRAM_BOT_NAME:
+    process.env.NEXT_PUBLIC_TELEGRAM_BOT_NAME || "CambodiaEMenuBot",
   // Telegram Bot numeric ID - used for OAuth popup
   TELEGRAM_BOT_ID: process.env.NEXT_PUBLIC_TELEGRAM_BOT_ID || "8464259107",
 };

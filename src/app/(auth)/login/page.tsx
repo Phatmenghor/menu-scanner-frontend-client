@@ -24,7 +24,10 @@ import { telegramAuthenticateService } from "@/redux/features/auth/store/thunks/
 import { ROUTES } from "@/constants/app-routes/routes";
 import { showToast } from "@/components/shared/common/show-toast";
 import { appImages } from "@/constants/app-resource/icons/app-images";
-import { AppDefault, SocialAuthConfig } from "@/constants/app-resource/default/default";
+import {
+  AppDefault,
+  SocialAuthConfig,
+} from "@/constants/app-resource/default/default";
 import { TelegramLoginButton } from "@/components/shared/telegram/telegram-login-widget";
 import { TelegramAuthData } from "@/redux/features/auth/store/models/request/social-auth-request";
 import { useAppSelector } from "@/redux/store";
@@ -46,12 +49,14 @@ export default function LoginPage() {
           telegramData,
           userType: "CUSTOMER",
           businessId: AppDefault.BUSINESS_ID,
-        })
+        }),
       ).unwrap();
 
       if (result) {
         if (result.isNewUser) {
-          showToast.success("Welcome! Your account has been created successfully.");
+          showToast.success(
+            "Welcome! Your account has been created successfully.",
+          );
         } else {
           showToast.success("Welcome back!");
         }
