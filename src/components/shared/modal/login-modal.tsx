@@ -298,6 +298,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
             {/* Telegram Login */}
             <TelegramLoginButton
               botName={SocialAuthConfig.TELEGRAM_BOT_NAME}
+              botId={SocialAuthConfig.TELEGRAM_BOT_ID}
               onAuth={handleTelegramAuth}
               disabled={isAnyLoading}
               loading={isTelegramLoading}
@@ -504,6 +505,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
             {/* Telegram Register */}
             <TelegramLoginButton
               botName={SocialAuthConfig.TELEGRAM_BOT_NAME}
+              botId={SocialAuthConfig.TELEGRAM_BOT_ID}
               onAuth={handleTelegramAuth}
               disabled={isAnyLoading}
               loading={isTelegramLoading}

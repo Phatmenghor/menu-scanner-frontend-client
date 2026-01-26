@@ -147,6 +147,7 @@ export function TelegramSyncCard({
             ) : (
               <TelegramLoginButton
                 botName={SocialAuthConfig.TELEGRAM_BOT_NAME}
+                botId={SocialAuthConfig.TELEGRAM_BOT_ID}
                 onAuth={handleTelegramSync}
                 disabled={isSocialLoading}
                 loading={isConnecting}
