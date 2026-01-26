@@ -242,6 +242,7 @@ export default function LoginPage() {
             {/* Telegram Login Button */}
             <TelegramLoginButton
               botName={SocialAuthConfig.TELEGRAM_BOT_NAME}
+              botId={SocialAuthConfig.TELEGRAM_BOT_ID}
               onAuth={handleTelegramAuth}
               disabled={isLoading}
               loading={isTelegramLoading}

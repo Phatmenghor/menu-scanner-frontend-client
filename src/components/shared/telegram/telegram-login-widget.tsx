@@ -91,6 +91,7 @@ export function TelegramLoginWidget({
  */
 interface TelegramLoginButtonProps {
   botName: string;
+  botId?: string; // Numeric bot ID for OAuth popup
   onAuth: (data: TelegramAuthData) => void;
   disabled?: boolean;
   loading?: boolean;
@@ -100,6 +101,7 @@ interface TelegramLoginButtonProps {
 
 export function TelegramLoginButton({
   botName,
+  botId,
   onAuth,
   disabled = false,
   loading = false,
@@ -115,7 +117,10 @@ export function TelegramLoginButton({
     const left = window.screenX + (window.outerWidth - width) / 2;
     const top = window.screenY + (window.outerHeight - height) / 2;
 
-    const authUrl = `https://oauth.telegram.org/auth?bot_id=${botName}&origin=${encodeURIComponent(
+    // Use botId if provided, otherwise use botName
+    const telegramBotId = botId || botName;
+
+    const authUrl = `https://oauth.telegram.org/auth?bot_id=${telegramBotId}&origin=${encodeURIComponent(
       window.location.origin
     )}&embed=1&request_access=write&return_to=${encodeURIComponent(
       window.location.href
@@ -156,7 +161,7 @@ export function TelegramLoginButton({
       clearInterval(checkPopup);
       window.removeEventListener("message", handleMessage);
     };
-  }, [botName, onAuth, disabled, loading]);
+  }, [botName, botId, onAuth, disabled, loading]);
 
   return (
     <button
