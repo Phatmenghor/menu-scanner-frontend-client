@@ -4,7 +4,15 @@ import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Edit, Loader2, Trash2, Lock, User, Monitor, Link2 } from "lucide-react";
+import {
+  Edit,
+  Loader2,
+  Trash2,
+  Lock,
+  User,
+  Monitor,
+  Link2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,11 +38,11 @@ import { useRouter } from "next/navigation";
 import { ROUTES } from "@/constants/app-routes/routes";
 import { clearToken } from "@/utils/local-storage/token";
 import { CustomAvatar } from "@/components/shared/avator/custom-avator";
-import Loading from "@/components/shared/common/loading";
 import { isBase64Image, uploadImage } from "@/utils/common/upload-image";
 import { removeUserInfo } from "@/utils/local-storage/userInfo";
 import { TelegramSyncCard } from "@/components/shared/telegram/telegram-sync-card";
 import Link from "next/link";
+import { Loading } from "@/components/shared/common/loading";
 
 // Profile update schema
 const profileSchema = z.object({
@@ -405,7 +413,8 @@ export default function UserProfilePage() {
                       Active Sessions
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Manage your active sessions and sign out from other devices
+                      Manage your active sessions and sign out from other
+                      devices
                     </p>
                   </div>
                   <Link href="/admin/sessions">
