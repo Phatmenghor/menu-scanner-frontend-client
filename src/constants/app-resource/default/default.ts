@@ -4,3 +4,12 @@ export const AppDefault = {
   PAGE_SIZE: 15,
   PAGE_SIZE_OPTIONS: [10, 15, 20, 50, 100],
 };
+
+/**
+ * Social Auth Configuration
+ */
+export const SocialAuthConfig = {
+  // Telegram Bot username (without @)
+  // Replace with your actual Telegram bot username
+  TELEGRAM_BOT_NAME: process.env.NEXT_PUBLIC_TELEGRAM_BOT_NAME || "YourBotName",
+};
