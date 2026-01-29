@@ -5,24 +5,20 @@
 
 import { axiosClientWithAuth } from "@/utils/axios";
 import { createApiThunk } from "@/utils/axios/api-wrapper";
-import { SessionFilterRequest } from "../models/request/session-request";
-import {
-  UserSessionResponse,
-  AdminSessionResponse,
-  PaginatedSessionsResponse,
-} from "../models/response/session-response";
 
 /**
  * Get all user sessions
  * For regular users to view their own sessions
  */
-export const getAllSessionsService = createApiThunk<
-  UserSessionResponse[],
-  void
->("sessions/getAll", async () => {
-  const response = await axiosClientWithAuth.get("/api/v1/sessions/all");
-  return response.data.data;
-});
+export const getAllSessionsService = createApiThunk<any, void>(
+  "sessions/getAll",
+  async () => {
+    const response = await axiosClientWithAuth.get(
+      "/api/v1/sessions/admin/all",
+    );
+    return response.data.data;
+  },
+);
 
 /**
  * Get session by ID
@@ -33,7 +29,7 @@ export const getSessionByIdService = createApiThunk<
   string
 >("sessions/getById", async (sessionId) => {
   const response = await axiosClientWithAuth.get(
-    `/api/v1/sessions/${sessionId}`
+    `/api/v1/sessions/${sessionId}`,
   );
   return response.data.data;
 });
@@ -46,7 +42,7 @@ export const logoutSessionService = createApiThunk<void, string>(
   "sessions/logoutSession",
   async (sessionId) => {
     await axiosClientWithAuth.delete(`/api/v1/sessions/${sessionId}`);
-  }
+  },
 );
 
 /**
@@ -57,9 +53,9 @@ export const logoutOtherSessionsService = createApiThunk<void, string>(
   "sessions/logoutOthers",
   async (currentSessionId) => {
     await axiosClientWithAuth.post(
-      `/api/v1/sessions/logout-others?currentSessionId=${currentSessionId}`
+      `/api/v1/sessions/logout-others?currentSessionId=${currentSessionId}`,
     );
-  }
+  },
 );
 
 /**
@@ -70,7 +66,7 @@ export const logoutAllSessionsService = createApiThunk<void, void>(
   "sessions/logoutAll",
   async () => {
     await axiosClientWithAuth.post("/api/v1/sessions/logout-all");
-  }
+  },
 );
 
 /**
@@ -83,7 +79,7 @@ export const adminGetSessionsService = createApiThunk<
 >("sessions/adminGetAll", async (filterRequest) => {
   const response = await axiosClientWithAuth.post(
     "/api/v1/sessions/admin/all",
-    filterRequest
+    filterRequest,
   );
   return response.data.data;
 });
@@ -97,7 +93,7 @@ export const adminGetSessionByIdService = createApiThunk<
   string
 >("sessions/adminGetById", async (sessionId) => {
   const response = await axiosClientWithAuth.get(
-    `/api/v1/sessions/admin/${sessionId}`
+    `/api/v1/sessions/admin/${sessionId}`,
   );
   return response.data.data;
 });
