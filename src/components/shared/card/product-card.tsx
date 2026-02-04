@@ -21,6 +21,10 @@ import {
   addToCart,
   updateCartItem,
 } from "@/redux/features/main/store/thunks/cart-thunks";
+import {
+  addLocalCartItem,
+  updateLocalCartItem,
+} from "@/redux/features/main/store/slice/cart-slice";
 import { SizeSelectionModal } from "../modal/size-selection-modal";
 
 interface ProductCardProps {
@@ -75,7 +79,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
     }
   };
 
-  // Cart handlers
+  // Cart handlers with optimistic updates
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -91,7 +95,22 @@ export function ProductCard({ product, className }: ProductCardProps) {
       return;
     }
 
-    // Otherwise, add directly
+    // Optimistic update - immediately show in UI
+    cartDispatch(
+      addLocalCartItem({
+        productId: product.id,
+        productSizeId: null,
+        quantity: 1,
+        productName: product.name,
+        productMainImageUrl: product.mainImageUrl,
+        productSizeName: null,
+        displayPrice: product.displayPrice,
+        originalPrice: product.displayOriginPrice || product.displayPrice,
+        hasActivePromotion: product.hasActivePromotion,
+      })
+    );
+
+    // API call in background
     setIsAddingToCart(true);
     try {
       await cartDispatch(
@@ -117,6 +136,16 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
     if (!cartItem) return;
 
+    // Optimistic update
+    cartDispatch(
+      updateLocalCartItem({
+        productId: product.id,
+        productSizeId: null,
+        quantity: quantity + 1,
+      })
+    );
+
+    // API call in background
     setIsAddingToCart(true);
     try {
       await cartDispatch(
@@ -144,18 +173,28 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
     if (!cartItem) return;
 
+    // Optimistic update
+    cartDispatch(
+      updateLocalCartItem({
+        productId: product.id,
+        productSizeId: null,
+        quantity: quantity - 1,
+      })
+    );
+
+    if (quantity === 1) {
+      showToast.success("Removed from cart");
+    }
+
+    // API call in background
     setIsAddingToCart(true);
     try {
-      // Use quantity 0 to remove item
       await cartDispatch(
         updateCartItem({
           productId: product.id,
           quantity: quantity - 1,
         }),
       ).unwrap();
-      if (quantity === 1) {
-        showToast.success("Removed from cart");
-      }
     } catch (error: any) {
       showToast.error(error?.message || "Failed to update cart");
     } finally {

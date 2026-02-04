@@ -67,6 +67,84 @@ const cartSlice = createSlice({
       state.loaded = false;
       state.error = null;
     },
+    // Optimistic add for instant UI feedback
+    addLocalCartItem: (
+      state,
+      action: PayloadAction<{
+        productId: string;
+        productSizeId?: string | null;
+        quantity: number;
+        productName: string;
+        productMainImageUrl: string;
+        productSizeName?: string | null;
+        displayPrice: number;
+        originalPrice: number;
+        hasActivePromotion?: boolean;
+      }>
+    ) => {
+      const {
+        productId,
+        productSizeId,
+        quantity,
+        productName,
+        productMainImageUrl,
+        productSizeName,
+        displayPrice,
+        originalPrice,
+        hasActivePromotion,
+      } = action.payload;
+
+      // Check if item already exists
+      const existingItem = state.items.find(
+        (i) =>
+          i.productId === productId &&
+          i.productSizeId === (productSizeId || null)
+      );
+
+      if (existingItem) {
+        // Update existing item quantity
+        existingItem.quantity += quantity;
+        existingItem.totalPrice = existingItem.displayPrice * existingItem.quantity;
+        existingItem.totalOriginalPrice = existingItem.originalPrice * existingItem.quantity;
+      } else {
+        // Add new item with temporary ID
+        const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        state.items.push({
+          id: tempId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          createdBy: "",
+          updatedBy: "",
+          productId,
+          productName,
+          productMainImageUrl,
+          productSizeId: productSizeId || null,
+          productSizeName: productSizeName || null,
+          quantity,
+          originalPrice,
+          displayPrice,
+          unitPrice: displayPrice,
+          totalOriginalPrice: originalPrice * quantity,
+          totalPrice: displayPrice * quantity,
+          discountAmount: (originalPrice - displayPrice) * quantity,
+          promotionType: "",
+          promotionValue: 0,
+          promotionFromDate: "",
+          promotionToDate: "",
+          hasActivePromotion: hasActivePromotion || false,
+          note: null,
+        });
+      }
+
+      // Recalculate totals
+      state.totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
+      state.totalOriginalPrice = state.items.reduce(
+        (sum, i) => sum + i.totalOriginalPrice,
+        0
+      );
+      state.totalPayment = state.items.reduce((sum, i) => sum + i.totalPrice, 0);
+      state.totalDiscount = state.totalOriginalPrice - state.totalPayment;
+    },
     updateLocalCartItem: (
       state,
       action: PayloadAction<{
@@ -182,5 +260,5 @@ const cartSlice = createSlice({
   },
 });
 
-export const { resetCart, updateLocalCartItem } = cartSlice.actions;
+export const { resetCart, addLocalCartItem, updateLocalCartItem } = cartSlice.actions;
 export default cartSlice.reducer;

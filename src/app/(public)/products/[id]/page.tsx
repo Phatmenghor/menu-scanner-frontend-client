@@ -9,7 +9,15 @@ import {
 } from "@/redux/features/main/store/thunks/public-product-thunks";
 import { clearSelectedProduct } from "@/redux/features/main/store/slice/public-product-slice";
 import { usePublicProductState } from "@/redux/features/main/store/state/public-product-state";
+import { useCartState } from "@/redux/features/main/store/state/cart-state";
+import { useFavoriteState } from "@/redux/features/main/store/state/favorite-state";
+import { useAuthState } from "@/redux/features/auth/store/state/auth-state";
+import { addToCart } from "@/redux/features/main/store/thunks/cart-thunks";
+import { addLocalCartItem } from "@/redux/features/main/store/slice/cart-slice";
+import { toggleFavorite } from "@/redux/features/main/store/thunks/favorite-thunks";
 import { ProductCard } from "@/components/shared/card/product-card";
+import { LoginModal } from "@/components/shared/modal/login-modal";
+import { showToast } from "@/components/shared/common/show-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,6 +31,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Check,
+  Loader2,
 } from "lucide-react";
 import { formatCurrency } from "@/utils/common/currency-format";
 import {
@@ -38,6 +47,9 @@ export default function ProductDetailPage() {
   const router = useRouter();
 
   const { dispatch, selectedProduct, loading } = usePublicProductState();
+  const { dispatch: cartDispatch, items: cartItems } = useCartState();
+  const { dispatch: favoriteDispatch } = useFavoriteState();
+  const { isAuthenticated } = useAuthState();
 
   const productId = params.id as string;
   const product = selectedProduct;
@@ -54,6 +66,25 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [selectedSize, setSelectedSize] = useState<ProductSize | null>(null);
+  // Local loading states for cart operations (independent from global loading)
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+  // Get cart quantity for selected size or product
+  const getCartQuantityForSize = (sizeId: string | null) => {
+    if (!product) return 0;
+    const cartItem = cartItems.find(
+      (item) => item.productId === product.id && item.productSizeId === sizeId
+    );
+    return cartItem?.quantity || 0;
+  };
+
+  const currentCartQuantity = selectedSize
+    ? getCartQuantityForSize(selectedSize.id)
+    : product
+    ? getCartQuantityForSize(null)
+    : 0;
 
   // Get all images (main + additional)
   const allImages = product
@@ -160,6 +191,91 @@ export default function ProductDetailPage() {
   const hasDiscount = selectedSize
     ? selectedSize.hasPromotion
     : product?.hasPromotion;
+
+  // Add to cart handler with optimistic update
+  const handleAddToCart = async () => {
+    if (!product) return;
+
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    // Optimistic update - immediately show in UI
+    cartDispatch(
+      addLocalCartItem({
+        productId: product.id,
+        productSizeId: selectedSize?.id || null,
+        quantity,
+        productName: product.name,
+        productMainImageUrl: product.mainImageUrl,
+        productSizeName: selectedSize?.name || null,
+        displayPrice: getDisplayPrice(),
+        originalPrice: getOriginalPrice() || getDisplayPrice(),
+        hasActivePromotion: hasDiscount,
+      })
+    );
+
+    // API call in background
+    setIsAddingToCart(true);
+    try {
+      await cartDispatch(
+        addToCart({
+          productId: product.id,
+          productSizeId: selectedSize?.id || null,
+          quantity,
+        })
+      ).unwrap();
+      showToast.success(
+        selectedSize
+          ? `Added ${quantity} "${selectedSize.name}" to cart`
+          : `Added ${quantity} to cart`
+      );
+    } catch (error: any) {
+      showToast.error(error?.message || "Failed to add to cart");
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
+
+  // Favorite toggle handler
+  const handleToggleFavorite = async () => {
+    if (!product) return;
+
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    setIsTogglingFavorite(true);
+    try {
+      await favoriteDispatch(
+        toggleFavorite({ productId: product.id })
+      ).unwrap();
+    } catch (error: any) {
+      showToast.error(error?.message || "Failed to update favorites");
+    } finally {
+      setIsTogglingFavorite(false);
+    }
+  };
+
+  // Share handler
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product?.name || "Product",
+          url: window.location.href,
+        });
+      } catch {
+        // User cancelled or error
+      }
+    } else {
+      // Fallback: copy to clipboard
+      navigator.clipboard.writeText(window.location.href);
+      showToast.success("Link copied to clipboard");
+    }
+  };
 
   if (isLoading) {
     return <ProductDetailSkeleton />;
@@ -335,33 +451,42 @@ export default function ProductDetailPage() {
               <div>
                 <h3 className="font-semibold mb-3 text-lg">Choose Size</h3>
                 <div className="flex flex-wrap gap-2">
-                  {product.sizes.map((size) => (
-                    <button
-                      key={size.id}
-                      onClick={() => setSelectedSize(size)}
-                      className={cn(
-                        "relative border-2 rounded-lg px-4 py-3 transition-all cursor-pointer hover:border-primary hover:shadow-md",
-                        selectedSize?.id === size.id
-                          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                          : "border-border"
-                      )}
-                    >
-                      <div className="font-semibold text-sm">{size.name}</div>
-                      <div className="text-primary font-bold text-base">
-                        {formatCurrency(size.finalPrice)}
-                      </div>
-                      {size.hasPromotion && (
-                        <div className="text-xs text-muted-foreground line-through">
-                          {formatCurrency(size.price)}
+                  {product.sizes.map((size) => {
+                    const sizeCartQty = getCartQuantityForSize(size.id);
+                    return (
+                      <button
+                        key={size.id}
+                        onClick={() => setSelectedSize(size)}
+                        className={cn(
+                          "relative border-2 rounded-lg px-4 py-3 transition-all cursor-pointer hover:border-primary hover:shadow-md",
+                          selectedSize?.id === size.id
+                            ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                            : "border-border"
+                        )}
+                      >
+                        <div className="font-semibold text-sm">{size.name}</div>
+                        <div className="text-primary font-bold text-base">
+                          {formatCurrency(size.finalPrice)}
                         </div>
-                      )}
-                      {selectedSize?.id === size.id && (
-                        <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-1">
-                          <Check className="h-3 w-3" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
+                        {size.hasPromotion && (
+                          <div className="text-xs text-muted-foreground line-through">
+                            {formatCurrency(size.price)}
+                          </div>
+                        )}
+                        {selectedSize?.id === size.id && (
+                          <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-1">
+                            <Check className="h-3 w-3" />
+                          </div>
+                        )}
+                        {/* Show cart quantity badge */}
+                        {sizeCartQty > 0 && (
+                          <div className="absolute -top-2 -left-2 bg-green-500 text-white rounded-full min-w-[20px] h-[20px] flex items-center justify-center text-xs font-bold">
+                            {sizeCartQty}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -401,23 +526,68 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
+            {/* Cart info for selected size */}
+            {currentCartQuantity > 0 && (
+              <div className="p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
+                <p className="text-sm text-green-700 dark:text-green-400 font-medium">
+                  {selectedSize
+                    ? `${currentCartQuantity} "${selectedSize.name}" already in cart`
+                    : `${currentCartQuantity} already in cart`}
+                </p>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="space-y-3 pt-4">
               <CustomButton
                 size="lg"
-                className="w-full h-12 text-base font-semibold"
-                disabled={product.status === "OUT_OF_STOCK"}
+                className="w-full h-12 text-base font-semibold gap-2"
+                disabled={product.status === "OUT_OF_STOCK" || isAddingToCart}
+                onClick={handleAddToCart}
               >
-                <ShoppingCart className="h-5 w-5 mr-2" />
-                Add to Cart • {formatCurrency(getDisplayPrice() * quantity)}
+                {isAddingToCart ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="h-5 w-5" />
+                    Add to Cart • {formatCurrency(getDisplayPrice() * quantity)}
+                  </>
+                )}
               </CustomButton>
 
               <div className="grid grid-cols-2 gap-3">
-                <CustomButton size="lg" variant="outline" className="h-12">
-                  <Heart className="h-5 w-5 mr-2" />
-                  Wishlist
+                <CustomButton
+                  size="lg"
+                  variant="outline"
+                  className={cn(
+                    "h-12",
+                    product.isFavorited &&
+                      "bg-red-50 border-red-200 text-red-600 hover:bg-red-100 dark:bg-red-950/30 dark:border-red-800 dark:text-red-400"
+                  )}
+                  onClick={handleToggleFavorite}
+                  disabled={isTogglingFavorite}
+                >
+                  {isTogglingFavorite ? (
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                  ) : (
+                    <Heart
+                      className={cn(
+                        "h-5 w-5 mr-2",
+                        product.isFavorited && "fill-current"
+                      )}
+                    />
+                  )}
+                  {product.isFavorited ? "Saved" : "Wishlist"}
                 </CustomButton>
-                <CustomButton size="lg" variant="outline" className="h-12">
+                <CustomButton
+                  size="lg"
+                  variant="outline"
+                  className="h-12"
+                  onClick={handleShare}
+                >
                   <Share2 className="h-5 w-5 mr-2" />
                   Share
                 </CustomButton>
@@ -460,6 +630,8 @@ export default function ProductDetailPage() {
           </div>
         )}
       </div>
+
+      <LoginModal open={showLoginModal} onOpenChange={setShowLoginModal} />
     </div>
   );
 }
