@@ -7,21 +7,21 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          50: "#FDF2F7",
-          100: "#FAEAF2",
-          200: "#F5D5E8",
-          300: "#EDBDD7",
-          400: "#D56B9E",
-          500: "#A23469", // main
-          600: "#802A54", // darker
-          700: "#5E1F3F",
-          800: "#3C142A",
-          900: "#1F0A15",
-          950: "#0F0509",
-          main: "#A23469",
-          darker: "#802357",
-          lighter: "#D56B9E",
-          subtle: "#FFD0E7",
+          50: "#F3F7F0",
+          100: "#E2EDD9",
+          200: "#BDD5AA",
+          300: "#93BA78",
+          400: "#6B9D4F",
+          500: "#57823D", // main
+          600: "#476B32", // darker
+          700: "#3C5A2A",
+          800: "#304922",
+          900: "#25381A",
+          950: "#162110",
+          main: "#57823D",
+          darker: "#476B32",
+          lighter: "#93BA78",
+          subtle: "#E2EDD9",
         },
 
         status: {
@@ -264,6 +264,7 @@ const config: Config = {
         slow: "var(--transition-slow)",
       },
       maxWidth: {
+        "7xl": "1140px",
         "8xl": "1340px",
         "9xl": "1600px",
       },

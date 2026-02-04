@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
@@ -17,6 +17,7 @@ import {
   Settings,
   Bell,
   CreditCard,
+  LocationEdit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { CustomButton } from "../shared/button/custom-button";
 import { useAuthState } from "@/redux/features/auth/store/state/auth-state";
 import { useCartState } from "@/redux/features/main/store/state/cart-state";
-import { useWishlistState } from "@/redux/features/main/store/state/wishlist-state";
+import { useFavoriteState } from "@/redux/features/main/store/state/favorite-state";
 import { logout } from "@/redux/features/auth/store/slice/auth-slice";
 import { showToast } from "@/components/shared/common/show-toast";
 import { clearToken } from "@/utils/local-storage/token";
@@ -35,13 +36,13 @@ import { LoginModal } from "../shared/modal/login-modal";
 import { CustomDropdownMenu } from "../shared/common/custom-dropdown-menu";
 import { PageContainer } from "../shared/common/page-container";
 import { cn } from "@/lib/utils";
+import { ROUTES } from "@/constants/app-routes/routes";
 
 const navigationLinks = [
   { name: "Home", href: "/" },
   { name: "Products", href: "/products" },
   { name: "Promotions", href: "/products?hasPromotion=true" },
   { name: "Categories", href: "/categories" },
-  { name: "Brands", href: "/brands" },
 ];
 
 export function Navbar() {
@@ -57,9 +58,26 @@ export function Navbar() {
   const { isAuthenticated, profile, fullName, email, profileImage, dispatch } =
     useAuthState();
 
-  // Cart and wishlist state
+  // Cart and favorites state
   const { totalItems: cartItemCount } = useCartState();
-  const { totalItems: wishlistItemCount } = useWishlistState();
+  const { totalItems: favoriteItemCount } = useFavoriteState();
+
+  // Animation state for favorites badge
+  const [favoriteAnimating, setFavoriteAnimating] = useState(false);
+  const prevFavoriteCount = useRef(favoriteItemCount);
+
+  // Trigger animation when favorite count changes
+  useEffect(() => {
+    if (
+      prevFavoriteCount.current !== favoriteItemCount &&
+      favoriteItemCount > 0
+    ) {
+      setFavoriteAnimating(true);
+      const timer = setTimeout(() => setFavoriteAnimating(false), 300);
+      return () => clearTimeout(timer);
+    }
+    prevFavoriteCount.current = favoriteItemCount;
+  }, [favoriteItemCount]);
 
   // Debounce search query
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
@@ -76,7 +94,6 @@ export function Navbar() {
   useEffect(() => {
     // Only handle search if there's actually a search query
     if (!debouncedSearchQuery.trim()) {
-      // Only clear search param if it exists in URL
       const hasSearchParam = searchParams.get("q");
       if (hasSearchParam) {
         const params = new URLSearchParams(searchParams.toString());
@@ -125,15 +142,9 @@ export function Navbar() {
           onClick: () => router.push("/profile"),
         },
         {
-          label: "Settings",
-          icon: <Settings className="h-4 w-4" />,
-          onClick: () => router.push("/settings"),
-        },
-        {
-          label: "Notifications",
-          icon: <Bell className="h-4 w-4" />,
-          onClick: () => router.push("/notifications"),
-          separator: true,
+          label: "Location",
+          icon: <LocationEdit className="h-4 w-4" />,
+          onClick: () => router.push(ROUTES.LOCATION),
         },
       ],
     },
@@ -146,15 +157,9 @@ export function Navbar() {
           onClick: () => router.push("/orders"),
         },
         {
-          label: "Wishlist",
+          label: "Favorites",
           icon: <Heart className="h-4 w-4" />,
-          onClick: () => router.push("/wishlist"),
-        },
-        {
-          label: "Payment Methods",
-          icon: <CreditCard className="h-4 w-4" />,
-          onClick: () => router.push("/payment-methods"),
-          separator: true,
+          onClick: () => router.push("/favorites"),
         },
       ],
     },
@@ -282,15 +287,18 @@ export function Navbar() {
                 variant="ghost"
                 size="icon"
                 className="relative hover:text-primary"
-                onClick={() => router.push("/wishlist")}
+                onClick={() => router.push("/favorites")}
               >
                 <Heart className="h-5 w-5" />
-                {wishlistItemCount > 0 && (
+                {favoriteItemCount > 0 && (
                   <Badge
                     variant="destructive"
-                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                    className={cn(
+                      "absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs transition-transform duration-300",
+                      favoriteAnimating && "animate-slide-down",
+                    )}
                   >
-                    {wishlistItemCount}
+                    {favoriteItemCount}
                   </Badge>
                 )}
               </CustomButton>

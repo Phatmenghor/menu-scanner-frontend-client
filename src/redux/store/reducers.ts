@@ -20,6 +20,7 @@ import workScheduleReducer from "../features/hr/store/slice/work-schedule-slice"
 import leaveReducer from "../features/hr/store/slice/leave-slice";
 import attendanceReducer from "../features/hr/store/slice/attendance-slice";
 
+import favoritesReducer from "../features/main/store/slice/favorite-slice";
 import productReducer from "../features/business/store/slice/product-slice";
 import homeReducer from "../features/main/store/slice/home-slice";
 import publicProductReducer from "../features/main/store/slice/public-product-slice";
@@ -27,9 +28,7 @@ import publicBrandsReducer from "../features/main/store/slice/public-brands-slic
 import publicCategoriesReducer from "../features/main/store/slice/public-categories-slice";
 import scrollReducer from "../features/main/store/slice/scroll-slice";
 import cartReducer from "../features/main/store/slice/cart-slice";
-import wishlistReducer from "../features/main/store/slice/wishlist-slice";
 import globalSettingsReducer from "./slices/global-settings-slice";
-import { ro } from "date-fns/locale";
 
 /**
  * Root reducer configuration
@@ -68,6 +67,6 @@ export const reducers = {
   publicBrands: publicBrandsReducer,
   publicCategories: publicCategoriesReducer,
   scroll: scrollReducer,
+  favorites: favoritesReducer,
   cart: cartReducer,
-  wishlist: wishlistReducer,
 };

@@ -1,0 +1,163 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Heart, ShoppingCart, Trash2, ArrowLeft } from "lucide-react";
+import { useFavoriteState } from "@/redux/features/main/store/state/favorite-state";
+import { useCartState } from "@/redux/features/main/store/state/cart-state";
+import { useAuthState } from "@/redux/features/auth/store/state/auth-state";
+import { isAuthenticated as checkTokenExists } from "@/utils/local-storage/token";
+import {
+  fetchFavoriteList,
+  toggleFavorite,
+  clearAllFavorites,
+} from "@/redux/features/main/store/thunks/favorite-thunks";
+import { addToCart } from "@/redux/features/main/store/thunks/cart-thunks";
+import { ProductCard } from "@/components/shared/card/product-card";
+import { ProductCardSkeleton } from "@/components/shared/skeletons/product-card-skeleton";
+import { CustomButton } from "@/components/shared/button/custom-button";
+import { showToast } from "@/components/shared/common/show-toast";
+
+export default function FavoritesPage() {
+  const router = useRouter();
+  const { isAuthenticated } = useAuthState();
+  const { dispatch, items, totalItems, loading, loaded } = useFavoriteState();
+  const { dispatch: cartDispatch } = useCartState();
+
+  useEffect(() => {
+    dispatch(fetchFavoriteList());
+  }, [isAuthenticated, dispatch, router]);
+
+  // Service 3: Remove one favorite
+  const handleRemoveOne = async (productId: string) => {
+    try {
+      await dispatch(toggleFavorite({ productId })).unwrap();
+      showToast.success("Removed from favorites");
+    } catch (error: any) {
+      showToast.error(error?.message || "Failed to remove from favorites");
+    }
+  };
+
+  // Service 4: Clear all favorites
+  const handleClearAll = async () => {
+    if (items.length === 0) return;
+    try {
+      await dispatch(clearAllFavorites()).unwrap();
+      showToast.success("All favorites cleared");
+    } catch (error: any) {
+      showToast.error(error?.message || "Failed to clear favorites");
+    }
+  };
+
+  const handleMoveToCart = async (productId: string) => {
+    try {
+      await cartDispatch(addToCart({ productId, quantity: 1 })).unwrap();
+      await dispatch(toggleFavorite({ productId })).unwrap();
+      showToast.success("Moved to cart");
+    } catch (error: any) {
+      showToast.error(error?.message || "Failed to move to cart");
+    }
+  };
+
+  if (loading.fetch && !loaded) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="h-10 w-64 bg-muted rounded mb-8 animate-pulse" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="container mx-auto px-4 py-16">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="flex items-center justify-center w-24 h-24 rounded-full bg-red-50 mx-auto mb-6">
+            <Heart className="h-12 w-12 text-red-500" />
+          </div>
+          <h1 className="text-3xl font-bold mb-4">Your Favorites is Empty</h1>
+          <p className="text-muted-foreground mb-8">
+            Save your favorite items here to buy them later or share with
+            friends
+          </p>
+          <CustomButton
+            onClick={() => router.push("/products")}
+            size="lg"
+            className="gap-2"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            Start Shopping
+          </CustomButton>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <CustomButton
+              variant="ghost"
+              size="icon"
+              onClick={() => router.back()}
+              className="h-10 w-10"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </CustomButton>
+            <div>
+              <h1 className="text-3xl font-bold mb-1">My Favorites</h1>
+              <p className="text-muted-foreground">
+                {totalItems} {totalItems === 1 ? "item" : "items"} saved
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {/* Clear All Button */}
+            <CustomButton
+              variant="destructive"
+              size="sm"
+              onClick={handleClearAll}
+              disabled={loading.clearAll}
+              className="gap-2"
+            >
+              {loading.clearAll ? (
+                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+              Clear All
+            </CustomButton>
+          </div>
+        </div>
+
+        {/* Favorites Items Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {items.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+
+        {/* Actions */}
+        <div className="mt-12 flex justify-center gap-4">
+          <CustomButton
+            size="lg"
+            onClick={() => router.push("/products")}
+            className="gap-2"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            Continue Shopping
+          </CustomButton>
+        </div>
+      </div>
+    </div>
+  );
+}
