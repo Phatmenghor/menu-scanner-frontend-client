@@ -13,7 +13,7 @@ export interface ProductDetailResponseModel {
   name: string;
   description: string;
   status: string;
-  price: number;
+  price: string;
   promotionType: string;
   promotionValue: number;
   promotionFromDate: string;
@@ -58,5 +58,6 @@ export interface ProductSize {
   promotionToDate: string;
   finalPrice: number;
   hasPromotion: boolean;
+  quantityInCart: string;
   createdAt: string;
 }
