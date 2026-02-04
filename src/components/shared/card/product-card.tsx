@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, ShoppingCart, Plus, Minus } from "lucide-react";
+import { Heart, ShoppingCart, Plus, Minus, Ruler } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -267,6 +267,19 @@ export function ProductCard({ product, className }: ProductCardProps) {
                 />
               </CustomButton>
             </div>
+
+            {/* Size indicator */}
+            {product.hasSizes && (
+              <div className="absolute bottom-2 left-2 z-10 pointer-events-none">
+                <Badge
+                  variant="secondary"
+                  className="text-xs font-medium px-1.5 py-0.5 shadow-sm bg-background/90 backdrop-blur-sm gap-1"
+                >
+                  <Ruler className="h-3 w-3" />
+                  Sizes
+                </Badge>
+              </div>
+            )}
           </div>
 
           {/* Product info */}

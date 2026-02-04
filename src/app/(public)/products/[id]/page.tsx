@@ -25,23 +25,13 @@ import {
   Check,
 } from "lucide-react";
 import { formatCurrency } from "@/utils/common/currency-format";
-import { ProductDetailResponseModel } from "@/redux/features/business/store/models/response/product-response";
+import {
+  ProductDetailResponseModel,
+  ProductSize,
+} from "@/redux/features/business/store/models/response/product-response";
 import { CustomButton } from "@/components/shared/button/custom-button";
 import { cn } from "@/lib/utils";
 import { useScrollToTop } from "@/hooks/use-scroll-restoration";
-
-interface ProductSize {
-  id: string;
-  name: string;
-  price: number;
-  promotionType: string | null;
-  promotionValue: number | null;
-  promotionFromDate: string | null;
-  promotionToDate: string | null;
-  finalPrice: number;
-  hasPromotion: boolean;
-  createdAt: string;
-}
 
 export default function ProductDetailPage() {
   const params = useParams();

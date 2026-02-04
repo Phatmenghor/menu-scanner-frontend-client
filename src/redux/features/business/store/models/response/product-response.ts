@@ -48,7 +48,7 @@ interface ProductImage {
   createdAt: string;
 }
 
-interface ProductSize {
+export interface ProductSize {
   id: string;
   name: string;
   price: number;
