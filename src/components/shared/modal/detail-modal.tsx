@@ -2,7 +2,6 @@
 
 import type React from "react";
 import { ReactNode } from "react";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +9,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { CustomAvatar } from "@/components/shared/avator/custom-avator";
 import { Loading } from "../common/loading";
 

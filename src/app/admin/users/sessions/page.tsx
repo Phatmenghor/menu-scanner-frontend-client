@@ -31,7 +31,7 @@ import {
   setSearchFilter,
 } from "@/redux/features/auth/store/slice/role-slice";
 
-export default function RolesPage() {
+export default function SessionPage() {
   useAdminCleanup(resetState);
   const searchParams = useSearchParams();
 

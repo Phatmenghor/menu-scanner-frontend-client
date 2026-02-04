@@ -1,54 +1,28 @@
-/**
- * Session Management Response Models
- */
+import { BasePagination } from "@/utils/common/pagination";
 
-import { DeviceType, SessionStatus } from "../request/session-request";
-
-/**
- * User session response
- * Basic session info for regular users
- */
-export interface UserSessionResponse {
-  id: string;
-  deviceId: string;
-  deviceName: string;
-  deviceType: DeviceType;
-  deviceDisplayName: string;
-  browser: string;
-  operatingSystem: string;
-  ipAddress: string;
-  country: string;
-  city: string;
-  status: SessionStatus;
-  loginAt: string;
-  lastActiveAt: string;
-  expiresAt: string;
-  isCurrentSession: boolean;
-  sessionDurationMinutes: number;
-  inactiveDurationMinutes: number;
+export interface AllSessionResponseModel extends BasePagination {
+  content: SessionResponse[];
 }
 
-/**
- * Admin session response
- * Extended session info for admins with user details
- */
-export interface AdminSessionResponse extends UserSessionResponse {
+export interface SessionResponse {
+  id: string;
   userId: string;
   userIdentifier: string;
   userFullName: string;
   userType: string;
-  loggedOutAt: string | null;
-  logoutReason: string | null;
-}
-
-/**
- * Paginated admin sessions response
- */
-export interface PaginatedSessionsResponse {
-  content: AdminSessionResponse[];
-  pageNo: number;
-  pageSize: number;
-  totalElements: number;
-  totalPages: number;
-  last: boolean;
+  deviceId: string;
+  deviceName: string;
+  deviceType: string;
+  deviceDisplayName: string;
+  browser: string;
+  operatingSystem: string;
+  ipAddress: string;
+  location: string;
+  status: string;
+  loginAt: string;
+  lastActiveAt: string;
+  expiresAt: string;
+  loggedOutAt: string;
+  logoutReason: string;
+  isCurrentSession: boolean;
 }
