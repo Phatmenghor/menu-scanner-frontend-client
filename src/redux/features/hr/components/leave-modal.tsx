@@ -5,8 +5,6 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import Loading from "@/components/shared/common/loading";
-import { TextField } from "@/components/shared/form-field/text-field";
 import { TextareaField } from "@/components/shared/form-field/text-area-field";
 import { DateTimePickerField } from "@/components/shared/form-field/date-picker-field";
 import { CancelButton } from "@/components/shared/form-field/cancel-button";
@@ -39,6 +37,7 @@ import {
   UpdateLeaveRequest,
 } from "../store/models/request/leave-request";
 import { Check, X } from "lucide-react";
+import { Loading } from "@/components/shared/common/loading";
 
 type Props = {
   mode: ModalMode;

@@ -35,21 +35,24 @@ import {
   logoutAllSessionsService,
 } from "@/redux/features/auth/store/thunks/session-thunks";
 import { UserSessionResponse } from "@/redux/features/auth/store/models/response/session-response";
-import { DeviceType, SessionStatus } from "@/redux/features/auth/store/models/request/session-request";
+import {
+  DeviceType,
+  SessionStatus,
+} from "@/redux/features/auth/store/models/request/session-request";
 import { showToast } from "@/components/shared/common/show-toast";
 import { formatDistanceToNow, format } from "date-fns";
-import Loading from "@/components/shared/common/loading";
 import { clearAllTokens } from "@/utils/local-storage/token";
 import { removeUserInfo } from "@/utils/local-storage/userInfo";
 import { ROUTES } from "@/constants/app-routes/routes";
 import { SessionDetailModal } from "@/components/shared/modal/session-detail-modal";
+import { Loading } from "@/components/shared/common/loading";
 
 export default function SessionsPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
 
   const { sessions, currentSession, isLoading, error } = useAppSelector(
-    (state) => state.sessions
+    (state) => state.sessions,
   );
 
   const [selectedSession, setSelectedSession] =
@@ -275,7 +278,10 @@ export default function SessionsPage() {
                         <h3 className="font-semibold text-foreground">
                           {session.deviceDisplayName || session.deviceName}
                         </h3>
-                        {getStatusBadge(session.status, session.isCurrentSession)}
+                        {getStatusBadge(
+                          session.status,
+                          session.isCurrentSession,
+                        )}
                       </div>
                       <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
@@ -324,7 +330,9 @@ export default function SessionsPage() {
             <Card>
               <CardContent className="p-8 text-center">
                 <Monitor className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">No active sessions found</p>
+                <p className="text-muted-foreground">
+                  No active sessions found
+                </p>
               </CardContent>
             </Card>
           )}
@@ -349,8 +357,9 @@ export default function SessionsPage() {
             <DialogTitle>Logout This Session?</DialogTitle>
             <DialogDescription>
               This will end the session on{" "}
-              {sessionToLogout?.deviceDisplayName || sessionToLogout?.deviceName}.
-              The device will need to sign in again to access the account.
+              {sessionToLogout?.deviceDisplayName ||
+                sessionToLogout?.deviceName}
+              . The device will need to sign in again to access the account.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -426,8 +435,8 @@ export default function SessionsPage() {
               Logout Everywhere?
             </DialogTitle>
             <DialogDescription>
-              <strong>Warning:</strong> This will end ALL sessions including your
-              current one. You will be redirected to the login page and all
+              <strong>Warning:</strong> This will end ALL sessions including
+              your current one. You will be redirected to the login page and all
               devices will need to sign in again.
             </DialogDescription>
           </DialogHeader>

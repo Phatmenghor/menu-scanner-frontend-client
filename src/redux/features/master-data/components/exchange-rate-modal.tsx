@@ -4,7 +4,6 @@ import React, { useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import Loading from "@/components/shared/common/loading";
 import { TextField } from "@/components/shared/form-field/text-field";
 import { CancelButton } from "@/components/shared/form-field/cancel-button";
 import { SubmitButton } from "@/components/shared/form-field/submid-button";
@@ -35,6 +34,7 @@ import {
   clearSelectedExchangeRate,
 } from "../store/slice/exchange-rate-slice";
 import { TextareaField } from "@/components/shared/form-field/text-area-field";
+import { Loading } from "@/components/shared/common/loading";
 
 type Props = {
   mode: ModalMode;
@@ -65,7 +65,7 @@ export default function ExchangeRateModal({
     formState: { errors, isDirty },
   } = useForm<ExchangeRateFormData, any, CreateExchangeRateData>({
     resolver: zodResolver(
-      isCreate ? createExchangeRateSchema : updateExchangeRateSchema
+      isCreate ? createExchangeRateSchema : updateExchangeRateSchema,
     ),
     defaultValues: {
       usdToKhrRate: undefined,
@@ -97,7 +97,7 @@ export default function ExchangeRateModal({
 
       try {
         const resultAction = await dispatch(
-          fetchExchangeRateByIdService(exchangeRateId)
+          fetchExchangeRateByIdService(exchangeRateId),
         );
 
         if (fetchExchangeRateByIdService.fulfilled.match(resultAction)) {
@@ -145,7 +145,7 @@ export default function ExchangeRateModal({
           updateExchangeRateService({
             id: exchangeRateId!,
             payload,
-          })
+          }),
         ).unwrap();
         showToast.success("Exchange rate updated successfully");
         handleClose();
@@ -153,7 +153,7 @@ export default function ExchangeRateModal({
     } catch (error: any) {
       showToast.error(
         error?.message ||
-          `Failed to ${isCreate ? "create" : "update"} exchange rate`
+          `Failed to ${isCreate ? "create" : "update"} exchange rate`,
       );
     }
   };
@@ -180,106 +180,99 @@ export default function ExchangeRateModal({
           isCreate={isCreate}
         />
 
-        {/* Show loading spinner in edit mode while fetching */}
-        {!isCreate && isFetchingDetail ? (
-          <div className="p-6 flex items-center justify-center min-h-[400px] flex-1">
-            <Loading />
-          </div>
-        ) : (
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-col flex-1 overflow-hidden"
-          >
-            <FormBody>
-              {/* Display Redux errors */}
-              {reduxError && (
-                <div className="p-4 bg-destructive/10 border border-destructive rounded-lg mb-4">
-                  <p className="text-sm text-destructive font-medium">
-                    {reduxError}
-                  </p>
-                </div>
-              )}
-
-              {/* Exchange Rate Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextField
-                  control={control}
-                  name="usdToKhrRate"
-                  label="USD To KHR Rate"
-                  placeholder="Enter USD to KHR rate"
-                  type="number"
-                  valueAsNumber
-                  disabled={isSubmitting}
-                  required
-                  error={errors.usdToKhrRate}
-                />
-
-                <TextField
-                  control={control}
-                  name="usdToCnyRate"
-                  label="USD To CNY Rate"
-                  placeholder="Enter USD to CNY rate (optional)"
-                  type="number"
-                  valueAsNumber
-                  disabled={isSubmitting}
-                  error={errors.usdToCnyRate}
-                />
-
-                <TextField
-                  control={control}
-                  name="usdToThbRate"
-                  label="USD To THB Rate"
-                  placeholder="Enter USD to THB rate (optional)"
-                  type="number"
-                  valueAsNumber
-                  disabled={isSubmitting}
-                  error={errors.usdToThbRate}
-                />
-
-                <TextField
-                  control={control}
-                  name="usdToVndRate"
-                  label="USD To VND Rate"
-                  placeholder="Enter USD to VND rate (optional)"
-                  type="number"
-                  valueAsNumber
-                  disabled={isSubmitting}
-                  error={errors.usdToVndRate}
-                />
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex flex-col flex-1 overflow-hidden"
+        >
+          <FormBody>
+            {/* Display Redux errors */}
+            {reduxError && (
+              <div className="p-4 bg-destructive/10 border border-destructive rounded-lg mb-4">
+                <p className="text-sm text-destructive font-medium">
+                  {reduxError}
+                </p>
               </div>
+            )}
 
-              {/* Notes - Separate Row */}
-              <TextareaField
+            {/* Exchange Rate Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <TextField
                 control={control}
-                name="notes"
-                label="Remark"
-                placeholder="Enter any additional notes (optional)"
-                rows={5}
+                name="usdToKhrRate"
+                label="USD To KHR Rate"
+                placeholder="Enter USD to KHR rate"
+                type="number"
+                valueAsNumber
                 disabled={isSubmitting}
-                error={errors.notes}
+                required
+                error={errors.usdToKhrRate}
               />
-            </FormBody>
 
-            <FormFooter
+              <TextField
+                control={control}
+                name="usdToCnyRate"
+                label="USD To CNY Rate"
+                placeholder="Enter USD to CNY rate (optional)"
+                type="number"
+                valueAsNumber
+                disabled={isSubmitting}
+                error={errors.usdToCnyRate}
+              />
+
+              <TextField
+                control={control}
+                name="usdToThbRate"
+                label="USD To THB Rate"
+                placeholder="Enter USD to THB rate (optional)"
+                type="number"
+                valueAsNumber
+                disabled={isSubmitting}
+                error={errors.usdToThbRate}
+              />
+
+              <TextField
+                control={control}
+                name="usdToVndRate"
+                label="USD To VND Rate"
+                placeholder="Enter USD to VND rate (optional)"
+                type="number"
+                valueAsNumber
+                disabled={isSubmitting}
+                error={errors.usdToVndRate}
+              />
+            </div>
+
+            {/* Notes - Separate Row */}
+            <TextareaField
+              control={control}
+              name="notes"
+              label="Remark"
+              placeholder="Enter any additional notes (optional)"
+              rows={5}
+              disabled={isSubmitting}
+              error={errors.notes}
+            />
+          </FormBody>
+
+          <FormFooter
+            isSubmitting={isSubmitting}
+            isDirty={isDirty}
+            isCreate={isCreate}
+            createMessage="Creating exchange rate..."
+            updateMessage="Updating exchange rate..."
+          >
+            <CancelButton onClick={handleClose} disabled={isSubmitting} />
+            <SubmitButton
               isSubmitting={isSubmitting}
               isDirty={isDirty}
               isCreate={isCreate}
-              createMessage="Creating exchange rate..."
-              updateMessage="Updating exchange rate..."
-            >
-              <CancelButton onClick={handleClose} disabled={isSubmitting} />
-              <SubmitButton
-                isSubmitting={isSubmitting}
-                isDirty={isDirty}
-                isCreate={isCreate}
-                createText="Create Exchange Rate"
-                updateText="Update Exchange Rate"
-                submittingCreateText="Creating..."
-                submittingUpdateText="Updating..."
-              />
-            </FormFooter>
-          </form>
-        )}
+              createText="Create Exchange Rate"
+              updateText="Update Exchange Rate"
+              submittingCreateText="Creating..."
+              submittingUpdateText="Updating..."
+            />
+          </FormFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

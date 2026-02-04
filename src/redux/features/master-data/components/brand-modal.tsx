@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import Loading from "@/components/shared/common/loading";
 import { TextField } from "@/components/shared/form-field/text-field";
 import { SelectField } from "@/components/shared/form-field/select-field";
 import { CancelButton } from "@/components/shared/form-field/cancel-button";
@@ -35,6 +34,7 @@ import {
 } from "../store/selectors/brand-selector";
 import { ClickableImageUpload } from "@/components/shared/form-field/clickable-image-upload";
 import { TextareaField } from "@/components/shared/form-field/text-area-field";
+import { Loading } from "@/components/shared/common/loading";
 
 type Props = {
   mode: ModalMode;
@@ -151,14 +151,14 @@ export default function BrandModal({ isOpen, onClose, brandId, mode }: Props) {
         handleClose();
       } else {
         await dispatch(
-          updateBrandService({ brandId: brandId!, brandData: payload })
+          updateBrandService({ brandId: brandId!, brandData: payload }),
         ).unwrap();
         showToast.success("Brand updated successfully");
         handleClose();
       }
     } catch (error: any) {
       showToast.error(
-        error?.message || `Failed to ${isCreate ? "create" : "update"} brand`
+        error?.message || `Failed to ${isCreate ? "create" : "update"} brand`,
       );
     }
   };

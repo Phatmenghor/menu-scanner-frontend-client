@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import Loading from "@/components/shared/common/loading";
 import { TextField } from "@/components/shared/form-field/text-field";
 import { TextareaField } from "@/components/shared/form-field/text-area-field";
 import { CancelButton } from "@/components/shared/form-field/cancel-button";
@@ -38,6 +37,7 @@ import {
   CreateLeaveTypeRequest,
   UpdateLeaveTypeRequest,
 } from "../store/models/request/leave-type-request";
+import { Loading } from "@/components/shared/common/loading";
 
 type Props = {
   mode: ModalMode;

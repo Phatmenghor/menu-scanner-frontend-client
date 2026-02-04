@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import Loading from "@/components/shared/common/loading";
 import { TextareaField } from "@/components/shared/form-field/text-area-field";
 import { CancelButton } from "@/components/shared/form-field/cancel-button";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
@@ -28,6 +27,7 @@ import {
 } from "../store/thunks/attendance-thunks";
 import { UpdateAttendanceRequest } from "../store/models/request/attendance-request";
 import { SubmitButton } from "@/components/shared/form-field/submid-button";
+import { Loading } from "@/components/shared/common/loading";
 
 type Props = {
   attendanceId?: string;

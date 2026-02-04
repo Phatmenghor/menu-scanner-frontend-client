@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import Loading from "@/components/shared/common/loading";
 import { SelectField } from "@/components/shared/form-field/select-field";
 import { CancelButton } from "@/components/shared/form-field/cancel-button";
 import { SubmitButton } from "@/components/shared/form-field/submid-button";
@@ -38,6 +37,7 @@ import {
 } from "../store/slice/delivery-options-slice";
 import { TextField } from "@/components/shared/form-field/text-field";
 import { TextareaField } from "@/components/shared/form-field/text-area-field";
+import { Loading } from "@/components/shared/common/loading";
 
 type Props = {
   mode: ModalMode;
@@ -73,7 +73,7 @@ export default function DeliveryOptionsModal({
     formState: { errors, isDirty },
   } = useForm<CreateDeliveryOptionsData>({
     resolver: zodResolver(
-      isCreate ? createDeliveryOptionsSchema : updateDeliveryOptionsSchema
+      isCreate ? createDeliveryOptionsSchema : updateDeliveryOptionsSchema,
     ),
     defaultValues: {
       name: "",
@@ -106,7 +106,7 @@ export default function DeliveryOptionsModal({
 
       try {
         const resultAction = await dispatch(
-          fetchDeliveryOptionsByIdService(deliveryOptionsId)
+          fetchDeliveryOptionsByIdService(deliveryOptionsId),
         );
 
         if (fetchDeliveryOptionsByIdService.fulfilled.match(resultAction)) {
@@ -147,7 +147,7 @@ export default function DeliveryOptionsModal({
         } catch (uploadError) {
           console.error("Error uploading delivery options image:", uploadError);
           showToast.error(
-            "Failed to upload delivery options image. Please try again."
+            "Failed to upload delivery options image. Please try again.",
           );
           return;
         } finally {
@@ -169,7 +169,7 @@ export default function DeliveryOptionsModal({
         handleClose();
       } else {
         await dispatch(
-          updateDeliveryOptionsService({ id: deliveryOptionsId!, payload })
+          updateDeliveryOptionsService({ id: deliveryOptionsId!, payload }),
         ).unwrap();
         showToast.success("Delivery options updated successfully");
         handleClose();
@@ -177,7 +177,7 @@ export default function DeliveryOptionsModal({
     } catch (error: any) {
       showToast.error(
         error?.message ||
-          `Failed to ${isCreate ? "create" : "update"} delivery options`
+          `Failed to ${isCreate ? "create" : "update"} delivery options`,
       );
     }
   };

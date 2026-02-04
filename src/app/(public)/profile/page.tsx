@@ -29,9 +29,9 @@ import { DeleteConfirmationModal } from "@/components/shared/modal/delete-confir
 import { useRouter } from "next/navigation";
 import { clearToken } from "@/utils/local-storage/token";
 import { CustomAvatar } from "@/components/shared/avator/custom-avator";
-import Loading from "@/components/shared/common/loading";
 import { isBase64Image, uploadImage } from "@/utils/common/upload-image";
 import { removeUserInfo } from "@/utils/local-storage/userInfo";
+import { Loading } from "@/components/shared/common/loading";
 
 // Profile update schema
 const profileSchema = z.object({

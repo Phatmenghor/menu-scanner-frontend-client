@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import Loading from "@/components/shared/common/loading";
 import { TextField } from "@/components/shared/form-field/text-field";
 import { CancelButton } from "@/components/shared/form-field/cancel-button";
 import { SubmitButton } from "@/components/shared/form-field/submid-button";
@@ -46,6 +45,7 @@ import { ComboboxSelectUser } from "@/components/shared/combobox/combobox_select
 import { ComboboxSelectScheduleType } from "@/components/shared/combobox/combobox_select_schedule_type";
 import { DayOfWeek } from "@/types/business-profile";
 import { WorkScheduleTypeFormData } from "../store/models/schema/work-schedule-type.schema";
+import { Loading } from "@/components/shared/common/loading";
 
 // Default working days: Monday to Friday
 const DEFAULT_WORK_DAYS: DayOfWeek[] = [

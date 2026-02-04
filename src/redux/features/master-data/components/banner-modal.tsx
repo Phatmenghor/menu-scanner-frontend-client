@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import Loading from "@/components/shared/common/loading";
 import { TextField } from "@/components/shared/form-field/text-field";
 import { SelectField } from "@/components/shared/form-field/select-field";
 import { CancelButton } from "@/components/shared/form-field/cancel-button";
@@ -35,6 +34,7 @@ import { uploadImage, isBase64Image } from "@/utils/common/upload-image";
 import { showToast } from "@/components/shared/common/show-toast";
 import { BANNER_STATUS_CREATE_UPDATE } from "@/constants/status/create-update-status";
 import { ClickableImageUpload } from "@/components/shared/form-field/clickable-image-upload";
+import { Loading } from "@/components/shared/common/loading";
 
 type Props = {
   mode: ModalMode;
@@ -152,14 +152,14 @@ export default function BannerModal({
         handleClose();
       } else {
         await dispatch(
-          updateBannerService({ id: bannerId!, payload })
+          updateBannerService({ id: bannerId!, payload }),
         ).unwrap();
         showToast.success("Banner updated successfully");
         handleClose();
       }
     } catch (error: any) {
       showToast.error(
-        error?.message || `Failed to ${isCreate ? "create" : "update"} banner`
+        error?.message || `Failed to ${isCreate ? "create" : "update"} banner`,
       );
     }
   };

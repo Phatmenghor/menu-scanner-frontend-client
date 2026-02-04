@@ -37,24 +37,22 @@ import {
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { adminGetSessionsService } from "@/redux/features/auth/store/thunks/session-thunks";
-import {
-  AdminSessionResponse,
-} from "@/redux/features/auth/store/models/response/session-response";
+import { AdminSessionResponse } from "@/redux/features/auth/store/models/response/session-response";
 import {
   SessionFilterRequest,
   DeviceType,
   SessionStatus,
 } from "@/redux/features/auth/store/models/request/session-request";
 import { formatDistanceToNow, format } from "date-fns";
-import Loading from "@/components/shared/common/loading";
 import { AdminSessionDetailModal } from "@/components/shared/modal/admin-session-detail-modal";
 import { AppDefault } from "@/constants/app-resource/default/default";
+import { Loading } from "@/components/shared/common/loading";
 
 export default function AdminSessionsPage() {
   const dispatch = useAppDispatch();
 
   const { adminSessions, isAdminLoading, error } = useAppSelector(
-    (state) => state.sessions
+    (state) => state.sessions,
   );
 
   const [selectedSession, setSelectedSession] =
