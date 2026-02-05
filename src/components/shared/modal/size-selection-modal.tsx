@@ -65,27 +65,25 @@ export function SizeSelectionModal({
       if (!displayProduct) return 0;
       const cartItem = cartItems.find(
         (item) =>
-          item.productId === displayProduct.id &&
-          item.productSizeId === sizeId
+          item.productId === displayProduct.id && item.productSizeId === sizeId,
       );
       return cartItem?.quantity || 0;
     },
-    [cartItems, displayProduct]
+    [cartItems, displayProduct],
   );
 
   // Get current quantity in cart for selected size
   const currentCartQuantity = selectedSize
     ? getCartQuantityForSize(selectedSize.id)
     : displayProduct
-    ? getCartQuantityForSize(null)
-    : 0;
+      ? getCartQuantityForSize(null)
+      : 0;
 
   // Fetch full product details when modal opens if sizes are missing
   useEffect(() => {
     if (open && product) {
       const needsFetch =
-        product.hasSizes &&
-        (!product.sizes || product.sizes.length === 0);
+        product.hasSizes && (!product.sizes || product.sizes.length === 0);
 
       if (needsFetch) {
         setIsLoadingDetail(true);
@@ -166,7 +164,7 @@ export function SizeSelectionModal({
             displayPrice,
             originalPrice,
             hasActivePromotion: hasDiscount,
-          })
+          }),
         );
       } else {
         // Updating existing item (or removing if 0)
@@ -175,7 +173,7 @@ export function SizeSelectionModal({
             productId: displayProduct.id,
             productSizeId: sizeId,
             quantity: newQuantity,
-          })
+          }),
         );
       }
 
@@ -192,7 +190,7 @@ export function SizeSelectionModal({
               productId: displayProduct.id,
               productSizeId: sizeId,
               quantity: latestQty,
-            })
+            }),
           )
             .unwrap()
             .catch((error: any) => {
@@ -204,7 +202,7 @@ export function SizeSelectionModal({
               productId: displayProduct.id,
               productSizeId: sizeId,
               quantity: 0,
-            })
+            }),
           )
             .unwrap()
             .then(() => {
@@ -216,7 +214,7 @@ export function SizeSelectionModal({
         }
       }, 500);
     },
-    [displayProduct, selectedSize, dispatch, getCartQuantityForSize]
+    [displayProduct, selectedSize, dispatch, getCartQuantityForSize],
   );
 
   if (!product) return null;
@@ -226,8 +224,8 @@ export function SizeSelectionModal({
   const originalPrice = selectedSize?.hasPromotion
     ? selectedSize.price
     : displayProduct?.hasActivePromotion
-    ? displayProduct?.displayOriginPrice
-    : null;
+      ? displayProduct?.displayOriginPrice
+      : null;
   const hasDiscount = selectedSize
     ? selectedSize.hasPromotion
     : displayProduct?.hasActivePromotion;
@@ -237,9 +235,7 @@ export function SizeSelectionModal({
       <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden">
         {/* Header */}
         <DialogHeader className="p-4 pb-0">
-          <DialogTitle className="text-lg font-bold">
-            Choose Size
-          </DialogTitle>
+          <DialogTitle className="text-lg font-bold">Choose Size</DialogTitle>
         </DialogHeader>
 
         <div className="p-4 pt-2">
@@ -283,13 +279,13 @@ export function SizeSelectionModal({
                         ? `-${Math.round(
                             ((selectedSize.price - selectedSize.finalPrice) /
                               selectedSize.price) *
-                              100
+                              100,
                           )}%`
                         : displayProduct?.displayPromotionType === "PERCENTAGE"
-                        ? `-${displayProduct?.displayPromotionValue}%`
-                        : `-${formatCurrency(
-                            displayProduct?.displayPromotionValue || 0
-                          )}`}
+                          ? `-${displayProduct?.displayPromotionValue}%`
+                          : `-${formatCurrency(
+                              displayProduct?.displayPromotionValue || 0,
+                            )}`}
                     </Badge>
                   )}
                 </div>
@@ -312,7 +308,7 @@ export function SizeSelectionModal({
                               "relative border-2 rounded-lg px-3 py-2 transition-all cursor-pointer hover:border-primary",
                               selectedSize?.id === size.id
                                 ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                                : "border-border"
+                                : "border-border",
                             )}
                           >
                             <div className="font-semibold text-xs">
@@ -353,13 +349,6 @@ export function SizeSelectionModal({
                   min={0}
                   size="sm"
                 />
-                {currentCartQuantity > 0 && (
-                  <p className="text-xs text-green-600 dark:text-green-400 mt-1.5">
-                    {selectedSize
-                      ? `${currentCartQuantity} "${selectedSize.name}" in cart`
-                      : `${currentCartQuantity} in cart`}
-                  </p>
-                )}
               </div>
 
               {/* Total */}
