@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -12,11 +12,18 @@ import { usePublicProductState } from "@/redux/features/main/store/state/public-
 import { useCartState } from "@/redux/features/main/store/state/cart-state";
 import { useFavoriteState } from "@/redux/features/main/store/state/favorite-state";
 import { useAuthState } from "@/redux/features/auth/store/state/auth-state";
-import { addToCart } from "@/redux/features/main/store/thunks/cart-thunks";
-import { addLocalCartItem } from "@/redux/features/main/store/slice/cart-slice";
+import {
+  addToCart,
+  updateCartItem,
+} from "@/redux/features/main/store/thunks/cart-thunks";
+import {
+  addLocalCartItem,
+  updateLocalCartItem,
+} from "@/redux/features/main/store/slice/cart-slice";
 import { toggleFavorite } from "@/redux/features/main/store/thunks/favorite-thunks";
 import { ProductCard } from "@/components/shared/card/product-card";
 import { LoginModal } from "@/components/shared/modal/login-modal";
+import { QuantitySelector } from "@/components/shared/input/quantity-selector";
 import { showToast } from "@/components/shared/common/show-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,8 +33,6 @@ import {
   Heart,
   ShoppingCart,
   Share2,
-  Plus,
-  Minus,
   ChevronLeft,
   ChevronRight,
   Check,
@@ -63,22 +68,27 @@ export default function ProductDetailPage() {
   >([]);
   const [selectedImage, setSelectedImage] = useState<string>("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [quantity, setQuantity] = useState(1);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [selectedSize, setSelectedSize] = useState<ProductSize | null>(null);
-  // Local loading states for cart operations (independent from global loading)
-  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
+  // Refs for debounced API calls and tracking known quantities
+  const apiDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const knownQtyRef = useRef<Map<string, number>>(new Map());
+
   // Get cart quantity for selected size or product
-  const getCartQuantityForSize = (sizeId: string | null) => {
-    if (!product) return 0;
-    const cartItem = cartItems.find(
-      (item) => item.productId === product.id && item.productSizeId === sizeId
-    );
-    return cartItem?.quantity || 0;
-  };
+  const getCartQuantityForSize = useCallback(
+    (sizeId: string | null) => {
+      if (!product) return 0;
+      const cartItem = cartItems.find(
+        (item) =>
+          item.productId === product.id && item.productSizeId === sizeId
+      );
+      return cartItem?.quantity || 0;
+    },
+    [cartItems, product]
+  );
 
   const currentCartQuantity = selectedSize
     ? getCartQuantityForSize(selectedSize.id)
@@ -147,6 +157,13 @@ export default function ProductDetailPage() {
     }
   }, [product, productId, dispatch]);
 
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (apiDebounceRef.current) clearTimeout(apiDebounceRef.current);
+    };
+  }, []);
+
   // Image navigation
   const handlePrevImage = () => {
     const newIndex =
@@ -192,51 +209,94 @@ export default function ProductDetailPage() {
     ? selectedSize.hasPromotion
     : product?.hasPromotion;
 
-  // Add to cart handler with optimistic update
-  const handleAddToCart = async () => {
-    if (!product) return;
+  // Handle quantity change with optimistic update + debounced API
+  const handleQuantityChange = useCallback(
+    (newQuantity: number) => {
+      if (!product) return;
 
-    if (!isAuthenticated) {
-      setShowLoginModal(true);
-      return;
-    }
+      if (!isAuthenticated) {
+        setShowLoginModal(true);
+        return;
+      }
 
-    // Optimistic update - immediately show in UI
-    cartDispatch(
-      addLocalCartItem({
-        productId: product.id,
-        productSizeId: selectedSize?.id || null,
-        quantity,
-        productName: product.name,
-        productMainImageUrl: product.mainImageUrl,
-        productSizeName: selectedSize?.name || null,
-        displayPrice: getDisplayPrice(),
-        originalPrice: getOriginalPrice() || getDisplayPrice(),
-        hasActivePromotion: hasDiscount,
-      })
-    );
+      const sizeId = selectedSize?.id || null;
+      const key = `${product.id}_${sizeId}`;
+      const knownQty =
+        knownQtyRef.current.get(key) ?? getCartQuantityForSize(sizeId);
+      const price =
+        selectedSize?.finalPrice || product.displayPrice || 0;
+      const origPrice =
+        (selectedSize?.hasPromotion
+          ? selectedSize.price
+          : product.displayOriginPrice) || price;
+      const isDiscounted = selectedSize
+        ? selectedSize.hasPromotion
+        : product.hasActivePromotion;
 
-    // API call in background
-    setIsAddingToCart(true);
-    try {
-      await cartDispatch(
-        addToCart({
-          productId: product.id,
-          productSizeId: selectedSize?.id || null,
-          quantity,
-        })
-      ).unwrap();
-      showToast.success(
-        selectedSize
-          ? `Added ${quantity} "${selectedSize.name}" to cart`
-          : `Added ${quantity} to cart`
-      );
-    } catch (error: any) {
-      showToast.error(error?.message || "Failed to add to cart");
-    } finally {
-      setIsAddingToCart(false);
-    }
-  };
+      // Optimistic update
+      if (knownQty === 0 && newQuantity > 0) {
+        cartDispatch(
+          addLocalCartItem({
+            productId: product.id,
+            productSizeId: sizeId,
+            quantity: newQuantity,
+            productName: product.name,
+            productMainImageUrl: product.mainImageUrl,
+            productSizeName: selectedSize?.name || null,
+            displayPrice: price,
+            originalPrice: origPrice,
+            hasActivePromotion: isDiscounted,
+          })
+        );
+      } else {
+        cartDispatch(
+          updateLocalCartItem({
+            productId: product.id,
+            productSizeId: sizeId,
+            quantity: newQuantity,
+          })
+        );
+      }
+
+      knownQtyRef.current.set(key, newQuantity);
+
+      // Debounced API call
+      if (apiDebounceRef.current) clearTimeout(apiDebounceRef.current);
+      apiDebounceRef.current = setTimeout(() => {
+        const latestQty = knownQtyRef.current.get(key) ?? newQuantity;
+
+        if (latestQty > 0) {
+          cartDispatch(
+            addToCart({
+              productId: product.id,
+              productSizeId: sizeId,
+              quantity: latestQty,
+            })
+          )
+            .unwrap()
+            .catch((error: any) => {
+              showToast.error(error?.message || "Failed to update cart");
+            });
+        } else {
+          cartDispatch(
+            updateCartItem({
+              productId: product.id,
+              productSizeId: sizeId,
+              quantity: 0,
+            })
+          )
+            .unwrap()
+            .then(() => {
+              showToast.success("Removed from cart");
+            })
+            .catch((error: any) => {
+              showToast.error(error?.message || "Failed to update cart");
+            });
+        }
+      }, 500);
+    },
+    [product, selectedSize, isAuthenticated, cartDispatch, getCartQuantityForSize]
+  );
 
   // Favorite toggle handler
   const handleToggleFavorite = async () => {
@@ -500,63 +560,43 @@ export default function ProductDetailPage() {
               </p>
             </div>
 
-            {/* Quantity Selector */}
+            {/* Quantity Selector - shows current cart quantity, editable */}
             <div>
               <h3 className="font-semibold mb-3 text-lg">Quantity</h3>
-              <div className="flex items-center gap-4">
-                <CustomButton
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="h-10 w-10"
-                >
-                  <Minus className="h-4 w-4" />
-                </CustomButton>
-                <span className="w-16 text-center font-bold text-xl">
-                  {quantity}
-                </span>
-                <CustomButton
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="h-10 w-10"
-                >
-                  <Plus className="h-4 w-4" />
-                </CustomButton>
-              </div>
-            </div>
-
-            {/* Cart info for selected size */}
-            {currentCartQuantity > 0 && (
-              <div className="p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
-                <p className="text-sm text-green-700 dark:text-green-400 font-medium">
+              <QuantitySelector
+                value={currentCartQuantity}
+                onChange={handleQuantityChange}
+                min={0}
+              />
+              {currentCartQuantity > 0 && (
+                <p className="text-sm text-green-600 dark:text-green-400 font-medium mt-2">
                   {selectedSize
-                    ? `${currentCartQuantity} "${selectedSize.name}" already in cart`
-                    : `${currentCartQuantity} already in cart`}
+                    ? `${currentCartQuantity} "${selectedSize.name}" in cart`
+                    : `${currentCartQuantity} in cart`}
+                  {" "}
+                  ({formatCurrency(getDisplayPrice() * currentCartQuantity)})
                 </p>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Action Buttons */}
             <div className="space-y-3 pt-4">
-              <CustomButton
-                size="lg"
-                className="w-full h-12 text-base font-semibold gap-2"
-                disabled={product.status === "OUT_OF_STOCK" || isAddingToCart}
-                onClick={handleAddToCart}
-              >
-                {isAddingToCart ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Adding...
-                  </>
-                ) : (
-                  <>
-                    <ShoppingCart className="h-5 w-5" />
-                    Add to Cart • {formatCurrency(getDisplayPrice() * quantity)}
-                  </>
-                )}
-              </CustomButton>
+              {currentCartQuantity === 0 ? (
+                <CustomButton
+                  size="lg"
+                  className="w-full h-12 text-base font-semibold gap-2"
+                  disabled={product.status === "OUT_OF_STOCK"}
+                  onClick={() => handleQuantityChange(1)}
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  Add to Cart
+                </CustomButton>
+              ) : (
+                <div className="w-full h-12 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 flex items-center justify-center gap-2 text-green-700 dark:text-green-400 font-semibold">
+                  <ShoppingCart className="h-5 w-5" />
+                  In Cart &bull; {formatCurrency(getDisplayPrice() * currentCartQuantity)}
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <CustomButton

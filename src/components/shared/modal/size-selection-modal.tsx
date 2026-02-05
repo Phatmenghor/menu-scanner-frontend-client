@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
-import { Check, Loader2, Minus, Plus, ShoppingCart } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { CustomButton } from "@/components/shared/button/custom-button";
+import { QuantitySelector } from "@/components/shared/input/quantity-selector";
 import { formatCurrency } from "@/utils/common/currency-format";
 import { cn } from "@/lib/utils";
 import {
@@ -18,7 +19,14 @@ import {
   ProductSize,
 } from "@/redux/features/business/store/models/response/product-response";
 import { useCartState } from "@/redux/features/main/store/state/cart-state";
-import { addToCart } from "@/redux/features/main/store/thunks/cart-thunks";
+import {
+  addToCart,
+  updateCartItem,
+} from "@/redux/features/main/store/thunks/cart-thunks";
+import {
+  addLocalCartItem,
+  updateLocalCartItem,
+} from "@/redux/features/main/store/slice/cart-slice";
 import { showToast } from "@/components/shared/common/show-toast";
 import { appImages } from "@/constants/app-resource/icons/app-images";
 import { fetchPublicProductById } from "@/redux/features/main/store/thunks/public-product-thunks";
@@ -40,12 +48,13 @@ export function SizeSelectionModal({
   const { dispatch, items: cartItems } = useCartState();
   const { dispatch: productDispatch } = usePublicProductState();
   const [selectedSize, setSelectedSize] = useState<ProductSize | null>(null);
-  const [quantity, setQuantity] = useState(1);
   const [fullProduct, setFullProduct] =
     useState<ProductDetailResponseModel | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
-  // Local loading state for add to cart - independent from global cart loading
-  const [isAdding, setIsAdding] = useState(false);
+
+  // Refs for debounced API calls and tracking known quantities
+  const apiDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const knownQtyRef = useRef<Map<string, number>>(new Map());
 
   // The product to display: use fetched full product if available, otherwise use the passed product
   const displayProduct = fullProduct || product;
@@ -82,7 +91,6 @@ export function SizeSelectionModal({
         setIsLoadingDetail(true);
         setFullProduct(null);
         setSelectedSize(null);
-        setQuantity(1);
 
         productDispatch(fetchPublicProductById(product.id))
           .unwrap()
@@ -106,40 +114,110 @@ export function SizeSelectionModal({
         } else {
           setSelectedSize(null);
         }
-        setQuantity(1);
       }
     }
 
     if (!open) {
       setFullProduct(null);
       setSelectedSize(null);
-      setQuantity(1);
       setIsLoadingDetail(false);
-      setIsAdding(false);
+      knownQtyRef.current.clear();
+      if (apiDebounceRef.current) clearTimeout(apiDebounceRef.current);
     }
   }, [open, product, productDispatch]);
 
-  const handleAddToCart = async () => {
-    if (!displayProduct) return;
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (apiDebounceRef.current) clearTimeout(apiDebounceRef.current);
+    };
+  }, []);
 
-    setIsAdding(true);
-    try {
-      await dispatch(
-        addToCart({
-          productId: displayProduct.id,
-          productSizeId: selectedSize?.id || null,
-          quantity,
-        })
-      ).unwrap();
-      showToast.success("Added to cart");
-      onOpenChange(false);
-      onSuccess?.();
-    } catch (error: any) {
-      showToast.error(error?.message || "Failed to add to cart");
-    } finally {
-      setIsAdding(false);
-    }
-  };
+  // Handle quantity change with optimistic update + debounced API
+  const handleQuantityChange = useCallback(
+    (newQuantity: number) => {
+      if (!displayProduct) return;
+
+      const sizeId = selectedSize?.id || null;
+      const key = `${displayProduct.id}_${sizeId}`;
+      const knownQty =
+        knownQtyRef.current.get(key) ?? getCartQuantityForSize(sizeId);
+
+      // Optimistic update
+      if (knownQty === 0 && newQuantity > 0) {
+        // Adding new item
+        const displayPrice =
+          selectedSize?.finalPrice || displayProduct.displayPrice || 0;
+        const originalPrice = selectedSize?.hasPromotion
+          ? selectedSize.price
+          : displayProduct.displayOriginPrice || displayPrice;
+        const hasDiscount = selectedSize
+          ? selectedSize.hasPromotion
+          : displayProduct.hasActivePromotion;
+
+        dispatch(
+          addLocalCartItem({
+            productId: displayProduct.id,
+            productSizeId: sizeId,
+            quantity: newQuantity,
+            productName: displayProduct.name,
+            productMainImageUrl: displayProduct.mainImageUrl,
+            productSizeName: selectedSize?.name || null,
+            displayPrice,
+            originalPrice,
+            hasActivePromotion: hasDiscount,
+          })
+        );
+      } else {
+        // Updating existing item (or removing if 0)
+        dispatch(
+          updateLocalCartItem({
+            productId: displayProduct.id,
+            productSizeId: sizeId,
+            quantity: newQuantity,
+          })
+        );
+      }
+
+      knownQtyRef.current.set(key, newQuantity);
+
+      // Debounced API call
+      if (apiDebounceRef.current) clearTimeout(apiDebounceRef.current);
+      apiDebounceRef.current = setTimeout(() => {
+        const latestQty = knownQtyRef.current.get(key) ?? newQuantity;
+
+        if (latestQty > 0) {
+          dispatch(
+            addToCart({
+              productId: displayProduct.id,
+              productSizeId: sizeId,
+              quantity: latestQty,
+            })
+          )
+            .unwrap()
+            .catch((error: any) => {
+              showToast.error(error?.message || "Failed to update cart");
+            });
+        } else {
+          dispatch(
+            updateCartItem({
+              productId: displayProduct.id,
+              productSizeId: sizeId,
+              quantity: 0,
+            })
+          )
+            .unwrap()
+            .then(() => {
+              showToast.success("Removed from cart");
+            })
+            .catch((error: any) => {
+              showToast.error(error?.message || "Failed to update cart");
+            });
+        }
+      }, 500);
+    },
+    [displayProduct, selectedSize, dispatch, getCartQuantityForSize]
+  );
 
   if (!product) return null;
 
@@ -160,7 +238,7 @@ export function SizeSelectionModal({
         {/* Header */}
         <DialogHeader className="p-4 pb-0">
           <DialogTitle className="text-lg font-bold">
-            Select Size & Quantity
+            Choose Size
           </DialogTitle>
         </DialogHeader>
 
@@ -266,81 +344,44 @@ export function SizeSelectionModal({
                   </div>
                 )}
 
-              {/* Current cart info for selected size */}
-              {currentCartQuantity > 0 && (
-                <div className="mb-4 p-2 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
-                  <p className="text-xs text-green-700 dark:text-green-400">
-                    {selectedSize
-                      ? `${currentCartQuantity} "${selectedSize.name}" already in cart`
-                      : `${currentCartQuantity} already in cart`}
-                  </p>
-                </div>
-              )}
-
-              {/* Quantity Selector */}
+              {/* Quantity Selector - shows current cart quantity, editable */}
               <div className="mb-4">
-                <h4 className="font-semibold mb-2 text-sm">Add Quantity</h4>
-                <div className="flex items-center gap-3">
-                  <CustomButton
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="h-9 w-9"
-                  >
-                    <Minus className="h-4 w-4" />
-                  </CustomButton>
-                  <span className="w-12 text-center font-bold text-lg">
-                    {quantity}
-                  </span>
-                  <CustomButton
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="h-9 w-9"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </CustomButton>
-                </div>
+                <h4 className="font-semibold mb-2 text-sm">Quantity</h4>
+                <QuantitySelector
+                  value={currentCartQuantity}
+                  onChange={handleQuantityChange}
+                  min={0}
+                  size="sm"
+                />
+                {currentCartQuantity > 0 && (
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-1.5">
+                    {selectedSize
+                      ? `${currentCartQuantity} "${selectedSize.name}" in cart`
+                      : `${currentCartQuantity} in cart`}
+                  </p>
+                )}
               </div>
 
               {/* Total */}
-              <div className="flex justify-between items-center py-3 border-t mb-4">
-                <span className="text-muted-foreground">Total</span>
-                <span className="text-xl font-bold text-primary">
-                  {formatCurrency(displayPrice * quantity)}
-                </span>
-              </div>
+              {currentCartQuantity > 0 && (
+                <div className="flex justify-between items-center py-3 border-t mb-4">
+                  <span className="text-muted-foreground">Total</span>
+                  <span className="text-xl font-bold text-primary">
+                    {formatCurrency(displayPrice * currentCartQuantity)}
+                  </span>
+                </div>
+              )}
 
-              {/* Actions */}
-              <div className="flex gap-3">
-                <CustomButton
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => onOpenChange(false)}
-                >
-                  Cancel
-                </CustomButton>
-                <CustomButton
-                  className="flex-1 gap-2"
-                  onClick={handleAddToCart}
-                  disabled={
-                    isAdding ||
-                    (displayProduct?.hasSizes && !selectedSize)
-                  }
-                >
-                  {isAdding ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Adding...
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingCart className="h-4 w-4" />
-                      Add to Cart
-                    </>
-                  )}
-                </CustomButton>
-              </div>
+              {/* Done button */}
+              <CustomButton
+                className="w-full"
+                onClick={() => {
+                  onOpenChange(false);
+                  onSuccess?.();
+                }}
+              >
+                Done
+              </CustomButton>
             </>
           )}
         </div>

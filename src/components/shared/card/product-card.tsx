@@ -352,7 +352,6 @@ export function ProductCard({ product, className }: ProductCardProps) {
                     variant="outline"
                     className="h-8 w-8 shrink-0 hover:bg-destructive hover:text-destructive-foreground"
                     onClick={handleDecrement}
-                    disabled={isAddingToCart}
                   >
                     <Minus className="h-3 w-3" />
                   </CustomButton>
@@ -366,7 +365,6 @@ export function ProductCard({ product, className }: ProductCardProps) {
                     variant="outline"
                     className="h-8 w-8 shrink-0 hover:bg-primary hover:text-primary-foreground"
                     onClick={handleIncrement}
-                    disabled={isAddingToCart}
                   >
                     <Plus className="h-3 w-3" />
                   </CustomButton>
