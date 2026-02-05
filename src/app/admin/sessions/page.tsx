@@ -1,468 +1,330 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Monitor,
-  Smartphone,
-  Tablet,
-  Globe,
-  MapPin,
-  Clock,
-  LogOut,
-  Loader2,
-  RefreshCw,
-  AlertTriangle,
-  CheckCircle2,
-  XCircle,
-} from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/redux/store";
-import {
-  getAllSessionsService,
-  logoutSessionService,
-  logoutOtherSessionsService,
-  logoutAllSessionsService,
-} from "@/redux/features/auth/store/thunks/session-thunks";
-import { UserSessionResponse } from "@/redux/features/auth/store/models/response/session-response";
-import {
-  DeviceType,
-  SessionStatus,
-} from "@/redux/features/auth/store/models/request/session-request";
-import { showToast } from "@/components/shared/common/show-toast";
-import { formatDistanceToNow, format } from "date-fns";
-import { clearAllTokens } from "@/utils/local-storage/token";
-import { removeUserInfo } from "@/utils/local-storage/userInfo";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Plus } from "lucide-react";
+import { useDebounce } from "@/utils/debounce/debounce";
 import { ROUTES } from "@/constants/app-routes/routes";
-import { SessionDetailModal } from "@/components/shared/modal/session-detail-modal";
-import { Loading } from "@/components/shared/common/loading";
+import { CardHeaderSection } from "@/components/layout/card-header-section";
+import { DeleteConfirmationModal } from "@/components/shared/modal/delete-confirmation-modal";
+import { DataTableWithPagination } from "@/components/shared/common/data-table";
+import { showToast } from "@/components/shared/common/show-toast";
+import { ModalMode, ProductStatus, Status } from "@/constants/status/status";
+import { usePagination } from "@/redux/store/use-pagination";
+import { useProductState } from "@/redux/features/business/store/state/product-state";
+import { ProductDetailResponseModel } from "@/redux/features/business/store/models/response/product-response";
+import {
+  deleteProductService,
+  fetchAllProductAdminService,
+} from "@/redux/features/business/store/thunks/product-thunks";
+import {
+  selectProductStatus,
+  setPageNo,
+  setSearchFilter,
+  resetState,
+} from "@/redux/features/business/store/slice/product-slice";
+import { productTableColumns } from "@/redux/features/business/table/product-table";
+import ProductModal from "@/redux/features/business/components/product-modal";
+import { ProductDetailModal } from "@/redux/features/business/components/product-detail-modal";
+import { CustomSelect } from "@/components/shared/common/custom-select";
+import { PRODUCT_STATUS_FILTER } from "@/constants/status/filter-status";
+import { ComboboxSelectBrand } from "@/components/shared/combobox/combobox_select_brand";
+import { ComboboxSelectCategories } from "@/components/shared/combobox/combobox_select_categories";
+import { CategoriesResponseModel } from "@/redux/features/master-data/store/models/response/categories-response";
+import { BrandResponseModel } from "@/redux/features/master-data/store/models/response/brand-response";
+import { useAdminCleanup } from "@/hooks/use-cleanup-on-unmount";
+import { AppDefault } from "@/constants/app-resource/default/default";
+import { setGlobalPageSize } from "@/redux/store/slices/global-settings-slice";
+import { selectGlobalPageSize } from "@/redux/store/selectors/global-settings-selectors";
+import { useAppSelector } from "@/redux/store";
 
-export default function SessionsPage() {
-  const dispatch = useAppDispatch();
-  const router = useRouter();
+export default function ProductPage() {
+  // Clean up state when leaving admin area (performance optimization)
+  useAdminCleanup(resetState);
+  const searchParams = useSearchParams();
 
-  const { sessions, currentSession, isLoading, error } = useAppSelector(
-    (state) => state.sessions,
+  // Redux state
+  const {
+    productState,
+    productData,
+    productContent,
+    isLoading,
+    filters,
+    operations,
+    pagination,
+    dispatch,
+  } = useProductState();
+
+  // Local UI state for modals only
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    mode: ModalMode.CREATE_MODE,
+    productId: "",
+  });
+
+  const [selectedBrand, setSelectedBrand] = useState<BrandResponseModel | null>(
+    null,
+  );
+  const [selectedCategories, setSelectedCategories] =
+    useState<CategoriesResponseModel | null>(null);
+
+  const [detailModalState, setDetailModalState] = useState({
+    isOpen: false,
+    productId: "",
+  });
+
+  const [deleteState, setDeleteState] = useState({
+    isOpen: false,
+    product: null as ProductDetailResponseModel | null,
+  });
+
+  // Global page size from global settings (synced across all admin pages)
+  const globalPageSize = useAppSelector(selectGlobalPageSize);
+
+  const debouncedSearch = useDebounce(filters.search, 400);
+
+  const { updateUrlWithPage, handlePageChange } = usePagination({
+    baseRoute: ROUTES.ADMIN.PRODUCTS,
+  });
+
+  // Initialize URL and Redux state on mount
+  useEffect(() => {
+    const pageParam = searchParams.get("pageNo");
+    const pageFromUrl = pageParam ? parseInt(pageParam, 10) : 1;
+
+    if (pageFromUrl !== pagination.currentPage) {
+      dispatch(setPageNo(pageFromUrl));
+    }
+  }, [searchParams, filters.pageNo, dispatch]);
+
+  useEffect(() => {
+    dispatch(
+      fetchAllProductAdminService({
+        search: debouncedSearch,
+        pageNo: filters.pageNo,
+        pageSize: globalPageSize,
+        status:
+          filters.status == ProductStatus.ALL ? undefined : filters.status,
+      }),
+    );
+  }, [
+    dispatch,
+    debouncedSearch,
+    filters.pageNo,
+    filters.status,
+    globalPageSize,
+  ]);
+
+  // Event handlers
+  const handleCreateBrand = () => {
+    setModalState({
+      isOpen: true,
+      mode: ModalMode.CREATE_MODE,
+      productId: "",
+    });
+  };
+
+  const handleEditProduct = (product: ProductDetailResponseModel) => {
+    setModalState({
+      isOpen: true,
+      mode: ModalMode.UPDATE_MODE,
+      productId: product?.id || "",
+    });
+  };
+
+  const handleProductViewDetail = (product: ProductDetailResponseModel) => {
+    setDetailModalState({
+      isOpen: true,
+      productId: product.id || "",
+    });
+  };
+
+  const handleDeleteProduct = (product: ProductDetailResponseModel) => {
+    setDeleteState({
+      isOpen: true,
+      product: product,
+    });
+  };
+
+  const tableHandlers = useMemo(
+    () => ({
+      handleEditProduct,
+      handleProductViewDetail,
+      handleDeleteProduct,
+    }),
+    [],
   );
 
-  const [selectedSession, setSelectedSession] =
-    useState<UserSessionResponse | null>(null);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
-  const [isLogoutOthersDialogOpen, setIsLogoutOthersDialogOpen] =
-    useState(false);
-  const [isLogoutAllDialogOpen, setIsLogoutAllDialogOpen] = useState(false);
-  const [sessionToLogout, setSessionToLogout] =
-    useState<UserSessionResponse | null>(null);
-  const [isActionLoading, setIsActionLoading] = useState(false);
+  const columns = useMemo(
+    () =>
+      productTableColumns({
+        data: productData,
+        handlers: tableHandlers,
+      }),
+    [productState, tableHandlers],
+  );
 
-  // Load sessions on mount
-  useEffect(() => {
-    dispatch(getAllSessionsService());
-  }, [dispatch]);
-
-  // Get device icon based on device type
-  const getDeviceIcon = (deviceType: DeviceType) => {
-    switch (deviceType) {
-      case "MOBILE":
-        return <Smartphone className="h-5 w-5" />;
-      case "TABLET":
-        return <Tablet className="h-5 w-5" />;
-      case "DESKTOP":
-        return <Monitor className="h-5 w-5" />;
-      default:
-        return <Globe className="h-5 w-5" />;
-    }
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    dispatch(setSearchFilter(e.target.value));
   };
 
-  // Get status badge variant
-  const getStatusBadge = (status: SessionStatus, isCurrentSession: boolean) => {
-    if (isCurrentSession) {
-      return (
-        <Badge variant="default" className="bg-green-500">
-          Current Session
-        </Badge>
+  const handlePageChangeWrapper = (page: number) => {
+    dispatch(setPageNo(page));
+    handlePageChange(page);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    dispatch(setGlobalPageSize(size));
+    dispatch(setPageNo(1));
+  };
+
+  const handleDelete = async () => {
+    if (!deleteState.product?.id) return;
+
+    try {
+      await dispatch(deleteProductService(deleteState.product.id)).unwrap();
+
+      showToast.success(
+        `Product "${deleteState.product.name ?? ""}" deleted successfully`,
       );
-    }
 
-    switch (status) {
-      case "ACTIVE":
-        return (
-          <Badge variant="secondary" className="bg-green-100 text-green-700">
-            <CheckCircle2 className="h-3 w-3 mr-1" />
-            Active
-          </Badge>
-        );
-      case "LOGGED_OUT":
-        return (
-          <Badge variant="secondary" className="bg-gray-100 text-gray-700">
-            <XCircle className="h-3 w-3 mr-1" />
-            Logged Out
-          </Badge>
-        );
-      case "EXPIRED":
-        return (
-          <Badge variant="secondary" className="bg-red-100 text-red-700">
-            <XCircle className="h-3 w-3 mr-1" />
-            Expired
-          </Badge>
-        );
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+      closeDeleteModal();
+
+      // Navigate to previous page if this was the last item
+      if (productContent.length === 1 && pagination.currentPage > 1) {
+        const newPage = pagination.currentPage - 1;
+        dispatch(setPageNo(newPage));
+        updateUrlWithPage(newPage);
+      }
+    } catch (error: any) {
+      showToast.error(error || "Failed to delete product");
     }
   };
 
-  // Handle logout single session
-  const handleLogoutSession = async () => {
-    if (!sessionToLogout) return;
-
-    setIsActionLoading(true);
-    try {
-      await dispatch(logoutSessionService(sessionToLogout.id)).unwrap();
-      showToast.success("Session logged out successfully");
-      setIsLogoutDialogOpen(false);
-      setSessionToLogout(null);
-    } catch (err: any) {
-      showToast.error(err || "Failed to logout session");
-    } finally {
-      setIsActionLoading(false);
-    }
+  const closeModal = () => {
+    setModalState({
+      isOpen: false,
+      mode: ModalMode.CREATE_MODE,
+      productId: "",
+    });
   };
 
-  // Handle logout all other sessions
-  const handleLogoutOthers = async () => {
-    if (!currentSession) return;
-
-    setIsActionLoading(true);
-    try {
-      await dispatch(logoutOtherSessionsService(currentSession.id)).unwrap();
-      showToast.success("All other sessions logged out successfully");
-      setIsLogoutOthersDialogOpen(false);
-    } catch (err: any) {
-      showToast.error(err || "Failed to logout other sessions");
-    } finally {
-      setIsActionLoading(false);
-    }
+  const closeDetailModal = () => {
+    setDetailModalState({
+      isOpen: false,
+      productId: "",
+    });
   };
 
-  // Handle logout all sessions (including current)
-  const handleLogoutAll = async () => {
-    setIsActionLoading(true);
-    try {
-      await dispatch(logoutAllSessionsService()).unwrap();
-      showToast.success("All sessions logged out");
-      // Clear local tokens and redirect to login
-      clearAllTokens();
-      removeUserInfo();
-      router.replace(ROUTES.AUTH.LOGIN);
-    } catch (err: any) {
-      showToast.error(err || "Failed to logout all sessions");
-      // Still clear local state and redirect
-      clearAllTokens();
-      removeUserInfo();
-      router.replace(ROUTES.AUTH.LOGIN);
-    } finally {
-      setIsActionLoading(false);
-    }
+  const closeDeleteModal = () => {
+    setDeleteState({
+      isOpen: false,
+      product: null,
+    });
   };
 
-  // Open session detail
-  const handleViewSession = (session: UserSessionResponse) => {
-    setSelectedSession(session);
-    setIsDetailModalOpen(true);
+  const handleProductStatusChange = (status: ProductStatus) => {
+    dispatch(selectProductStatus(status));
   };
 
-  // Open logout confirmation
-  const handleConfirmLogout = (session: UserSessionResponse) => {
-    setSessionToLogout(session);
-    setIsLogoutDialogOpen(true);
+  const handleBrandChange = (brand: BrandResponseModel | null) => {
+    setSelectedBrand(brand);
   };
 
-  if (isLoading && sessions.length === 0) {
-    return <Loading />;
-  }
+  const handleCategoriesChange = (
+    categories: CategoriesResponseModel | null,
+  ) => {
+    setSelectedCategories(categories);
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">
-              Active Sessions
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Manage your active sessions and sign out from other devices
-            </p>
+    <div className="flex flex-1 flex-col gap-4 px-2">
+      <div className="space-y-4">
+        <CardHeaderSection
+          breadcrumbs={[
+            { label: "Dashboard", href: ROUTES.ADMIN.ROOT },
+            { label: "Product", href: "" },
+          ]}
+          title="Product Information"
+          searchValue={filters.search}
+          searchPlaceholder="Search product..."
+          buttonTooltip="Create a new product"
+          buttonIcon={<Plus className="w-3 h-3" />}
+          buttonText="New"
+          onSearchChange={handleSearchChange}
+          openModal={handleCreateBrand}
+        >
+          <div className="flex items-center gap-3">
+            <ComboboxSelectBrand
+              dataSelect={selectedBrand}
+              onChangeSelected={handleBrandChange}
+              placeholder="All Brand"
+              showAllOption={true}
+            />
+
+            <ComboboxSelectCategories
+              dataSelect={selectedCategories}
+              onChangeSelected={handleCategoriesChange}
+              placeholder="All Categires"
+              showAllOption={true}
+            />
+
+            <CustomSelect
+              options={PRODUCT_STATUS_FILTER}
+              value={filters.status}
+              placeholder="All Status"
+              onValueChange={(value) =>
+                handleProductStatusChange(value as ProductStatus)
+              }
+              label="Product Status"
+            />
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => dispatch(getAllSessionsService())}
-              disabled={isLoading}
-            >
-              <RefreshCw
-                className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
-              />
-              Refresh
-            </Button>
-          </div>
-        </div>
+        </CardHeaderSection>
 
-        {/* Action Buttons */}
-        <div className="flex gap-3 mb-6">
-          <Button
-            variant="outline"
-            onClick={() => setIsLogoutOthersDialogOpen(true)}
-            disabled={sessions.filter((s) => !s.isCurrentSession).length === 0}
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout Other Devices
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={() => setIsLogoutAllDialogOpen(true)}
-          >
-            <AlertTriangle className="h-4 w-4 mr-2" />
-            Logout Everywhere
-          </Button>
-        </div>
-
-        {/* Error Display */}
-        {error && (
-          <Card className="mb-4 border-destructive">
-            <CardContent className="p-4">
-              <p className="text-sm text-destructive">{error}</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Sessions List */}
-        <div className="space-y-4">
-          {sessions.map((session) => (
-            <Card
-              key={session.id}
-              className={`cursor-pointer hover:shadow-md transition-shadow ${
-                session.isCurrentSession ? "border-primary" : ""
-              }`}
-              onClick={() => handleViewSession(session)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    {/* Device Icon */}
-                    <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                        session.isCurrentSession
-                          ? "bg-primary/10 text-primary"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      {getDeviceIcon(session.deviceType)}
-                    </div>
-
-                    {/* Session Info */}
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-foreground">
-                          {session.deviceDisplayName || session.deviceName}
-                        </h3>
-                        {getStatusBadge(
-                          session.status,
-                          session.isCurrentSession,
-                        )}
-                      </div>
-                      <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Globe className="h-3 w-3" />
-                          {session.browser} · {session.operatingSystem}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {session.city}, {session.country}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          Last active{" "}
-                          {formatDistanceToNow(new Date(session.lastActiveAt), {
-                            addSuffix: true,
-                          })}
-                        </span>
-                        <span>IP: {session.ipAddress}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Action Button */}
-                  {!session.isCurrentSession && session.status === "ACTIVE" && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleConfirmLogout(session);
-                      }}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <LogOut className="h-4 w-4 mr-1" />
-                      Logout
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-
-          {sessions.length === 0 && !isLoading && (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <Monitor className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">
-                  No active sessions found
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+        {/* Data Table with Your Custom Pagination */}
+        <DataTableWithPagination
+          data={productContent}
+          columns={columns}
+          loading={isLoading}
+          emptyMessage="No product found"
+          getRowKey={(product) => product.id}
+          currentPage={filters.pageNo}
+          totalElements={pagination.totalElements}
+          totalPages={pagination.totalPages}
+          onPageChange={handlePageChangeWrapper}
+          pageSize={globalPageSize}
+          onPageSizeChange={handlePageSizeChange}
+          pageSizeOptions={AppDefault.PAGE_SIZE_OPTIONS}
+        />
       </div>
 
-      {/* Session Detail Modal */}
-      <SessionDetailModal
-        session={selectedSession}
-        isOpen={isDetailModalOpen}
-        onClose={() => {
-          setIsDetailModalOpen(false);
-          setSelectedSession(null);
-        }}
-        onLogout={handleConfirmLogout}
+      {/* Modals Add/Edit */}
+      <ProductModal
+        isOpen={modalState.isOpen}
+        onClose={closeModal}
+        productId={modalState.productId}
+        mode={modalState.mode}
       />
 
-      {/* Logout Single Session Confirmation */}
-      <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Logout This Session?</DialogTitle>
-            <DialogDescription>
-              This will end the session on{" "}
-              {sessionToLogout?.deviceDisplayName ||
-                sessionToLogout?.deviceName}
-              . The device will need to sign in again to access the account.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsLogoutDialogOpen(false)}
-              disabled={isActionLoading}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleLogoutSession}
-              disabled={isActionLoading}
-            >
-              {isActionLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <LogOut className="h-4 w-4 mr-2" />
-              )}
-              Logout
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Modals Product Detail */}
+      <ProductDetailModal
+        productId={detailModalState.productId}
+        isOpen={detailModalState.isOpen}
+        onClose={closeDetailModal}
+      />
 
-      {/* Logout Other Sessions Confirmation */}
-      <Dialog
-        open={isLogoutOthersDialogOpen}
-        onOpenChange={setIsLogoutOthersDialogOpen}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Logout All Other Devices?</DialogTitle>
-            <DialogDescription>
-              This will end all sessions except your current one. All other
-              devices will need to sign in again.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsLogoutOthersDialogOpen(false)}
-              disabled={isActionLoading}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleLogoutOthers}
-              disabled={isActionLoading}
-            >
-              {isActionLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <LogOut className="h-4 w-4 mr-2" />
-              )}
-              Logout Others
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Logout All Sessions Confirmation */}
-      <Dialog
-        open={isLogoutAllDialogOpen}
-        onOpenChange={setIsLogoutAllDialogOpen}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" />
-              Logout Everywhere?
-            </DialogTitle>
-            <DialogDescription>
-              <strong>Warning:</strong> This will end ALL sessions including
-              your current one. You will be redirected to the login page and all
-              devices will need to sign in again.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsLogoutAllDialogOpen(false)}
-              disabled={isActionLoading}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleLogoutAll}
-              disabled={isActionLoading}
-            >
-              {isActionLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <LogOut className="h-4 w-4 mr-2" />
-              )}
-              Logout Everywhere
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Modals Delete Product */}
+      <DeleteConfirmationModal
+        isOpen={deleteState.isOpen}
+        onClose={closeDeleteModal}
+        onDelete={handleDelete}
+        title="Delete Product"
+        description={`Are you sure you want to delete this product ${
+          deleteState.product?.name || ""
+        }?`}
+        itemName={deleteState.product?.name || ""}
+        isSubmitting={operations.isDeleting}
+      />
     </div>
   );
 }
