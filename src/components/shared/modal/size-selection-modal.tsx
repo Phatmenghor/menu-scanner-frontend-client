@@ -352,14 +352,12 @@ export function SizeSelectionModal({
               </div>
 
               {/* Total */}
-              {currentCartQuantity > 0 && (
-                <div className="flex justify-between items-center py-3 border-t mb-4">
-                  <span className="text-muted-foreground">Total</span>
-                  <span className="text-xl font-bold text-primary">
-                    {formatCurrency(displayPrice * currentCartQuantity)}
-                  </span>
-                </div>
-              )}
+              <div className="flex justify-between items-center py-3 border-t mb-4">
+                <span className="text-muted-foreground">Total</span>
+                <span className="text-xl font-bold text-primary">
+                  {formatCurrency(displayPrice * currentCartQuantity)}
+                </span>
+              </div>
 
               {/* Done button */}
               <CustomButton
