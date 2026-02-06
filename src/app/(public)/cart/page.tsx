@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -40,6 +40,9 @@ export default function CartPage() {
     loaded,
   } = useCartState();
 
+  // Refs for debounced API calls
+  const debounceTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
   useEffect(() => {
     if (!isAuthenticated) {
       router.push("/");
@@ -52,6 +55,7 @@ export default function CartPage() {
     }
   }, [isAuthenticated, loaded, loading.fetch, dispatch, router]);
 
+<<<<<<< HEAD
   // Optimistic update + background API call (no blocking)
   const handleUpdateQuantity = (
     productId: string,
@@ -118,6 +122,96 @@ export default function CartPage() {
         showToast.error(error?.message || "Failed to remove item");
       });
   };
+=======
+  // Cleanup debounce timers on unmount
+  useEffect(() => {
+    return () => {
+      debounceTimersRef.current.forEach((timer) => clearTimeout(timer));
+    };
+  }, []);
+
+  const handleUpdateQuantity = useCallback(
+    (
+      productId: string,
+      productSizeId: string | null,
+      newQuantity: number,
+    ) => {
+      const key = `${productId}_${productSizeId}`;
+
+      // Optimistic update immediately
+      dispatch(
+        updateLocalCartItem({
+          productId,
+          productSizeId,
+          quantity: newQuantity,
+        }),
+      );
+
+      if (newQuantity === 0) {
+        showToast.success("Item removed from cart");
+      }
+
+      // Debounce the API call
+      const existingTimer = debounceTimersRef.current.get(key);
+      if (existingTimer) clearTimeout(existingTimer);
+
+      debounceTimersRef.current.set(
+        key,
+        setTimeout(() => {
+          debounceTimersRef.current.delete(key);
+          dispatch(
+            updateCartItem({
+              productId,
+              productSizeId,
+              quantity: newQuantity,
+            }),
+          )
+            .unwrap()
+            .catch((error: any) => {
+              showToast.error(error?.message || "Failed to update cart");
+            });
+        }, 500),
+      );
+    },
+    [dispatch],
+  );
+
+  const handleRemoveItem = useCallback(
+    (productId: string, productSizeId: string | null) => {
+      const key = `${productId}_${productSizeId}`;
+
+      // Cancel any pending debounced update for this item
+      const existingTimer = debounceTimersRef.current.get(key);
+      if (existingTimer) clearTimeout(existingTimer);
+      debounceTimersRef.current.delete(key);
+
+      // Optimistic update immediately
+      dispatch(
+        updateLocalCartItem({
+          productId,
+          productSizeId,
+          quantity: 0,
+        }),
+      );
+
+      showToast.success("Item removed from cart");
+
+      // API call immediately for explicit remove
+      dispatch(
+        updateCartItem({
+          productId,
+          productSizeId,
+          quantity: 0,
+        }),
+      )
+        .unwrap()
+        .catch((error: any) => {
+          showToast.error(error?.message || "Failed to remove item");
+        });
+    },
+    [dispatch],
+  );
+>>>>>>> f797c9d1ca19c51a57b34b90ae42fa4b2d27fc00
 
   const handleClearCart = async () => {
     if (!confirm("Are you sure you want to clear your cart?")) return;
