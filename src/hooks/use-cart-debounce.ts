@@ -10,6 +10,16 @@ import { showToast } from "@/components/shared/common/show-toast";
 
 const DEBOUNCE_DELAY = 500;
 
+/** Check if error is from an aborted/superseded request */
+function isAbortError(error: any): boolean {
+  return (
+    error?.aborted ||
+    error?.name === "AbortError" ||
+    error?.message === "Aborted" ||
+    error?.message === "Request superseded"
+  );
+}
+
 /**
  * Hook that manages debounced cart API calls per item key.
  *
@@ -91,8 +101,8 @@ export function useCartDebounce(dispatch: AppDispatch) {
             })
             .catch((error: any) => {
               inFlightRef.current.delete(key);
-              // Silently ignore aborted requests
-              if (error?.aborted) return;
+              // Silently ignore aborted/superseded requests
+              if (isAbortError(error)) return;
               showToast.error(error?.message || "Failed to update cart");
             });
         }, DEBOUNCE_DELAY)
@@ -135,7 +145,8 @@ export function useCartDebounce(dispatch: AppDispatch) {
         })
         .catch((error: any) => {
           inFlightRef.current.delete(key);
-          if (error?.aborted) return;
+          // Silently ignore aborted/superseded requests
+          if (isAbortError(error)) return;
           showToast.error(error?.message || "Failed to update cart");
         });
     },

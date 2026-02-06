@@ -1,15 +1,39 @@
 import { deleteCookie, getCookie, setCookie } from "cookies-next";
+import { COOKIE_KEYS } from "@/constants/cookie-keys";
 
-// Cookie names
-const ACCESS_TOKEN_KEY = "auth-token-client";
-const REFRESH_TOKEN_KEY = "auth-refresh-token";
+// Cookie names - use centralized constants
+const ACCESS_TOKEN_KEY = COOKIE_KEYS.ACCESS_TOKEN;
+const REFRESH_TOKEN_KEY = COOKIE_KEYS.REFRESH_TOKEN;
+
+/**
+ * Calculate maxAge in seconds from a JWT token's exp claim.
+ * Falls back to the provided default if decoding fails.
+ */
+function getMaxAgeFromToken(
+  token: string,
+  fallbackSeconds: number
+): number {
+  try {
+    const decoded = decodeToken(token);
+    if (decoded?.exp) {
+      const now = Math.floor(Date.now() / 1000);
+      const remaining = decoded.exp - now;
+      // Use the remaining time if it's positive, otherwise use fallback
+      if (remaining > 0) return remaining;
+    }
+  } catch {
+    // ignore decode errors
+  }
+  return fallbackSeconds;
+}
 
 export function storeTokenRemember(token: string | undefined): void {
-  if (typeof window === "undefined") {
+  if (typeof window === "undefined" || !token) {
     return;
   }
 
-  setCookie(ACCESS_TOKEN_KEY, token, { maxAge: 365 * 24 * 60 * 60 });
+  const maxAge = getMaxAgeFromToken(token, 365 * 24 * 60 * 60);
+  setCookie(ACCESS_TOKEN_KEY, token, { maxAge });
 }
 
 export function getToken() {
@@ -17,24 +41,28 @@ export function getToken() {
   return token;
 }
 
+/**
+ * Store access token with expiry matching the JWT exp claim
+ */
 export function storeToken(token: string | undefined): void {
-  if (typeof window === "undefined") {
+  if (typeof window === "undefined" || !token) {
     return;
   }
 
-  setCookie(ACCESS_TOKEN_KEY, token);
+  const maxAge = getMaxAgeFromToken(token, 7 * 24 * 60 * 60); // fallback: 7 days
+  setCookie(ACCESS_TOKEN_KEY, token, { maxAge });
 }
 
 /**
- * Store refresh token in cookie
+ * Store refresh token with expiry matching the JWT exp claim
  */
 export function storeRefreshToken(refreshToken: string | undefined): void {
-  if (typeof window === "undefined") {
+  if (typeof window === "undefined" || !refreshToken) {
     return;
   }
 
-  // Store refresh token with longer expiry (30 days)
-  setCookie(REFRESH_TOKEN_KEY, refreshToken, { maxAge: 30 * 24 * 60 * 60 });
+  const maxAge = getMaxAgeFromToken(refreshToken, 30 * 24 * 60 * 60); // fallback: 30 days
+  setCookie(REFRESH_TOKEN_KEY, refreshToken, { maxAge });
 }
 
 /**
@@ -46,7 +74,7 @@ export function getRefreshToken(): string | undefined {
 }
 
 /**
- * Store both access and refresh tokens
+ * Store both access and refresh tokens with expiry from JWT exp claims
  */
 export function storeTokens(
   accessToken: string | undefined,
@@ -60,7 +88,6 @@ export function storeTokens(
  * Logout the current user
  */
 export function clearToken(): void {
-  // Delete auth cookie
   deleteCookie(ACCESS_TOKEN_KEY);
 }
 

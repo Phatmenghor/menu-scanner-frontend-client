@@ -12,6 +12,14 @@ import { createSelector } from "@reduxjs/toolkit";
 const selectAuthState = (state: RootState) => state.auth;
 
 /**
+ * Select if auth has been initialized from cookies
+ */
+export const selectAuthReady = createSelector(
+  [selectAuthState],
+  (auth) => auth.authReady
+);
+
+/**
  * Select if user is authenticated
  */
 export const selectIsAuthenticated = createSelector(

@@ -10,6 +10,7 @@ import { useInfiniteScroll } from "@/components/shared/common/use-infinite-scrol
 import { useScrollRestoration } from "@/hooks/use-scroll-restoration";
 import { useSkeletonCount, SkeletonPresets } from "@/hooks/use-skeleton-count";
 import { EmptyState } from "@/components/shared/empty-state";
+import { PageContainer } from "@/components/shared/common/page-container";
 import { useScrollAnchor } from "@/hooks/use-scroll-anchor";
 
 export default function BrandsPage() {
@@ -54,7 +55,7 @@ export default function BrandsPage() {
         pageNo: pagination.currentPage + 1,
         pageSize,
         status: "ACTIVE",
-        append: true, // Append to existing data
+        append: true,
       }).finally(() => {
         isLoadingRef.current = false;
       });
@@ -69,7 +70,7 @@ export default function BrandsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
+      <PageContainer className="py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">All Brands</h1>
@@ -82,7 +83,7 @@ export default function BrandsPage() {
 
         {/* Initial Loading */}
         {isInitialLoading && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
             {Array.from({ length: skeletonCount }).map((_, i) => (
               <BrandCardSkeleton key={i} />
             ))}
@@ -102,7 +103,7 @@ export default function BrandsPage() {
         {/* Brands Grid */}
         {!isInitialLoading && brands.length > 0 && (
           <div ref={containerRef}>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
               {brands.map((brand) => (
                 <BrandCard key={brand.id} brand={brand} />
               ))}
@@ -139,7 +140,7 @@ export default function BrandsPage() {
             )}
           </div>
         )}
-      </div>
+      </PageContainer>
     </div>
   );
 }

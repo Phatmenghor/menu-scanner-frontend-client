@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -10,6 +10,7 @@ import {
   ShoppingBag,
   ArrowLeft,
   CreditCard,
+  LogIn,
 } from "lucide-react";
 import { useCartState } from "@/redux/features/main/store/state/cart-state";
 import { useAuthState } from "@/redux/features/auth/store/state/auth-state";
@@ -25,10 +26,11 @@ import {
 } from "@/redux/features/main/store/thunks/cart-thunks";
 import { updateLocalCartItem } from "@/redux/features/main/store/slice/cart-slice";
 import { useCartDebounce, cartItemKey } from "@/hooks/use-cart-debounce";
+import { LoginModal } from "@/components/shared/modal/login-modal";
 
 export default function CartPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuthState();
+  const { isAuthenticated, authReady } = useAuthState();
   const {
     dispatch,
     items,
@@ -41,18 +43,21 @@ export default function CartPage() {
   } = useCartState();
 
   const { debouncedUpdate, immediateUpdate } = useCartDebounce(dispatch);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
 
   useEffect(() => {
+    // Wait for auth to initialize before doing anything
+    if (!authReady) return;
+
     if (!isAuthenticated) {
-      router.push("/");
-      showToast.error("Please login to view your cart");
+      // Don't redirect - show not-logged-in state instead
       return;
     }
 
     if (!loaded && !loading.fetch) {
       dispatch(fetchCart());
     }
-  }, [isAuthenticated, loaded, loading.fetch, dispatch, router]);
+  }, [authReady, isAuthenticated, loaded, loading.fetch, dispatch]);
 
   const handleUpdateQuantity = useCallback(
     (productId: string, productSizeId: string | null, newQuantity: number) => {
@@ -114,6 +119,64 @@ export default function CartPage() {
     showToast.success("Proceeding to checkout...");
     // router.push("/checkout");
   };
+
+  // Show loading skeleton while auth is initializing
+  if (!authReady) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          <Skeleton className="h-10 w-64 mb-8" />
+          <div className="grid lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-32 w-full" />
+              ))}
+            </div>
+            <div>
+              <Skeleton className="h-64 w-full" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show not-logged-in state
+  if (!isAuthenticated) {
+    return (
+      <div className="container mx-auto px-4 py-16">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="flex items-center justify-center w-24 h-24 rounded-full bg-primary/10 mx-auto mb-6">
+            <ShoppingBag className="h-12 w-12 text-primary" />
+          </div>
+          <h1 className="text-3xl font-bold mb-4">Your Cart</h1>
+          <p className="text-muted-foreground mb-8">
+            Please sign in to view your cart and start shopping.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <CustomButton
+              onClick={() => setLoginModalOpen(true)}
+              size="lg"
+              className="gap-2"
+            >
+              <LogIn className="h-5 w-5" />
+              Sign In
+            </CustomButton>
+            <CustomButton
+              variant="outline"
+              onClick={() => router.push("/products")}
+              size="lg"
+              className="gap-2"
+            >
+              <ShoppingBag className="h-5 w-5" />
+              Browse Products
+            </CustomButton>
+          </div>
+        </div>
+        <LoginModal open={loginModalOpen} onOpenChange={setLoginModalOpen} />
+      </div>
+    );
+  }
 
   if (loading.fetch && !loaded) {
     return (

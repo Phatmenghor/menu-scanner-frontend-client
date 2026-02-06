@@ -3,13 +3,16 @@
 
 import { useEffect, useRef } from "react";
 import { useAuthState } from "@/redux/features/auth/store/state/auth-state";
-import { setUser } from "@/redux/features/auth/store/slice/auth-slice";
+import {
+  setUser,
+  setAuthReady,
+} from "@/redux/features/auth/store/slice/auth-slice";
 import { getProfileService } from "@/redux/features/auth/store/thunks/auth-thunks";
 import { getToken } from "@/utils/local-storage/token";
 import { getUserInfo } from "@/utils/local-storage/userInfo";
 
 export function useAuthInit() {
-  const { dispatch, isAuthenticated } = useAuthState();
+  const { dispatch, isAuthenticated, authReady } = useAuthState();
   const isInitialized = useRef(false);
 
   useEffect(() => {
@@ -26,7 +29,7 @@ export function useAuthInit() {
         const userInfo = getUserInfo();
 
         if (userInfo) {
-          // Restore user to Redux state
+          // Restore user to Redux state (this also sets authReady = true)
           dispatch(setUser(userInfo));
 
           // Fetch fresh profile data
@@ -35,12 +38,18 @@ export function useAuthInit() {
           } catch (error) {
             console.error("Failed to fetch profile:", error);
           }
+        } else {
+          // Token exists but no user info - mark auth as ready
+          dispatch(setAuthReady());
         }
+      } else {
+        // No token found - mark auth as ready (not authenticated)
+        dispatch(setAuthReady());
       }
     };
 
     initAuth();
   }, [dispatch]);
 
-  return { isAuthenticated };
+  return { isAuthenticated, authReady };
 }

@@ -38,6 +38,7 @@ interface ExtendedAuthState extends AuthState {
  */
 const initialState: ExtendedAuthState = {
   isAuthenticated: false,
+  authReady: false,
   user: null,
   profile: null,
   isLoading: false,
@@ -61,6 +62,14 @@ const authSlice = createSlice({
     setUser: (state, action: PayloadAction<UserAuthResponseModel>) => {
       state.user = action.payload;
       state.isAuthenticated = !!action.payload.accessToken;
+      state.authReady = true;
+    },
+
+    /**
+     * Mark auth initialization as complete (even when no token found)
+     */
+    setAuthReady: (state) => {
+      state.authReady = true;
     },
 
     /**
@@ -116,6 +125,7 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.user = action.payload;
         state.isAuthenticated = !!action.payload.accessToken;
+        state.authReady = true;
 
         // Store authentication data (access + refresh tokens)
         if (action.payload.accessToken) {
@@ -336,6 +346,7 @@ const authSlice = createSlice({
 
 export const {
   setUser,
+  setAuthReady,
   logout,
   clearError,
   setSocialSync,

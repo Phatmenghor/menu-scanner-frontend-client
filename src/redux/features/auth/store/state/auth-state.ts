@@ -7,6 +7,7 @@ import {
   selectError,
   selectIsLoading,
   selectIsAuthenticated,
+  selectAuthReady,
   selectUser,
   selectProfile,
   selectIsProfileLoading,
@@ -25,6 +26,7 @@ export const useAuthState = () => {
   const isProfileLoading = useAppSelector(selectIsProfileLoading);
   const error = useAppSelector(selectError);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const authReady = useAppSelector(selectAuthReady);
   const user = useAppSelector(selectUser);
   const profile = useAppSelector(selectProfile);
   const fullName = useAppSelector(selectUserFullName);
@@ -41,6 +43,7 @@ export const useAuthState = () => {
 
     // Auth state
     isAuthenticated,
+    authReady,
     user,
     profile,
 

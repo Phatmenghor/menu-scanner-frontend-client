@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Heart, ShoppingCart, Trash2, ArrowLeft } from "lucide-react";
+import { Heart, ShoppingCart, Trash2, ArrowLeft, LogIn } from "lucide-react";
 import { useFavoriteState } from "@/redux/features/main/store/state/favorite-state";
 import { useCartState } from "@/redux/features/main/store/state/cart-state";
 import { useAuthState } from "@/redux/features/auth/store/state/auth-state";
-import { isAuthenticated as checkTokenExists } from "@/utils/local-storage/token";
 import {
   fetchFavoriteList,
   toggleFavorite,
@@ -17,16 +16,24 @@ import { ProductCard } from "@/components/shared/card/product-card";
 import { ProductCardSkeleton } from "@/components/shared/skeletons/product-card-skeleton";
 import { CustomButton } from "@/components/shared/button/custom-button";
 import { showToast } from "@/components/shared/common/show-toast";
+import { LoginModal } from "@/components/shared/modal/login-modal";
 
 export default function FavoritesPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuthState();
+  const { isAuthenticated, authReady } = useAuthState();
   const { dispatch, items, totalItems, loading, loaded } = useFavoriteState();
   const { dispatch: cartDispatch } = useCartState();
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchFavoriteList());
-  }, [isAuthenticated, dispatch, router]);
+    // Wait for auth to initialize before fetching
+    if (!authReady) return;
+
+    // Only fetch favorites when authenticated
+    if (isAuthenticated && !loaded) {
+      dispatch(fetchFavoriteList());
+    }
+  }, [authReady, isAuthenticated, loaded, dispatch]);
 
   // Service 3: Remove one favorite
   const handleRemoveOne = async (productId: string) => {
@@ -58,6 +65,59 @@ export default function FavoritesPage() {
       showToast.error(error?.message || "Failed to move to cart");
     }
   };
+
+  // Show loading skeleton while auth is initializing
+  if (!authReady) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="h-10 w-64 bg-muted rounded mb-8 animate-pulse" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show not-logged-in state
+  if (!isAuthenticated) {
+    return (
+      <div className="container mx-auto px-4 py-16">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="flex items-center justify-center w-24 h-24 rounded-full bg-red-50 mx-auto mb-6">
+            <Heart className="h-12 w-12 text-red-500" />
+          </div>
+          <h1 className="text-3xl font-bold mb-4">My Favorites</h1>
+          <p className="text-muted-foreground mb-8">
+            Please sign in to view and manage your favorite items.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <CustomButton
+              onClick={() => setLoginModalOpen(true)}
+              size="lg"
+              className="gap-2"
+            >
+              <LogIn className="h-5 w-5" />
+              Sign In
+            </CustomButton>
+            <CustomButton
+              variant="outline"
+              onClick={() => router.push("/products")}
+              size="lg"
+              className="gap-2"
+            >
+              <ShoppingCart className="h-5 w-5" />
+              Browse Products
+            </CustomButton>
+          </div>
+        </div>
+        <LoginModal open={loginModalOpen} onOpenChange={setLoginModalOpen} />
+      </div>
+    );
+  }
 
   if (loading.fetch && !loaded) {
     return (

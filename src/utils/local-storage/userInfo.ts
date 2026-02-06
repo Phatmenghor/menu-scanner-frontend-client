@@ -1,18 +1,21 @@
 // utils/local-storage/userInfo.ts
 import { getCookie, setCookie, deleteCookie } from "cookies-next";
+import { COOKIE_KEYS } from "@/constants/cookie-keys";
+
+const USER_INFO_KEY = COOKIE_KEYS.USER_INFO;
 
 export function storeUserInfo(userInfo: any): void {
   if (typeof window === "undefined") {
     return;
   }
 
-  setCookie("user-info", JSON.stringify(userInfo), {
+  setCookie(USER_INFO_KEY, JSON.stringify(userInfo), {
     maxAge: 365 * 24 * 60 * 60,
   });
 }
 
 export function getUserInfo() {
-  const userInfo = getCookie("user-info");
+  const userInfo = getCookie(USER_INFO_KEY);
 
   if (userInfo) {
     try {
@@ -27,5 +30,5 @@ export function getUserInfo() {
 }
 
 export function removeUserInfo(): void {
-  deleteCookie("user-info");
+  deleteCookie(USER_INFO_KEY);
 }
