@@ -71,6 +71,11 @@ export default function CartPage() {
       showToast.success("Item removed from cart");
     }
 
+    console.log("### Dispatched local update for cart item quantity change", {
+      productId,
+      productSizeId,
+      newQuantity,
+    });
     // API call in background (not awaited, not blocking)
     dispatch(
       updateCartItem({
