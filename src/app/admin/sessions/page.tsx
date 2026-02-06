@@ -11,71 +11,53 @@ import { DataTableWithPagination } from "@/components/shared/common/data-table";
 import { showToast } from "@/components/shared/common/show-toast";
 import { ModalMode, ProductStatus, Status } from "@/constants/status/status";
 import { usePagination } from "@/redux/store/use-pagination";
-import { useProductState } from "@/redux/features/business/store/state/product-state";
-import { ProductDetailResponseModel } from "@/redux/features/business/store/models/response/product-response";
-import {
-  deleteProductService,
-  fetchAllProductAdminService,
-} from "@/redux/features/business/store/thunks/product-thunks";
-import {
-  selectProductStatus,
-  setPageNo,
-  setSearchFilter,
-  resetState,
-} from "@/redux/features/business/store/slice/product-slice";
-import { productTableColumns } from "@/redux/features/business/table/product-table";
-import ProductModal from "@/redux/features/business/components/product-modal";
-import { ProductDetailModal } from "@/redux/features/business/components/product-detail-modal";
+
 import { CustomSelect } from "@/components/shared/common/custom-select";
 import { PRODUCT_STATUS_FILTER } from "@/constants/status/filter-status";
-import { ComboboxSelectBrand } from "@/components/shared/combobox/combobox_select_brand";
-import { ComboboxSelectCategories } from "@/components/shared/combobox/combobox_select_categories";
-import { CategoriesResponseModel } from "@/redux/features/master-data/store/models/response/categories-response";
-import { BrandResponseModel } from "@/redux/features/master-data/store/models/response/brand-response";
 import { useAdminCleanup } from "@/hooks/use-cleanup-on-unmount";
 import { AppDefault } from "@/constants/app-resource/default/default";
 import { setGlobalPageSize } from "@/redux/store/slices/global-settings-slice";
 import { selectGlobalPageSize } from "@/redux/store/selectors/global-settings-selectors";
 import { useAppSelector } from "@/redux/store";
+import {
+  resetState,
+  setPageNo,
+  setSearchFilter,
+} from "@/redux/features/sessions/store/slice/session-slice";
+import { useSessionState } from "@/redux/features/sessions/store/state/session-state";
+import { SessionResponseModel } from "@/redux/features/sessions/store/models/response/session-response";
+import {
+  deleteSessionByIDService,
+  fetchAllSessionsService,
+} from "@/redux/features/sessions/store/thunks/session-thunks";
+import { sessionTableColumns } from "@/redux/features/sessions/table/session-table";
+import { SessionsDetailModal } from "@/redux/features/sessions/components/session-detail-modal";
 
-export default function ProductPage() {
+export default function SessionPage() {
   // Clean up state when leaving admin area (performance optimization)
   useAdminCleanup(resetState);
   const searchParams = useSearchParams();
 
   // Redux state
   const {
-    productState,
-    productData,
-    productContent,
+    sessionState,
+    sessionsData,
+    sessionsContent,
     isLoading,
     filters,
     operations,
     pagination,
     dispatch,
-  } = useProductState();
-
-  // Local UI state for modals only
-  const [modalState, setModalState] = useState({
-    isOpen: false,
-    mode: ModalMode.CREATE_MODE,
-    productId: "",
-  });
-
-  const [selectedBrand, setSelectedBrand] = useState<BrandResponseModel | null>(
-    null,
-  );
-  const [selectedCategories, setSelectedCategories] =
-    useState<CategoriesResponseModel | null>(null);
+  } = useSessionState();
 
   const [detailModalState, setDetailModalState] = useState({
     isOpen: false,
-    productId: "",
+    sessionId: "",
   });
 
   const [deleteState, setDeleteState] = useState({
     isOpen: false,
-    product: null as ProductDetailResponseModel | null,
+    session: null as SessionResponseModel | null,
   });
 
   // Global page size from global settings (synced across all admin pages)
@@ -84,7 +66,7 @@ export default function ProductPage() {
   const debouncedSearch = useDebounce(filters.search, 400);
 
   const { updateUrlWithPage, handlePageChange } = usePagination({
-    baseRoute: ROUTES.ADMIN.PRODUCTS,
+    baseRoute: ROUTES.ADMIN.SESSIONS,
   });
 
   // Initialize URL and Redux state on mount
@@ -99,69 +81,43 @@ export default function ProductPage() {
 
   useEffect(() => {
     dispatch(
-      fetchAllProductAdminService({
+      fetchAllSessionsService({
         search: debouncedSearch,
         pageNo: filters.pageNo,
         pageSize: globalPageSize,
-        status:
-          filters.status == ProductStatus.ALL ? undefined : filters.status,
       }),
     );
-  }, [
-    dispatch,
-    debouncedSearch,
-    filters.pageNo,
-    filters.status,
-    globalPageSize,
-  ]);
+  }, [dispatch, debouncedSearch, filters.pageNo, globalPageSize]);
 
-  // Event handlers
-  const handleCreateBrand = () => {
-    setModalState({
-      isOpen: true,
-      mode: ModalMode.CREATE_MODE,
-      productId: "",
-    });
-  };
-
-  const handleEditProduct = (product: ProductDetailResponseModel) => {
-    setModalState({
-      isOpen: true,
-      mode: ModalMode.UPDATE_MODE,
-      productId: product?.id || "",
-    });
-  };
-
-  const handleProductViewDetail = (product: ProductDetailResponseModel) => {
+  const handleSessionViewDetail = (session: SessionResponseModel) => {
     setDetailModalState({
       isOpen: true,
-      productId: product.id || "",
+      sessionId: session.id || "",
     });
   };
 
-  const handleDeleteProduct = (product: ProductDetailResponseModel) => {
+  const handleDeleteSession = (session: SessionResponseModel) => {
     setDeleteState({
       isOpen: true,
-      product: product,
+      session: session,
     });
   };
 
   const tableHandlers = useMemo(
     () => ({
-      handleEditProduct,
-      handleProductViewDetail,
-      handleDeleteProduct,
+      handleSessionViewDetail,
+      handleDeleteSession,
     }),
     [],
   );
 
   const columns = useMemo(
     () =>
-      productTableColumns({
-        data: productData,
+      sessionTableColumns({
+        data: sessionsData,
         handlers: tableHandlers,
       }),
-    [productState, tableHandlers],
+    [sessionState, tableHandlers],
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -179,62 +135,40 @@ export default function ProductPage() {
   };
 
   const handleDelete = async () => {
-    if (!deleteState.product?.id) return;
+    if (!deleteState.session?.id) return;
 
     try {
-      await dispatch(deleteProductService(deleteState.product.id)).unwrap();
+      await dispatch(deleteSessionByIDService(deleteState.session.id)).unwrap();
 
       showToast.success(
-        `Product "${deleteState.product.name ?? ""}" deleted successfully`,
+        `Session "${deleteState.session.deviceDisplayName ?? ""}" deleted successfully`,
       );
 
       closeDeleteModal();
 
       // Navigate to previous page if this was the last item
-      if (productContent.length === 1 && pagination.currentPage > 1) {
+      if (sessionsContent.length === 1 && pagination.currentPage > 1) {
         const newPage = pagination.currentPage - 1;
         dispatch(setPageNo(newPage));
         updateUrlWithPage(newPage);
       }
     } catch (error: any) {
-      showToast.error(error || "Failed to delete product");
+      showToast.error(error || "Failed to delete session");
     }
-  };
-
-  const closeModal = () => {
-    setModalState({
-      isOpen: false,
-      mode: ModalMode.CREATE_MODE,
-      productId: "",
-    });
   };
 
   const closeDetailModal = () => {
     setDetailModalState({
       isOpen: false,
-      productId: "",
+      sessionId: "",
     });
   };
 
   const closeDeleteModal = () => {
     setDeleteState({
       isOpen: false,
-      product: null,
+      session: null,
     });
-  };
-
-  const handleProductStatusChange = (status: ProductStatus) => {
-    dispatch(selectProductStatus(status));
-  };
-
-  const handleBrandChange = (brand: BrandResponseModel | null) => {
-    setSelectedBrand(brand);
-  };
-
-  const handleCategoriesChange = (
-    categories: CategoriesResponseModel | null,
-  ) => {
-    setSelectedCategories(categories);
   };
 
   return (
@@ -243,51 +177,22 @@ export default function ProductPage() {
         <CardHeaderSection
           breadcrumbs={[
             { label: "Dashboard", href: ROUTES.ADMIN.ROOT },
-            { label: "Product", href: "" },
+            { label: "Sessions", href: "" },
           ]}
-          title="Product Information"
+          title="Session Information"
           searchValue={filters.search}
-          searchPlaceholder="Search product..."
-          buttonTooltip="Create a new product"
+          searchPlaceholder="Search session..."
           buttonIcon={<Plus className="w-3 h-3" />}
-          buttonText="New"
           onSearchChange={handleSearchChange}
-          openModal={handleCreateBrand}
-        >
-          <div className="flex items-center gap-3">
-            <ComboboxSelectBrand
-              dataSelect={selectedBrand}
-              onChangeSelected={handleBrandChange}
-              placeholder="All Brand"
-              showAllOption={true}
-            />
-
-            <ComboboxSelectCategories
-              dataSelect={selectedCategories}
-              onChangeSelected={handleCategoriesChange}
-              placeholder="All Categires"
-              showAllOption={true}
-            />
-
-            <CustomSelect
-              options={PRODUCT_STATUS_FILTER}
-              value={filters.status}
-              placeholder="All Status"
-              onValueChange={(value) =>
-                handleProductStatusChange(value as ProductStatus)
-              }
-              label="Product Status"
-            />
-          </div>
-        </CardHeaderSection>
+        ></CardHeaderSection>
 
         {/* Data Table with Your Custom Pagination */}
         <DataTableWithPagination
-          data={productContent}
+          data={sessionsContent}
           columns={columns}
           loading={isLoading}
-          emptyMessage="No product found"
-          getRowKey={(product) => product.id}
+          emptyMessage="No session found"
+          getRowKey={(session) => session.id}
           currentPage={filters.pageNo}
           totalElements={pagination.totalElements}
           totalPages={pagination.totalPages}
@@ -298,31 +203,23 @@ export default function ProductPage() {
         />
       </div>
 
-      {/* Modals Add/Edit */}
-      <ProductModal
-        isOpen={modalState.isOpen}
-        onClose={closeModal}
-        productId={modalState.productId}
-        mode={modalState.mode}
-      />
-
-      {/* Modals Product Detail */}
-      <ProductDetailModal
-        productId={detailModalState.productId}
+      {/* Modals Session Detail */}
+      <SessionsDetailModal
+        sessionId={detailModalState.sessionId}
         isOpen={detailModalState.isOpen}
         onClose={closeDetailModal}
       />
 
-      {/* Modals Delete Product */}
+      {/* Modals Delete Session */}
       <DeleteConfirmationModal
         isOpen={deleteState.isOpen}
         onClose={closeDeleteModal}
         onDelete={handleDelete}
-        title="Delete Product"
-        description={`Are you sure you want to delete this product ${
-          deleteState.product?.name || ""
+        title="Delete Session"
+        description={`Are you sure you want to delete this session ${
+          deleteState.session?.deviceDisplayName || ""
         }?`}
-        itemName={deleteState.product?.name || ""}
+        itemName={deleteState.session?.deviceDisplayName || ""}
         isSubmitting={operations.isDeleting}
       />
     </div>

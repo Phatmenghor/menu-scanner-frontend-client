@@ -1,6 +1,6 @@
 import { indexDisplay } from "@/utils/common/common";
 import { dateTimeFormat } from "@/utils/date/date-time-format";
-import { Edit, Eye, Trash } from "lucide-react";
+import { Eye, Trash } from "lucide-react";
 import { TableColumn } from "@/components/shared/common/data-table";
 
 import { ActionButton } from "@/components/shared/button/action-button";
@@ -39,14 +39,105 @@ export const sessionTableColumns = ({
     },
 
     {
+      key: "userIdentifier",
+      label: "User Identifier",
+      minWidth: "10px",
+      maxWidth: "400px",
+      truncate: true,
+      render: (session) => (
+        <span className="text-xs text-muted-foreground">
+          {session?.userIdentifier || "---"}
+        </span>
+      ),
+    },
+
+    {
+      key: "userFullName",
+      label: "User Full Name",
+      minWidth: "10px",
+      maxWidth: "400px",
+      truncate: true,
+      render: (session) => (
+        <span className="text-xs text-muted-foreground">
+          {session?.userFullName || "---"}
+        </span>
+      ),
+    },
+
+    {
+      key: "deviceDisplayName",
+      label: "Device Display Name",
+      minWidth: "10px",
+      maxWidth: "400px",
+      truncate: true,
+      render: (session) => (
+        <span className="text-xs text-muted-foreground">
+          {session?.deviceDisplayName || "---"}
+        </span>
+      ),
+    },
+
+    {
+      key: "deviceType",
+      label: "Device Type",
+      minWidth: "10px",
+      maxWidth: "400px",
+      truncate: true,
+      render: (session) => (
+        <span className="text-xs text-muted-foreground">
+          {session?.deviceType || "---"}
+        </span>
+      ),
+    },
+
+    {
+      key: "ipAddress",
+      label: "IP Address",
+      minWidth: "10px",
+      maxWidth: "400px",
+      truncate: true,
+      render: (session) => (
+        <span className="text-xs text-muted-foreground">
+          {session?.ipAddress || "---"}
+        </span>
+      ),
+    },
+
+    {
       key: "status",
       label: "Status",
       minWidth: "10px",
       maxWidth: "400px",
       truncate: true,
-      render: (deliveryOptions) => (
+      render: (session) => (
         <span className="text-xs text-muted-foreground">
-          {deliveryOptions?.status || "---"}
+          {session?.status || "---"}
+        </span>
+      ),
+    },
+
+    {
+      key: "lastActiveAt",
+      label: "Last Active At",
+      minWidth: "10px",
+      maxWidth: "400px",
+      truncate: true,
+      render: (session) => (
+        <span className="text-xs text-muted-foreground">
+          {dateTimeFormat(session?.lastActiveAt)}
+        </span>
+      ),
+    },
+
+    {
+      key: "loggedOutAt",
+      label: "Logged Out At",
+      minWidth: "10px",
+      maxWidth: "400px",
+      truncate: true,
+      render: (session) => (
+        <span className="text-xs text-muted-foreground">
+          {dateTimeFormat(session?.loggedOutAt)}
         </span>
       ),
     },
@@ -56,9 +147,9 @@ export const sessionTableColumns = ({
       label: "Created At",
       minWidth: "10px",
       maxWidth: "400px",
-      render: (deliveryOptions) => (
+      render: (session) => (
         <span className="text-sm text-muted-foreground">
-          {dateTimeFormat(deliveryOptions?.createdAt)}
+          {dateTimeFormat(session?.createdAt)}
         </span>
       ),
     },

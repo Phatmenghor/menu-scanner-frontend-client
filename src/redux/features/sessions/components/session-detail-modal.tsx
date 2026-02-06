@@ -61,8 +61,76 @@ export function SessionsDetailModal({
           {/* Session Information */}
           <DetailSection title="Personal Information">
             <DetailRow
+              label="User Identifier"
+              value={sessionData?.userIdentifier || "---"}
+            />
+
+            <DetailRow
               label="User Full Name"
               value={sessionData?.userFullName || "---"}
+            />
+
+            <DetailRow
+              label="Device ID"
+              value={sessionData?.deviceId || "---"}
+            />
+
+            <DetailRow
+              label="Device Name"
+              value={sessionData?.deviceName || "---"}
+            />
+
+            <DetailRow
+              label="Device type"
+              value={sessionData?.deviceType || "---"}
+            />
+
+            <DetailRow
+              label="Device Display Name"
+              value={sessionData?.deviceDisplayName || "---"}
+            />
+
+            <DetailRow label="Browser" value={sessionData?.browser || "---"} />
+
+            <DetailRow
+              label="Operating System"
+              value={sessionData?.operatingSystem || "---"}
+            />
+            <DetailRow
+              label="IP Address"
+              value={sessionData?.ipAddress || "---"}
+            />
+
+            <DetailRow
+              label="Location"
+              value={sessionData?.location || "---"}
+            />
+
+            <DetailRow label="Status" value={sessionData?.status || "---"} />
+
+            <DetailRow
+              label="Login At"
+              value={dateTimeFormat(sessionData?.loginAt ?? "")}
+            />
+
+            <DetailRow
+              label="Last Active At"
+              value={dateTimeFormat(sessionData?.lastActiveAt ?? "")}
+            />
+
+            <DetailRow
+              label="Logged Out At"
+              value={dateTimeFormat(sessionData?.loggedOutAt ?? "")}
+            />
+
+            <DetailRow
+              label="Logout Reason"
+              value={sessionData?.logoutReason || "---"}
+            />
+
+            <DetailRow
+              label="Current Session"
+              value={sessionData?.isCurrentSession ? "Yes" : "No"}
             />
           </DetailSection>
 
