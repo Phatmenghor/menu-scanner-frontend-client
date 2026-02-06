@@ -18,10 +18,8 @@ yarn.lock
 .yarnrc.yml
 .yarn/install-state.gz
 
-# Yarn Berry (ignore all by default)
+# Yarn Berry (optional folders)
 .yarn/*
-# If you WANT Yarn Berry reproducible installs, comment the line above
-# and uncomment the lines below instead:
 # !.yarn/patches
 # !.yarn/plugins
 # !.yarn/releases
