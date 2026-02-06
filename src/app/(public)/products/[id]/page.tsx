@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -12,10 +12,6 @@ import { usePublicProductState } from "@/redux/features/main/store/state/public-
 import { useCartState } from "@/redux/features/main/store/state/cart-state";
 import { useFavoriteState } from "@/redux/features/main/store/state/favorite-state";
 import { useAuthState } from "@/redux/features/auth/store/state/auth-state";
-import {
-  addToCart,
-  updateCartItem,
-} from "@/redux/features/main/store/thunks/cart-thunks";
 import {
   addLocalCartItem,
   updateLocalCartItem,
@@ -46,6 +42,7 @@ import {
 import { CustomButton } from "@/components/shared/button/custom-button";
 import { cn } from "@/lib/utils";
 import { useScrollToTop } from "@/hooks/use-scroll-restoration";
+import { useCartDebounce, cartItemKey } from "@/hooks/use-cart-debounce";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -73,9 +70,8 @@ export default function ProductDetailPage() {
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
-  // Refs for debounced API calls and tracking known quantities
-  const apiDebounceRef = useRef<NodeJS.Timeout | null>(null);
-  const knownQtyRef = useRef<Map<string, number>>(new Map());
+  // Debounced cart API calls (aborts stale in-flight requests)
+  const { debouncedUpdate } = useCartDebounce(cartDispatch);
 
   // Get cart quantity for selected size or product
   const getCartQuantityForSize = useCallback(
@@ -157,13 +153,6 @@ export default function ProductDetailPage() {
     }
   }, [product, productId, dispatch]);
 
-  // Cleanup debounce on unmount
-  useEffect(() => {
-    return () => {
-      if (apiDebounceRef.current) clearTimeout(apiDebounceRef.current);
-    };
-  }, []);
-
   // Image navigation
   const handlePrevImage = () => {
     const newIndex =
@@ -220,11 +209,9 @@ export default function ProductDetailPage() {
       }
 
       const sizeId = selectedSize?.id || null;
-      const key = `${product.id}_${sizeId}`;
-      const knownQty =
-        knownQtyRef.current.get(key) ?? getCartQuantityForSize(sizeId);
-      const price =
-        selectedSize?.finalPrice || product.displayPrice || 0;
+      const key = cartItemKey(product.id, sizeId);
+      const currentQty = getCartQuantityForSize(sizeId);
+      const price = selectedSize?.finalPrice || product.displayPrice || 0;
       const origPrice =
         (selectedSize?.hasPromotion
           ? selectedSize.price
@@ -234,7 +221,7 @@ export default function ProductDetailPage() {
         : product.hasActivePromotion;
 
       // Optimistic update
-      if (knownQty === 0 && newQuantity > 0) {
+      if (currentQty === 0 && newQuantity > 0) {
         cartDispatch(
           addLocalCartItem({
             productId: product.id,
@@ -258,44 +245,10 @@ export default function ProductDetailPage() {
         );
       }
 
-      knownQtyRef.current.set(key, newQuantity);
-
-      // Debounced API call
-      if (apiDebounceRef.current) clearTimeout(apiDebounceRef.current);
-      apiDebounceRef.current = setTimeout(() => {
-        const latestQty = knownQtyRef.current.get(key) ?? newQuantity;
-
-        if (latestQty > 0) {
-          cartDispatch(
-            addToCart({
-              productId: product.id,
-              productSizeId: sizeId,
-              quantity: latestQty,
-            })
-          )
-            .unwrap()
-            .catch((error: any) => {
-              showToast.error(error?.message || "Failed to update cart");
-            });
-        } else {
-          cartDispatch(
-            updateCartItem({
-              productId: product.id,
-              productSizeId: sizeId,
-              quantity: 0,
-            })
-          )
-            .unwrap()
-            .then(() => {
-              showToast.success("Removed from cart");
-            })
-            .catch((error: any) => {
-              showToast.error(error?.message || "Failed to update cart");
-            });
-        }
-      }, 500);
+      // Debounced API call (aborts previous in-flight request for this key)
+      debouncedUpdate(key, product.id, sizeId, newQuantity);
     },
-    [product, selectedSize, isAuthenticated, cartDispatch, getCartQuantityForSize]
+    [product, selectedSize, isAuthenticated, cartDispatch, getCartQuantityForSize, debouncedUpdate]
   );
 
   // Favorite toggle handler

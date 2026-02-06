@@ -202,6 +202,9 @@ const cartSlice = createSlice({
       )
       .addCase(addToCart.rejected, (state, action) => {
         state.loading.add = false;
+        // Silently ignore aborted requests (superseded by newer debounced call)
+        const payload = action.payload as any;
+        if (payload?.aborted) return;
         state.error = action.error.message || "Failed to add item to cart";
       })
 
@@ -220,6 +223,9 @@ const cartSlice = createSlice({
       )
       .addCase(updateCartItem.rejected, (state, action) => {
         state.loading.update = false;
+        // Silently ignore aborted requests (superseded by newer debounced call)
+        const payload = action.payload as any;
+        if (payload?.aborted) return;
         state.error = action.error.message || "Failed to update cart item";
       })
 

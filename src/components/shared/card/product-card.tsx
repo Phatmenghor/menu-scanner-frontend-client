@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, ShoppingCart, Plus, Minus, Ruler } from "lucide-react";
@@ -17,15 +17,13 @@ import { useAuthState } from "@/redux/features/auth/store/state/auth-state";
 import { appImages } from "@/constants/app-resource/icons/app-images";
 import { LoginModal } from "../modal/login-modal";
 import { useFavoriteState } from "@/redux/features/main/store/state/favorite-state";
-import {
-  addToCart,
-  updateCartItem,
-} from "@/redux/features/main/store/thunks/cart-thunks";
+import { addToCart } from "@/redux/features/main/store/thunks/cart-thunks";
 import {
   addLocalCartItem,
   updateLocalCartItem,
 } from "@/redux/features/main/store/slice/cart-slice";
 import { SizeSelectionModal } from "../modal/size-selection-modal";
+import { useCartDebounce, cartItemKey } from "@/hooks/use-cart-debounce";
 
 interface ProductCardProps {
   product: ProductDetailResponseModel;
@@ -45,15 +43,8 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSizeModal, setShowSizeModal] = useState(false);
 
-  // Ref for debounced API calls
-  const apiDebounceRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Cleanup debounce on unmount
-  useEffect(() => {
-    return () => {
-      if (apiDebounceRef.current) clearTimeout(apiDebounceRef.current);
-    };
-  }, []);
+  // Debounced cart API calls (aborts stale in-flight requests)
+  const { debouncedUpdate } = useCartDebounce(cartDispatch);
 
   // Get current cart item for this product (without size)
   const cartItem = cartItems.find(
@@ -148,6 +139,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
       if (!cartItem) return;
 
       const newQuantity = quantity + 1;
+      const key = cartItemKey(product.id, null);
 
       // Optimistic update
       cartDispatch(
@@ -158,22 +150,10 @@ export function ProductCard({ product, className }: ProductCardProps) {
         })
       );
 
-      // Debounced API call
-      if (apiDebounceRef.current) clearTimeout(apiDebounceRef.current);
-      apiDebounceRef.current = setTimeout(() => {
-        cartDispatch(
-          updateCartItem({
-            productId: product.id,
-            quantity: newQuantity,
-          }),
-        )
-          .unwrap()
-          .catch((error: any) => {
-            showToast.error(error?.message || "Failed to update cart");
-          });
-      }, 500);
+      // Debounced API call (aborts previous in-flight request)
+      debouncedUpdate(key, product.id, null, newQuantity);
     },
-    [product, cartItem, quantity, cartDispatch],
+    [product, cartItem, quantity, cartDispatch, debouncedUpdate],
   );
 
   const handleDecrement = useCallback(
@@ -190,6 +170,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
       if (!cartItem) return;
 
       const newQuantity = quantity - 1;
+      const key = cartItemKey(product.id, null);
 
       // Optimistic update
       cartDispatch(
@@ -204,22 +185,10 @@ export function ProductCard({ product, className }: ProductCardProps) {
         showToast.success("Removed from cart");
       }
 
-      // Debounced API call
-      if (apiDebounceRef.current) clearTimeout(apiDebounceRef.current);
-      apiDebounceRef.current = setTimeout(() => {
-        cartDispatch(
-          updateCartItem({
-            productId: product.id,
-            quantity: newQuantity,
-          }),
-        )
-          .unwrap()
-          .catch((error: any) => {
-            showToast.error(error?.message || "Failed to update cart");
-          });
-      }, 500);
+      // Debounced API call (aborts previous in-flight request)
+      debouncedUpdate(key, product.id, null, newQuantity);
     },
-    [product, cartItem, quantity, cartDispatch],
+    [product, cartItem, quantity, cartDispatch, debouncedUpdate],
   );
 
   // Favorite handler - toggle only (auto add/remove)

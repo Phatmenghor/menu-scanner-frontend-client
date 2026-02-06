@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -22,9 +22,9 @@ import Link from "next/link";
 import {
   clearCart,
   fetchCart,
-  updateCartItem,
 } from "@/redux/features/main/store/thunks/cart-thunks";
 import { updateLocalCartItem } from "@/redux/features/main/store/slice/cart-slice";
+import { useCartDebounce, cartItemKey } from "@/hooks/use-cart-debounce";
 
 export default function CartPage() {
   const router = useRouter();
@@ -40,8 +40,7 @@ export default function CartPage() {
     loaded,
   } = useCartState();
 
-  // Refs for debounced API calls
-  const debounceTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const { debouncedUpdate, immediateUpdate } = useCartDebounce(dispatch);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -55,16 +54,9 @@ export default function CartPage() {
     }
   }, [isAuthenticated, loaded, loading.fetch, dispatch, router]);
 
-  // Cleanup debounce timers on unmount
-  useEffect(() => {
-    return () => {
-      debounceTimersRef.current.forEach((timer) => clearTimeout(timer));
-    };
-  }, []);
-
   const handleUpdateQuantity = useCallback(
     (productId: string, productSizeId: string | null, newQuantity: number) => {
-      const key = `${productId}_${productSizeId}`;
+      const key = cartItemKey(productId, productSizeId);
 
       // Optimistic update immediately
       dispatch(
@@ -79,39 +71,15 @@ export default function CartPage() {
         showToast.success("Item removed from cart");
       }
 
-      // Debounce the API call
-      const existingTimer = debounceTimersRef.current.get(key);
-      if (existingTimer) clearTimeout(existingTimer);
-
-      debounceTimersRef.current.set(
-        key,
-        setTimeout(() => {
-          debounceTimersRef.current.delete(key);
-          dispatch(
-            updateCartItem({
-              productId,
-              productSizeId,
-              quantity: newQuantity,
-            }),
-          )
-            .unwrap()
-            .catch((error: any) => {
-              showToast.error(error?.message || "Failed to update cart");
-            });
-        }, 500),
-      );
+      // Debounced API call (aborts previous in-flight request)
+      debouncedUpdate(key, productId, productSizeId, newQuantity);
     },
-    [dispatch],
+    [dispatch, debouncedUpdate],
   );
 
   const handleRemoveItem = useCallback(
     (productId: string, productSizeId: string | null) => {
-      const key = `${productId}_${productSizeId}`;
-
-      // Cancel any pending debounced update for this item
-      const existingTimer = debounceTimersRef.current.get(key);
-      if (existingTimer) clearTimeout(existingTimer);
-      debounceTimersRef.current.delete(key);
+      const key = cartItemKey(productId, productSizeId);
 
       // Optimistic update immediately
       dispatch(
@@ -124,20 +92,10 @@ export default function CartPage() {
 
       showToast.success("Item removed from cart");
 
-      // API call immediately for explicit remove
-      dispatch(
-        updateCartItem({
-          productId,
-          productSizeId,
-          quantity: 0,
-        }),
-      )
-        .unwrap()
-        .catch((error: any) => {
-          showToast.error(error?.message || "Failed to remove item");
-        });
+      // Immediate API call for explicit remove (cancels any pending debounce)
+      immediateUpdate(key, productId, productSizeId, 0);
     },
-    [dispatch],
+    [dispatch, immediateUpdate],
   );
 
   const handleClearCart = async () => {

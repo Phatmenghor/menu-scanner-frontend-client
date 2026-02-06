@@ -11,13 +11,24 @@ export const createApiThunk = <ReturnType, ArgType = void>(
 ) => {
   return createAsyncThunk<ReturnType, ArgType>(
     typePrefix,
-    async (arg, { rejectWithValue }) => {
+    async (arg, { rejectWithValue, signal }) => {
       try {
         const response = await apiCall(arg);
+
+        // If thunk was aborted while waiting for API, reject to prevent stale data
+        if (signal.aborted) {
+          return rejectWithValue({ aborted: true, message: "Request superseded" });
+        }
+
         return options?.transformResponse
           ? options.transformResponse(response)
           : response;
       } catch (error: any) {
+        // If aborted, reject silently
+        if (signal.aborted) {
+          return rejectWithValue({ aborted: true, message: "Request superseded" });
+        }
+
         // Custom error logging
         if (options?.logError !== false) {
           console.error(`Error in ${typePrefix}:`, error);
