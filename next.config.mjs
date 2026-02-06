@@ -7,16 +7,11 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const nextConfig = {
   output: "standalone",
 
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-
   typescript: {
     ignoreBuildErrors: true,
   },
 
   trailingSlash: false,
-  swcMinify: true,
 
   images: {
     unoptimized: false,
@@ -58,6 +53,13 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: "10mb",
     },
+  },
+
+  webpack: (config) => {
+    config.ignoreWarnings = [
+      { module: /node_modules\/next-intl\/dist\/esm\/production\/extractor\/format\/index\.js/ },
+    ];
+    return config;
   },
 };
 
