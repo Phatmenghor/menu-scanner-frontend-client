@@ -1,1 +1,0 @@
-{"version":3,"sources":["../../../../src/app/admin/hr/page.tsx"],"sourcesContent":["import React from \"react\";\r\n\r\nconst Hr = () => {\r\n  return <div>Hr</div>;\r\n};\r\n\r\nexport default Hr;\r\n"],"names":[],"mappings":"mQAEW,IACF,CAAA,EAAA,EAAA,GAAA,EAAC,MAAA,UAAI"}

@@ -1,1 +1,0 @@
-{"version":3,"sources":["../../../../src/app/admin/page.tsx"],"sourcesContent":["import React from \"react\";\r\n\r\nconst AdminPage = () => {\r\n  return <div>AdminPage</div>;\r\n};\r\n\r\nexport default AdminPage;\r\n"],"names":[],"mappings":"mQAEkB,IACT,CAAA,EAAA,EAAA,GAAA,EAAC,MAAA,UAAI"}
