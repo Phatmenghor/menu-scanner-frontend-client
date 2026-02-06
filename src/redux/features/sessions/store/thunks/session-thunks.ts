@@ -1,3 +1,4 @@
+import { ConditionalActionButton } from "@/components/shared/button/action-button";
 import { AllSessionRequest } from "@/redux/features/auth/store/models/request/session-request";
 import { axiosClientWithAuth } from "@/utils/axios";
 import { createApiThunk } from "@/utils/axios/api-wrapper";
@@ -12,6 +13,8 @@ export const fetchAllSessionsService = createApiThunk<any, AllSessionRequest>(
       "/api/v1/sessions/admin/all",
       params,
     );
+
+    console.log("#### setched sessions data:", response.data); // Debug log
     return response.data.data;
   },
 );

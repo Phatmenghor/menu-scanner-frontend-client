@@ -9,68 +9,67 @@ import { CardHeaderSection } from "@/components/layout/card-header-section";
 import { DeleteConfirmationModal } from "@/components/shared/modal/delete-confirmation-modal";
 import { DataTableWithPagination } from "@/components/shared/common/data-table";
 import { showToast } from "@/components/shared/common/show-toast";
+import { ModalMode, ProductStatus, Status } from "@/constants/status/status";
 import { usePagination } from "@/redux/store/use-pagination";
-import { ModalMode } from "@/constants/status/status";
+
+import { CustomSelect } from "@/components/shared/common/custom-select";
+import { PRODUCT_STATUS_FILTER } from "@/constants/status/filter-status";
 import { useAdminCleanup } from "@/hooks/use-cleanup-on-unmount";
 import { AppDefault } from "@/constants/app-resource/default/default";
 import { setGlobalPageSize } from "@/redux/store/slices/global-settings-slice";
 import { selectGlobalPageSize } from "@/redux/store/selectors/global-settings-selectors";
 import { useAppSelector } from "@/redux/store";
-import { RoleResponseModel } from "@/redux/features/auth/store/models/response/role-response";
-import {
-  deleteRoleService,
-  fetchAllRoleService,
-} from "@/redux/features/auth/store/thunks/role-thunks";
-import { roleTableColumns } from "@/redux/features/auth/table/roles-table";
-import { useRolesState } from "@/redux/features/auth/store/state/role-state";
-import RoleModal from "@/redux/features/auth/components/role-modal";
-import { RoleDetailModal } from "@/redux/features/auth/components/role-detail-modal";
 import {
   resetState,
   setPageNo,
   setSearchFilter,
-} from "@/redux/features/auth/store/slice/role-slice";
+} from "@/redux/features/sessions/store/slice/session-slice";
+import { useSessionState } from "@/redux/features/sessions/store/state/session-state";
+import { SessionResponseModel } from "@/redux/features/sessions/store/models/response/session-response";
+import {
+  deleteSessionByIDService,
+  fetchAllSessionsService,
+} from "@/redux/features/sessions/store/thunks/session-thunks";
+import { sessionTableColumns } from "@/redux/features/sessions/table/session-table";
+import { SessionsDetailModal } from "@/redux/features/sessions/components/session-detail-modal";
 
 export default function SessionPage() {
+  // Clean up state when leaving admin area (performance optimization)
   useAdminCleanup(resetState);
   const searchParams = useSearchParams();
 
+  // Redux state
   const {
-    rolesState,
-    rolesData,
-    rolesContent,
+    sessionState,
+    sessionsData,
+    sessionsContent,
     isLoading,
     filters,
     operations,
     pagination,
     dispatch,
-  } = useRolesState();
-
-  // Local UI state for modals only
-  const [modalState, setModalState] = useState({
-    isOpen: false,
-    mode: ModalMode.CREATE_MODE,
-    id: "",
-  });
+  } = useSessionState();
 
   const [detailModalState, setDetailModalState] = useState({
     isOpen: false,
-    id: "",
+    sessionId: "",
   });
 
   const [deleteState, setDeleteState] = useState({
     isOpen: false,
-    roles: null as RoleResponseModel | null,
+    session: null as SessionResponseModel | null,
   });
 
+  // Global page size from global settings (synced across all admin pages)
   const globalPageSize = useAppSelector(selectGlobalPageSize);
 
   const debouncedSearch = useDebounce(filters.search, 400);
 
   const { updateUrlWithPage, handlePageChange } = usePagination({
-    baseRoute: ROUTES.HR.ATTENDANCE,
+    baseRoute: ROUTES.ADMIN.USER_SESSIONS,
   });
 
+  // Initialize URL and Redux state on mount
   useEffect(() => {
     const pageParam = searchParams.get("pageNo");
     const pageFromUrl = pageParam ? parseInt(pageParam, 10) : 1;
@@ -82,62 +81,43 @@ export default function SessionPage() {
 
   useEffect(() => {
     dispatch(
-      fetchAllRoleService({
+      fetchAllSessionsService({
         search: debouncedSearch,
         pageNo: filters.pageNo,
         pageSize: globalPageSize,
-        businessId: AppDefault.BUSINESS_ID,
       }),
     );
   }, [dispatch, debouncedSearch, filters.pageNo, globalPageSize]);
 
-  // Event handlers
-  const handleCreate = () => {
-    setModalState({
-      isOpen: true,
-      mode: ModalMode.CREATE_MODE,
-      id: "",
-    });
-  };
-
-  const handleEditItem = (role: RoleResponseModel) => {
-    setModalState({
-      isOpen: true,
-      mode: ModalMode.UPDATE_MODE,
-      id: role?.id || "",
-    });
-  };
-
-  const handleViewDetailItem = (role: RoleResponseModel) => {
+  const handleSessionViewDetail = (session: SessionResponseModel) => {
     setDetailModalState({
       isOpen: true,
-      id: role.id || "",
+      sessionId: session.id || "",
     });
   };
 
-  const handleDeleteItem = (role: RoleResponseModel) => {
+  const handleDeleteSession = (session: SessionResponseModel) => {
     setDeleteState({
       isOpen: true,
-      roles: role,
+      session: session,
     });
   };
 
   const tableHandlers = useMemo(
     () => ({
-      handleEditItem,
-      handleViewDetailItem,
-      handleDeleteItem,
+      handleSessionViewDetail,
+      handleDeleteSession,
     }),
     [],
   );
 
   const columns = useMemo(
     () =>
-      roleTableColumns({
-        data: rolesData,
+      sessionTableColumns({
+        data: sessionsData,
         handlers: tableHandlers,
       }),
-    [rolesState, tableHandlers],
+    [sessionState, tableHandlers],
   );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -155,48 +135,43 @@ export default function SessionPage() {
   };
 
   const handleDelete = async () => {
-    if (!deleteState.roles?.id) return;
+    if (!deleteState.session?.id) return;
 
     try {
-      await dispatch(deleteRoleService(deleteState.roles.id)).unwrap();
+      await dispatch(deleteSessionByIDService(deleteState.session.id)).unwrap();
 
       showToast.success(
-        `Roles "${deleteState?.roles?.name ?? ""}" deleted successfully`,
+        `Session "${deleteState.session.deviceDisplayName ?? ""}" deleted successfully`,
       );
 
       closeDeleteModal();
 
-      if (rolesContent.length === 1 && pagination.currentPage > 1) {
+      // Navigate to previous page if this was the last item
+      if (sessionsContent.length === 1 && pagination.currentPage > 1) {
         const newPage = pagination.currentPage - 1;
         dispatch(setPageNo(newPage));
         updateUrlWithPage(newPage);
       }
     } catch (error: any) {
-      showToast.error(error || "Failed to delete roles");
+      showToast.error(error || "Failed to delete session");
     }
-  };
-
-  const closeModal = () => {
-    setModalState({
-      isOpen: false,
-      mode: ModalMode.CREATE_MODE,
-      id: "",
-    });
   };
 
   const closeDetailModal = () => {
     setDetailModalState({
       isOpen: false,
-      id: "",
+      sessionId: "",
     });
   };
 
   const closeDeleteModal = () => {
     setDeleteState({
       isOpen: false,
-      roles: null,
+      session: null,
     });
   };
+
+  console.log("### Session Page Rendered with sessions:", sessionsContent); // Debug log
 
   return (
     <div className="flex flex-1 flex-col gap-4 px-2">
@@ -204,22 +179,22 @@ export default function SessionPage() {
         <CardHeaderSection
           breadcrumbs={[
             { label: "Dashboard", href: ROUTES.ADMIN.ROOT },
-            { label: "Roles", href: "" },
+            { label: "Sessions", href: "" },
           ]}
-          title="Roles Management"
+          title="Session Information"
           searchValue={filters.search}
-          searchPlaceholder="Search roles..."
+          searchPlaceholder="Search session..."
           buttonIcon={<Plus className="w-3 h-3" />}
           onSearchChange={handleSearchChange}
         ></CardHeaderSection>
 
         {/* Data Table with Your Custom Pagination */}
         <DataTableWithPagination
-          data={rolesContent}
+          data={sessionsContent}
           columns={columns}
           loading={isLoading}
-          emptyMessage="No roles found"
-          getRowKey={(role) => role.id}
+          emptyMessage="No session found"
+          getRowKey={(session) => session.id}
           currentPage={filters.pageNo}
           totalElements={pagination.totalElements}
           totalPages={pagination.totalPages}
@@ -230,29 +205,23 @@ export default function SessionPage() {
         />
       </div>
 
-      {/* Modals Add/Edit */}
-      <RoleModal
-        isOpen={modalState.isOpen}
-        onClose={closeModal}
-        mode={modalState.mode}
-        roleId={modalState.id}
-      />
-
-      {/* Modals Role Detail */}
-      <RoleDetailModal
-        roleId={detailModalState.id}
+      {/* Modals Session Detail */}
+      <SessionsDetailModal
+        sessionId={detailModalState.sessionId}
         isOpen={detailModalState.isOpen}
         onClose={closeDetailModal}
       />
 
-      {/* Modals Delete Role */}
+      {/* Modals Delete Session */}
       <DeleteConfirmationModal
         isOpen={deleteState.isOpen}
         onClose={closeDeleteModal}
         onDelete={handleDelete}
-        title="Delete Role"
-        description={`Are you sure you want to delete this role ${deleteState.roles?.name}?`}
-        itemName={deleteState.roles?.name || "this role"}
+        title="Delete Session"
+        description={`Are you sure you want to delete this session ${
+          deleteState.session?.deviceDisplayName || ""
+        }?`}
+        itemName={deleteState.session?.deviceDisplayName || ""}
         isSubmitting={operations.isDeleting}
       />
     </div>
