@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Minus, Plus } from "lucide-react";
 import { CustomButton } from "@/components/shared/button/custom-button";
 import { cn } from "@/lib/utils";
@@ -22,62 +22,82 @@ export function QuantitySelector({
   size = "md",
   className,
 }: QuantitySelectorProps) {
-  const [localValue, setLocalValue] = useState(value);
   const [inputText, setInputText] = useState(String(value));
-  const inputDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const latestCommittedRef = useRef(value);
+  const isTypingRef = useRef(false);
 
-  // Sync with external value when it changes
+  // Sync with external value only when not actively typing
   useEffect(() => {
-    setLocalValue(value);
-    setInputText(String(value));
+    latestCommittedRef.current = value;
+    if (!isTypingRef.current) {
+      setInputText(String(value));
+    }
   }, [value]);
 
-  // Cleanup debounce on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (inputDebounceRef.current) clearTimeout(inputDebounceRef.current);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, []);
 
   const clamp = (v: number) => Math.min(Math.max(v, min), max);
 
-  const commit = (newValue: number) => {
-    const clamped = clamp(newValue);
-    setLocalValue(clamped);
-    setInputText(String(clamped));
-    onChange(clamped);
-  };
+  const commitValue = useCallback(
+    (newValue: number) => {
+      const clamped = clamp(newValue);
+      latestCommittedRef.current = clamped;
+      setInputText(String(clamped));
+      isTypingRef.current = false;
+      onChange(clamped);
+    },
+    [min, max, onChange],
+  );
 
   const handleDecrement = () => {
-    if (localValue <= min) return;
-    commit(localValue - 1);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    isTypingRef.current = false;
+    const current = latestCommittedRef.current;
+    if (current <= min) return;
+    commitValue(current - 1);
   };
 
   const handleIncrement = () => {
-    if (localValue >= max) return;
-    commit(localValue + 1);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    isTypingRef.current = false;
+    const current = latestCommittedRef.current;
+    if (current >= max) return;
+    commitValue(current + 1);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
+
+    // Allow clearing the field
     if (raw === "") {
       setInputText("");
+      isTypingRef.current = true;
       return;
     }
-    if (!/^\d+$/.test(raw)) return;
+
+    // Only allow digits, max 3 characters
+    if (!/^\d{1,3}$/.test(raw)) return;
+
     setInputText(raw);
+    isTypingRef.current = true;
 
     // Debounce commit for typed input
-    if (inputDebounceRef.current) clearTimeout(inputDebounceRef.current);
-    inputDebounceRef.current = setTimeout(() => {
-      commit(parseInt(raw, 10));
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      commitValue(parseInt(raw, 10));
     }, 600);
   };
 
   const handleBlur = () => {
-    if (inputDebounceRef.current) clearTimeout(inputDebounceRef.current);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     const parsed = parseInt(inputText, 10);
-    commit(isNaN(parsed) ? min : parsed);
+    commitValue(isNaN(parsed) ? min : parsed);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -87,6 +107,7 @@ export function QuantitySelector({
   };
 
   const isSmall = size === "sm";
+  const displayValue = latestCommittedRef.current;
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
@@ -96,7 +117,7 @@ export function QuantitySelector({
         onClick={handleDecrement}
         className={cn(
           isSmall ? "h-8 w-8" : "h-10 w-10",
-          localValue <= min && "opacity-40"
+          displayValue <= min && "opacity-40",
         )}
       >
         <Minus className={cn(isSmall ? "h-3 w-3" : "h-4 w-4")} />
@@ -105,13 +126,14 @@ export function QuantitySelector({
       <input
         type="text"
         inputMode="numeric"
+        maxLength={3}
         value={inputText}
         onChange={handleInputChange}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         className={cn(
           "text-center font-bold bg-primary/10 text-primary rounded border border-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/30",
-          isSmall ? "w-12 h-8 text-sm" : "w-16 h-10 text-lg"
+          isSmall ? "w-12 h-8 text-sm" : "w-16 h-10 text-lg",
         )}
       />
 

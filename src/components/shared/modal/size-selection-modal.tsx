@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, ShoppingCart, X, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -51,35 +51,56 @@ export function SizeSelectionModal({
   const [fullProduct, setFullProduct] =
     useState<ProductDetailResponseModel | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Refs for debounced API calls and tracking known quantities
-  const apiDebounceRef = useRef<NodeJS.Timeout | null>(null);
-  const knownQtyRef = useRef<Map<string, number>>(new Map());
+  // Local pending quantities: key = sizeId (or "no_size"), value = quantity
+  const [pendingQuantities, setPendingQuantities] = useState<
+    Map<string, number>
+  >(new Map());
 
-  // The product to display: use fetched full product if available, otherwise use the passed product
+  // Track which sizes have been modified
+  const [modifiedSizes, setModifiedSizes] = useState<Set<string>>(new Set());
+
+  // The product to display
   const displayProduct = fullProduct || product;
 
-  // Get cart quantity for a specific size
+  // Get cart quantity for a specific size from actual cart state
   const getCartQuantityForSize = useCallback(
     (sizeId: string | null) => {
       if (!displayProduct) return 0;
       const cartItem = cartItems.find(
         (item) =>
-          item.productId === displayProduct.id && item.productSizeId === sizeId,
+          item.productId === displayProduct.id &&
+          item.productSizeId === sizeId,
       );
       return cartItem?.quantity || 0;
     },
     [cartItems, displayProduct],
   );
 
-  // Get current quantity in cart for selected size
-  const currentCartQuantity = selectedSize
-    ? getCartQuantityForSize(selectedSize.id)
+  // Get the display quantity (pending if modified, otherwise cart)
+  const getDisplayQuantity = useCallback(
+    (sizeId: string | null) => {
+      const key = sizeId || "no_size";
+      if (pendingQuantities.has(key)) {
+        return pendingQuantities.get(key)!;
+      }
+      return getCartQuantityForSize(sizeId);
+    },
+    [pendingQuantities, getCartQuantityForSize],
+  );
+
+  // Check if there are any unsaved changes
+  const hasUnsavedChanges = modifiedSizes.size > 0;
+
+  // Current quantity for selected size
+  const currentQuantity = selectedSize
+    ? getDisplayQuantity(selectedSize.id)
     : displayProduct
-      ? getCartQuantityForSize(null)
+      ? getDisplayQuantity(null)
       : 0;
 
-  // Fetch full product details when modal opens if sizes are missing
+  // Initialize when modal opens
   useEffect(() => {
     if (open && product) {
       const needsFetch =
@@ -105,7 +126,6 @@ export function SizeSelectionModal({
             setIsLoadingDetail(false);
           });
       } else {
-        // Sizes already available, use them directly
         setFullProduct(null);
         if (product.sizes && product.sizes.length > 0) {
           setSelectedSize(product.sizes[0]);
@@ -119,103 +139,170 @@ export function SizeSelectionModal({
       setFullProduct(null);
       setSelectedSize(null);
       setIsLoadingDetail(false);
-      knownQtyRef.current.clear();
-      if (apiDebounceRef.current) clearTimeout(apiDebounceRef.current);
+      setPendingQuantities(new Map());
+      setModifiedSizes(new Set());
+      setIsSaving(false);
     }
   }, [open, product, productDispatch]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (apiDebounceRef.current) clearTimeout(apiDebounceRef.current);
-    };
-  }, []);
-
-  // Handle quantity change with optimistic update + debounced API
+  // Handle local quantity change (no API call)
   const handleQuantityChange = useCallback(
     (newQuantity: number) => {
       if (!displayProduct) return;
 
       const sizeId = selectedSize?.id || null;
-      const key = `${displayProduct.id}_${sizeId}`;
-      const knownQty =
-        knownQtyRef.current.get(key) ?? getCartQuantityForSize(sizeId);
+      const key = sizeId || "no_size";
+      const originalQty = getCartQuantityForSize(sizeId);
 
-      // Optimistic update
-      if (knownQty === 0 && newQuantity > 0) {
-        // Adding new item
-        const displayPrice =
-          selectedSize?.finalPrice || displayProduct.displayPrice || 0;
-        const originalPrice = selectedSize?.hasPromotion
-          ? selectedSize.price
-          : displayProduct.displayOriginPrice || displayPrice;
-        const hasDiscount = selectedSize
-          ? selectedSize.hasPromotion
-          : displayProduct.hasActivePromotion;
+      setPendingQuantities((prev) => {
+        const next = new Map(prev);
+        next.set(key, newQuantity);
+        return next;
+      });
 
-        dispatch(
-          addLocalCartItem({
-            productId: displayProduct.id,
-            productSizeId: sizeId,
-            quantity: newQuantity,
-            productName: displayProduct.name,
-            productMainImageUrl: displayProduct.mainImageUrl,
-            productSizeName: selectedSize?.name || null,
-            displayPrice,
-            originalPrice,
-            hasActivePromotion: hasDiscount,
-          }),
-        );
-      } else {
-        // Updating existing item (or removing if 0)
-        dispatch(
-          updateLocalCartItem({
-            productId: displayProduct.id,
-            productSizeId: sizeId,
-            quantity: newQuantity,
-          }),
-        );
-      }
+      // Track if this is actually different from cart
+      setModifiedSizes((prev) => {
+        const next = new Set(prev);
+        if (newQuantity === originalQty) {
+          next.delete(key);
+        } else {
+          next.add(key);
+        }
+        return next;
+      });
+    },
+    [displayProduct, selectedSize, getCartQuantityForSize],
+  );
 
-      knownQtyRef.current.set(key, newQuantity);
+  // Clear a specific size from cart
+  const handleClearSize = useCallback(
+    (sizeId: string | null) => {
+      if (!displayProduct) return;
 
-      // Debounced API call
-      if (apiDebounceRef.current) clearTimeout(apiDebounceRef.current);
-      apiDebounceRef.current = setTimeout(() => {
-        const latestQty = knownQtyRef.current.get(key) ?? newQuantity;
+      const key = sizeId || "no_size";
+      const originalQty = getCartQuantityForSize(sizeId);
 
-        if (latestQty > 0) {
+      setPendingQuantities((prev) => {
+        const next = new Map(prev);
+        next.set(key, 0);
+        return next;
+      });
+
+      setModifiedSizes((prev) => {
+        const next = new Set(prev);
+        if (originalQty === 0) {
+          next.delete(key);
+        } else {
+          next.add(key);
+        }
+        return next;
+      });
+    },
+    [displayProduct, getCartQuantityForSize],
+  );
+
+  // Discard all pending changes
+  const handleDiscard = useCallback(() => {
+    setPendingQuantities(new Map());
+    setModifiedSizes(new Set());
+    onOpenChange(false);
+  }, [onOpenChange]);
+
+  // Save all pending changes to API
+  const handleAddToCart = useCallback(async () => {
+    if (!displayProduct || modifiedSizes.size === 0) return;
+
+    setIsSaving(true);
+
+    try {
+      const promises: Promise<any>[] = [];
+
+      for (const key of modifiedSizes) {
+        const sizeId = key === "no_size" ? null : key;
+        const newQty = pendingQuantities.get(key) ?? getCartQuantityForSize(sizeId);
+        const originalQty = getCartQuantityForSize(sizeId);
+
+        if (newQty === originalQty) continue;
+
+        // Optimistic local update
+        if (originalQty === 0 && newQty > 0) {
+          const size = displayProduct.sizes?.find((s) => s.id === sizeId);
+          const displayPrice =
+            size?.finalPrice || displayProduct.displayPrice || 0;
+          const originalPrice = size?.hasPromotion
+            ? size.price
+            : displayProduct.displayOriginPrice || displayPrice;
+          const hasDiscount = size
+            ? size.hasPromotion
+            : displayProduct.hasActivePromotion;
+
           dispatch(
-            addToCart({
+            addLocalCartItem({
               productId: displayProduct.id,
               productSizeId: sizeId,
-              quantity: latestQty,
+              quantity: newQty,
+              productName: displayProduct.name,
+              productMainImageUrl: displayProduct.mainImageUrl,
+              productSizeName: size?.name || null,
+              displayPrice,
+              originalPrice,
+              hasActivePromotion: hasDiscount,
             }),
-          )
-            .unwrap()
-            .catch((error: any) => {
-              showToast.error(error?.message || "Failed to update cart");
-            });
+          );
         } else {
           dispatch(
-            updateCartItem({
+            updateLocalCartItem({
               productId: displayProduct.id,
               productSizeId: sizeId,
-              quantity: 0,
+              quantity: newQty,
             }),
-          )
-            .unwrap()
-            .then(() => {
-              showToast.success("Removed from cart");
-            })
-            .catch((error: any) => {
-              showToast.error(error?.message || "Failed to update cart");
-            });
+          );
         }
-      }, 500);
-    },
-    [displayProduct, selectedSize, dispatch, getCartQuantityForSize],
-  );
+
+        // API call
+        if (newQty > 0) {
+          promises.push(
+            dispatch(
+              addToCart({
+                productId: displayProduct.id,
+                productSizeId: sizeId,
+                quantity: newQty,
+              }),
+            ).unwrap(),
+          );
+        } else {
+          promises.push(
+            dispatch(
+              updateCartItem({
+                productId: displayProduct.id,
+                productSizeId: sizeId,
+                quantity: 0,
+              }),
+            ).unwrap(),
+          );
+        }
+      }
+
+      await Promise.all(promises);
+      showToast.success("Cart updated");
+      setPendingQuantities(new Map());
+      setModifiedSizes(new Set());
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (error: any) {
+      showToast.error(error?.message || "Failed to update cart");
+    } finally {
+      setIsSaving(false);
+    }
+  }, [
+    displayProduct,
+    modifiedSizes,
+    pendingQuantities,
+    dispatch,
+    getCartQuantityForSize,
+    onOpenChange,
+    onSuccess,
+  ]);
 
   if (!product) return null;
 
@@ -299,7 +386,11 @@ export function SizeSelectionModal({
                     <h4 className="font-semibold mb-2 text-sm">Choose Size</h4>
                     <div className="flex flex-wrap gap-2">
                       {displayProduct.sizes.map((size) => {
+                        const sizeDisplayQty = getDisplayQuantity(size.id);
                         const sizeCartQty = getCartQuantityForSize(size.id);
+                        const isModified =
+                          modifiedSizes.has(size.id) &&
+                          sizeDisplayQty !== sizeCartQty;
                         return (
                           <button
                             key={size.id}
@@ -309,6 +400,7 @@ export function SizeSelectionModal({
                               selectedSize?.id === size.id
                                 ? "border-primary bg-primary/5 ring-2 ring-primary/20"
                                 : "border-border",
+                              isModified && "ring-2 ring-amber-400/50",
                             )}
                           >
                             <div className="font-semibold text-xs">
@@ -327,10 +419,15 @@ export function SizeSelectionModal({
                                 <Check className="h-2.5 w-2.5" />
                               </div>
                             )}
-                            {/* Show cart quantity badge */}
-                            {sizeCartQty > 0 && (
-                              <div className="absolute -top-1.5 -left-1.5 bg-green-500 text-white rounded-full min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold">
-                                {sizeCartQty}
+                            {/* Show quantity badge */}
+                            {sizeDisplayQty > 0 && (
+                              <div
+                                className={cn(
+                                  "absolute -top-1.5 -left-1.5 text-white rounded-full min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold",
+                                  isModified ? "bg-amber-500" : "bg-green-500",
+                                )}
+                              >
+                                {sizeDisplayQty}
                               </div>
                             )}
                           </button>
@@ -340,35 +437,70 @@ export function SizeSelectionModal({
                   </div>
                 )}
 
-              {/* Quantity Selector - shows current cart quantity, editable */}
+              {/* Quantity Selector + Clear button */}
               <div className="mb-4">
                 <h4 className="font-semibold mb-2 text-sm">Quantity</h4>
-                <QuantitySelector
-                  value={currentCartQuantity}
-                  onChange={handleQuantityChange}
-                  min={0}
-                  size="sm"
-                />
+                <div className="flex items-center gap-2">
+                  <QuantitySelector
+                    value={currentQuantity}
+                    onChange={handleQuantityChange}
+                    min={0}
+                    size="sm"
+                  />
+                  {/* Clear button for selected size */}
+                  {currentQuantity > 0 && (
+                    <CustomButton
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-2 text-destructive border-destructive/30 hover:bg-destructive hover:text-destructive-foreground"
+                      onClick={() =>
+                        handleClearSize(selectedSize?.id || null)
+                      }
+                    >
+                      <Trash2 className="h-3.5 w-3.5 mr-1" />
+                      Clear
+                    </CustomButton>
+                  )}
+                </div>
               </div>
 
               {/* Total */}
               <div className="flex justify-between items-center py-3 border-t mb-4">
                 <span className="text-muted-foreground">Total</span>
                 <span className="text-xl font-bold text-primary">
-                  {formatCurrency(displayPrice * currentCartQuantity)}
+                  {formatCurrency(displayPrice * currentQuantity)}
                 </span>
               </div>
 
-              {/* Done button */}
-              <CustomButton
-                className="w-full"
-                onClick={() => {
-                  onOpenChange(false);
-                  onSuccess?.();
-                }}
-              >
-                Done
-              </CustomButton>
+              {/* Action buttons: Discard & Add to Cart */}
+              <div className="flex gap-3">
+                <CustomButton
+                  variant="outline"
+                  className="flex-1"
+                  onClick={handleDiscard}
+                  disabled={isSaving}
+                >
+                  <X className="h-4 w-4 mr-1.5" />
+                  Discard
+                </CustomButton>
+                <CustomButton
+                  className="flex-1"
+                  onClick={handleAddToCart}
+                  disabled={isSaving || !hasUnsavedChanges}
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="h-4 w-4 mr-1.5" />
+                      Add to Cart
+                    </>
+                  )}
+                </CustomButton>
+              </div>
             </>
           )}
         </div>
