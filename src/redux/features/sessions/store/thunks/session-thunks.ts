@@ -47,7 +47,7 @@ export const deleteSessionByUserIDService = createApiThunk<any, string>(
   "sessions/deleteByUserID",
   async (id) => {
     const response = await axiosClientWithAuth.delete(
-      `/api/v1/sessions/admin/${id}`,
+      `/api/v1/sessions/admin/logout-all/${id}`,
     );
     return response.data.data;
   },

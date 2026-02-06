@@ -55,74 +55,6 @@ export default function CartPage() {
     }
   }, [isAuthenticated, loaded, loading.fetch, dispatch, router]);
 
-<<<<<<< HEAD
-  // Optimistic update + background API call (no blocking)
-  const handleUpdateQuantity = (
-    productId: string,
-    productSizeId: string | null,
-    newQuantity: number,
-  ) => {
-    // Optimistic local update first
-    dispatch(
-      updateLocalCartItem({
-        productId,
-        productSizeId,
-        quantity: newQuantity,
-      }),
-    );
-
-    if (newQuantity === 0) {
-      showToast.success("Item removed from cart");
-    }
-
-    console.log("### Dispatched local update for cart item quantity change", {
-      productId,
-      productSizeId,
-      newQuantity,
-    });
-    // API call in background (not awaited, not blocking)
-    dispatch(
-      updateCartItem({
-        productId,
-        productSizeId,
-        quantity: newQuantity,
-      }),
-    )
-      .unwrap()
-      .catch((error: any) => {
-        showToast.error(error?.message || "Failed to update cart");
-      });
-  };
-
-  const handleRemoveItem = (
-    productId: string,
-    productSizeId: string | null,
-  ) => {
-    // Optimistic local update
-    dispatch(
-      updateLocalCartItem({
-        productId,
-        productSizeId,
-        quantity: 0,
-      }),
-    );
-
-    showToast.success("Item removed from cart");
-
-    // API call in background
-    dispatch(
-      updateCartItem({
-        productId,
-        productSizeId,
-        quantity: 0,
-      }),
-    )
-      .unwrap()
-      .catch((error: any) => {
-        showToast.error(error?.message || "Failed to remove item");
-      });
-  };
-=======
   // Cleanup debounce timers on unmount
   useEffect(() => {
     return () => {
@@ -131,11 +63,7 @@ export default function CartPage() {
   }, []);
 
   const handleUpdateQuantity = useCallback(
-    (
-      productId: string,
-      productSizeId: string | null,
-      newQuantity: number,
-    ) => {
+    (productId: string, productSizeId: string | null, newQuantity: number) => {
       const key = `${productId}_${productSizeId}`;
 
       // Optimistic update immediately
@@ -211,7 +139,6 @@ export default function CartPage() {
     },
     [dispatch],
   );
->>>>>>> f797c9d1ca19c51a57b34b90ae42fa4b2d27fc00
 
   const handleClearCart = async () => {
     if (!confirm("Are you sure you want to clear your cart?")) return;
