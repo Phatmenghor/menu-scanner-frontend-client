@@ -3,7 +3,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 
 export const createApiThunk = <ReturnType, ArgType = void>(
   typePrefix: string,
-  apiCall: (arg: ArgType) => Promise<ReturnType>,
+  apiCall: (arg: ArgType, signal: AbortSignal) => Promise<ReturnType>,
   options?: {
     transformResponse?: (data: any) => ReturnType;
     logError?: boolean;
@@ -13,7 +13,7 @@ export const createApiThunk = <ReturnType, ArgType = void>(
     typePrefix,
     async (arg, { rejectWithValue, signal }) => {
       try {
-        const response = await apiCall(arg);
+        const response = await apiCall(arg, signal);
 
         // If thunk was aborted while waiting for API, reject to prevent stale data
         if (signal.aborted) {
@@ -35,15 +35,19 @@ export const createApiThunk = <ReturnType, ArgType = void>(
         }
 
         // Standardized error handling
-        if (error.response?.data?.message) {
+        if (error?.response?.data?.message) {
           return rejectWithValue(error.response.data.message);
         }
 
-        if (error.message) {
+        if (error instanceof Error) {
           return rejectWithValue(error.message);
         }
 
-        return rejectWithValue("An unexpected error occurred");
+        if (typeof error === "string") {
+          return rejectWithValue(error);
+        }
+
+        return rejectWithValue(error?.message || "An unexpected error occurred");
       }
     }
   );

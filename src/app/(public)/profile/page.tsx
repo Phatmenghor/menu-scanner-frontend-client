@@ -30,7 +30,7 @@ import { useRouter } from "next/navigation";
 import { clearToken } from "@/utils/local-storage/token";
 import { CustomAvatar } from "@/components/shared/avator/custom-avator";
 import { isBase64Image, uploadImage } from "@/utils/common/upload-image";
-import { removeUserInfo } from "@/utils/local-storage/userInfo";
+import { clearUserInfo } from "@/utils/local-storage/userInfo";
 import { Loading } from "@/components/shared/common/loading";
 
 // Profile update schema
@@ -162,7 +162,7 @@ export default function UserProfilePage() {
 
       // Clear all auth data
       clearToken();
-      removeUserInfo();
+      clearUserInfo();
 
       router.refresh();
     } catch (error: any) {

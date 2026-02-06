@@ -42,16 +42,77 @@ const initialState: CartState = {
   loaded: false,
 };
 
-// Helper to update cart state from response
+// Helper to update cart state from response with conflict resolution
 const updateCartFromResponse = (
   state: CartState,
-  response: CartResponseModel
+  response: CartResponseModel,
+  optimisticTimestamp?: number
 ) => {
-  state.items = response.items || [];
-  state.totalItems = response.totalItems || 0;
-  state.subtotal = response.subtotal || 0;
-  state.totalDiscount = response.totalDiscount || 0;
-  state.finalTotal = response.finalTotal || 0;
+  // If we have an optimistic timestamp from the request, we can check for conflicts
+  // If undefined (e.g. fetchCart), we treat it as 0 (older than any active optimistic update) or check differently
+  const checkTimestamp = optimisticTimestamp || 0;
+
+  // Create a map of existing items for preserving optimistic state
+  const currentItemsMap = new Map(state.items.map((i) => [i.id, i]));
+  // Also map by product+size for matching incoming items
+  const currentItemsByKey = new Map(
+    state.items.map((i) => [`${i.productId}_${i.productSizeId}`, i])
+  );
+
+  const newItems = response.items || [];
+  const processedItems: CartItemModel[] = [];
+
+  for (const newItem of newItems) {
+    const key = `${newItem.productId}_${newItem.productSizeId}`;
+    const localItem = currentItemsByKey.get(key);
+
+    if (localItem && (localItem.lastOptimisticTimestamp || 0) > checkTimestamp) {
+      // Local item is newer than this response/request.
+      // Keep local quantity, but update pricing/metadata from server if desired.
+      // For safety, let's keep the entire local item to avoid inconsistencies,
+      // OR just preserve the quantity and recalculate totals.
+      // Let's preserve the local item entirely to be safe, but maybe update price?
+      // If we update price but keep quantity, we need to recalc totalPrice.
+
+      // We'll trust the LOCAL state for this item entirely since it's newer.
+      processedItems.push(localItem);
+    } else {
+      // Server is newer or equal, or no local conflict. Accept server item.
+      processedItems.push(newItem);
+    }
+  }
+
+  // Handle items that might be in local state but not in server response?
+  // If server returns full cart, missing items means they were removed?
+  // But if we optimistically added an item (T_new) and server (T_old) doesn't have it yet?
+  // Then we should KEEP the local item if its timestamp is newer.
+
+  // Find local items that are NOT in the newItems list
+  const newItemKeys = new Set(
+    newItems.map((i) => `${i.productId}_${i.productSizeId}`)
+  );
+
+  state.items.forEach(localItem => {
+    const key = `${localItem.productId}_${localItem.productSizeId}`;
+    if (!newItemKeys.has(key)) {
+      // Item exists locally but not in response.
+      // If local, is it a temp item? or a real item that was removed?
+      // If it has a newer timestamp than the request, it might be a new add that hasn't synced yet.
+      if ((localItem.lastOptimisticTimestamp || 0) > checkTimestamp) {
+        processedItems.push(localItem);
+      }
+    }
+  });
+
+  state.items = processedItems;
+
+  // We need to recalculate totals because we mixed local and server items
+  recalculateTotals(state);
+
+  // Update other global fields if we didn't override everything?
+  // If we respected ANY local override, we must rely on recalculateTotals
+  // If we purely took server response, we could typically trust server totals.
+  // But recalculateTotals is safer mixed.
 };
 
 // Helper to recalculate local totals from items
@@ -91,6 +152,7 @@ const cartSlice = createSlice({
         finalPrice: number;
         currentPrice: number;
         hasPromotion?: boolean;
+        optimisticTimestamp?: number;
       }>
     ) => {
       const {
@@ -103,6 +165,7 @@ const cartSlice = createSlice({
         finalPrice,
         currentPrice,
         hasPromotion,
+        optimisticTimestamp
       } = action.payload;
 
       // Check if item already exists
@@ -116,6 +179,9 @@ const cartSlice = createSlice({
         // Update existing item quantity
         existingItem.quantity += quantity;
         existingItem.totalPrice = existingItem.finalPrice * existingItem.quantity;
+        if (optimisticTimestamp) {
+          existingItem.lastOptimisticTimestamp = optimisticTimestamp;
+        }
       } else {
         // Add new item with temporary ID
         const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -135,6 +201,7 @@ const cartSlice = createSlice({
           promotionType: null,
           promotionValue: null,
           promotionEndDate: null,
+          lastOptimisticTimestamp: optimisticTimestamp
         });
       }
 
@@ -146,6 +213,7 @@ const cartSlice = createSlice({
         productId: string;
         productSizeId?: string | null;
         quantity: number;
+        optimisticTimestamp?: number;
       }>
     ) => {
       const item = state.items.find(
@@ -160,6 +228,9 @@ const cartSlice = createSlice({
         } else {
           item.quantity = action.payload.quantity;
           item.totalPrice = item.finalPrice * action.payload.quantity;
+          if (action.payload.optimisticTimestamp) {
+            item.lastOptimisticTimestamp = action.payload.optimisticTimestamp;
+          }
         }
         recalculateTotals(state);
       }
@@ -183,6 +254,7 @@ const cartSlice = createSlice({
       )
       .addCase(fetchCart.rejected, (state, action) => {
         state.loading.fetch = false;
+        if (action.error.message === "canceled" || action.payload === "canceled") return;
         state.error = action.error.message || "Failed to fetch cart";
       })
 
@@ -193,9 +265,9 @@ const cartSlice = createSlice({
       })
       .addCase(
         addToCart.fulfilled,
-        (state, action: PayloadAction<CartResponseModel>) => {
+        (state, action) => {
           state.loading.add = false;
-          updateCartFromResponse(state, action.payload);
+          updateCartFromResponse(state, action.payload, action.meta.arg.optimisticTimestamp);
           state.loaded = true;
           state.error = null;
         }
@@ -204,7 +276,7 @@ const cartSlice = createSlice({
         state.loading.add = false;
         // Silently ignore aborted requests (superseded by newer debounced call)
         const payload = action.payload as any;
-        if (payload?.aborted) return;
+        if (payload?.aborted || payload === "canceled" || action.error.message === "canceled") return;
         state.error = action.error.message || "Failed to add item to cart";
       })
 
@@ -215,9 +287,9 @@ const cartSlice = createSlice({
       })
       .addCase(
         updateCartItem.fulfilled,
-        (state, action: PayloadAction<CartResponseModel>) => {
+        (state, action) => {
           state.loading.update = false;
-          updateCartFromResponse(state, action.payload);
+          updateCartFromResponse(state, action.payload, action.meta.arg.optimisticTimestamp);
           state.error = null;
         }
       )
@@ -225,7 +297,7 @@ const cartSlice = createSlice({
         state.loading.update = false;
         // Silently ignore aborted requests (superseded by newer debounced call)
         const payload = action.payload as any;
-        if (payload?.aborted) return;
+        if (payload?.aborted || payload === "canceled" || action.error.message === "canceled") return;
         state.error = action.error.message || "Failed to update cart item";
       })
 
@@ -245,6 +317,7 @@ const cartSlice = createSlice({
       })
       .addCase(clearCart.rejected, (state, action) => {
         state.loading.clear = false;
+        if (action.error.message === "canceled" || action.payload === "canceled") return;
         state.error = action.error.message || "Failed to clear cart";
       });
   },

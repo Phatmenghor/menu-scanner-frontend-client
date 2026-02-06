@@ -18,6 +18,7 @@ import {
   Bell,
   CreditCard,
   LocationEdit,
+  CarTaxiFront,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +31,7 @@ import { useFavoriteState } from "@/redux/features/main/store/state/favorite-sta
 import { logout } from "@/redux/features/auth/store/slice/auth-slice";
 import { showToast } from "@/components/shared/common/show-toast";
 import { clearToken } from "@/utils/local-storage/token";
-import { removeUserInfo } from "@/utils/local-storage/userInfo";
+import { clearUserInfo } from "@/utils/local-storage/userInfo";
 import { useDebounce } from "@/utils/debounce/debounce";
 import { LoginModal } from "../shared/modal/login-modal";
 import { CustomDropdownMenu } from "../shared/common/custom-dropdown-menu";
@@ -43,6 +44,7 @@ const navigationLinks = [
   { name: "Products", href: "/products" },
   { name: "Promotions", href: "/products?hasPromotion=true" },
   { name: "Categories", href: "/categories" },
+  { name: "Brands", href: "/brands" },
 ];
 
 export function Navbar() {
@@ -127,7 +129,7 @@ export function Navbar() {
   const handleLogout = () => {
     dispatch(logout());
     clearToken();
-    removeUserInfo();
+    clearUserInfo();
     showToast.success("You've been logged out successfully");
     router.push("/");
   };
@@ -152,14 +154,19 @@ export function Navbar() {
       label: "Shopping",
       items: [
         {
-          label: "My Orders",
-          icon: <Package className="h-4 w-4" />,
-          onClick: () => router.push("/orders"),
+          label: "Cart",
+          icon: <CarTaxiFront className="h-4 w-4" />,
+          onClick: () => router.push("/cart"),
         },
         {
           label: "Favorites",
           icon: <Heart className="h-4 w-4" />,
           onClick: () => router.push("/favorites"),
+        },
+        {
+          label: "My Orders",
+          icon: <Package className="h-4 w-4" />,
+          onClick: () => router.push("/orders"),
         },
       ],
     },
@@ -247,7 +254,7 @@ export function Navbar() {
                         className={cn(
                           "text-foreground hover:text-primary hover:bg-primary/10 relative",
                           isActive &&
-                            "text-primary after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-3/4 after:h-0.5 after:bg-primary after:rounded-full",
+                          "text-primary after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-3/4 after:h-0.5 after:bg-primary after:rounded-full",
                         )}
                       >
                         {link.name}
@@ -392,7 +399,7 @@ export function Navbar() {
                       className={cn(
                         "w-full justify-start",
                         isActive &&
-                          "bg-primary/10 text-primary border-l-4 border-primary",
+                        "bg-primary/10 text-primary border-l-4 border-primary",
                       )}
                     >
                       {link.name}

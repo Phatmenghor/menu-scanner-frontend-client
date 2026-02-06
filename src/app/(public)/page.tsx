@@ -51,19 +51,19 @@ export default function HomePage() {
     const loadData = async () => {
       const promises = [];
 
-      if (!bannersSection.loaded) {
+      if (!bannersSection.loaded && !bannersSection.loading) {
         promises.push(dispatch(fetchHomeBanners({})));
       }
 
-      if (!categoriesSection.loaded) {
+      if (!categoriesSection.loaded && !categoriesSection.loading) {
         promises.push(dispatch(fetchHomeCategories({ pageSize: 12 })));
       }
 
-      if (!promotionProductsSection.loaded) {
+      if (!promotionProductsSection.loaded && !promotionProductsSection.loading) {
         promises.push(dispatch(fetchHomePromotionProducts({ pageSize: 20 })));
       }
 
-      if (!featuredProductsSection.loaded) {
+      if (!featuredProductsSection.loaded && !featuredProductsSection.loading) {
         promises.push(
           dispatch(fetchHomeFeaturedProducts({ pageNo: 1, pageSize: 15 })),
         );

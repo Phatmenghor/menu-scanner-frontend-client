@@ -62,6 +62,7 @@ export default function CartPage() {
   const handleUpdateQuantity = useCallback(
     (productId: string, productSizeId: string | null, newQuantity: number) => {
       const key = cartItemKey(productId, productSizeId);
+      const timestamp = Date.now();
 
       // Optimistic update immediately
       dispatch(
@@ -69,6 +70,7 @@ export default function CartPage() {
           productId,
           productSizeId,
           quantity: newQuantity,
+          optimisticTimestamp: timestamp,
         }),
       );
 
@@ -77,7 +79,7 @@ export default function CartPage() {
       }
 
       // Debounced API call (aborts previous in-flight request)
-      debouncedUpdate(key, productId, productSizeId, newQuantity);
+      debouncedUpdate(key, productId, productSizeId, newQuantity, timestamp);
     },
     [dispatch, debouncedUpdate],
   );
@@ -85,6 +87,7 @@ export default function CartPage() {
   const handleRemoveItem = useCallback(
     (productId: string, productSizeId: string | null) => {
       const key = cartItemKey(productId, productSizeId);
+      const timestamp = Date.now();
 
       // Optimistic update immediately
       dispatch(
@@ -92,13 +95,14 @@ export default function CartPage() {
           productId,
           productSizeId,
           quantity: 0,
+          optimisticTimestamp: timestamp,
         }),
       );
 
       showToast.success("Item removed from cart");
 
       // Immediate API call for explicit remove (cancels any pending debounce)
-      immediateUpdate(key, productId, productSizeId, 0);
+      immediateUpdate(key, productId, productSizeId, 0, timestamp);
     },
     [dispatch, immediateUpdate],
   );

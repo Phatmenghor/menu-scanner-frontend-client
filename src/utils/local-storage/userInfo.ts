@@ -29,6 +29,6 @@ export function getUserInfo() {
   return null;
 }
 
-export function removeUserInfo(): void {
+export function clearUserInfo(): void {
   deleteCookie(USER_INFO_KEY);
 }

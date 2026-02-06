@@ -96,6 +96,8 @@ export function ProductCard({ product, className }: ProductCardProps) {
       return;
     }
 
+    const timestamp = Date.now();
+
     // Optimistic update - immediately show in UI
     cartDispatch(
       addLocalCartItem({
@@ -108,6 +110,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
         finalPrice: product.displayPrice,
         currentPrice: product.displayOriginPrice || product.displayPrice,
         hasPromotion: product.hasActivePromotion,
+        optimisticTimestamp: timestamp,
       })
     );
 
@@ -115,7 +118,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
     setIsAddingToCart(true);
     try {
       await cartDispatch(
-        addToCart({ productId: product.id, quantity: 1 }),
+        addToCart({ productId: product.id, quantity: 1, optimisticTimestamp: timestamp }),
       ).unwrap();
       showToast.success("Added to cart");
     } catch (error: any) {
@@ -140,6 +143,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
       const newQuantity = quantity + 1;
       const key = cartItemKey(product.id, null);
+      const timestamp = Date.now();
 
       // Optimistic update
       cartDispatch(
@@ -147,11 +151,12 @@ export function ProductCard({ product, className }: ProductCardProps) {
           productId: product.id,
           productSizeId: null,
           quantity: newQuantity,
+          optimisticTimestamp: timestamp,
         })
       );
 
       // Debounced API call (aborts previous in-flight request)
-      debouncedUpdate(key, product.id, null, newQuantity);
+      debouncedUpdate(key, product.id, null, newQuantity, timestamp);
     },
     [product, cartItem, quantity, cartDispatch, debouncedUpdate],
   );
@@ -171,6 +176,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
       const newQuantity = quantity - 1;
       const key = cartItemKey(product.id, null);
+      const timestamp = Date.now();
 
       // Optimistic update
       cartDispatch(
@@ -178,6 +184,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
           productId: product.id,
           productSizeId: null,
           quantity: newQuantity,
+          optimisticTimestamp: timestamp,
         })
       );
 
@@ -186,7 +193,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
       }
 
       // Debounced API call (aborts previous in-flight request)
-      debouncedUpdate(key, product.id, null, newQuantity);
+      debouncedUpdate(key, product.id, null, newQuantity, timestamp);
     },
     [product, cartItem, quantity, cartDispatch, debouncedUpdate],
   );
@@ -319,9 +326,8 @@ export function ProductCard({ product, className }: ProductCardProps) {
             <div className="mt-auto">
               <div className="flex flex-col mb-2">
                 <span
-                  className={`text-xs text-muted-foreground line-through ${
-                    product.hasActivePromotion ? "visible" : "invisible"
-                  }`}
+                  className={`text-xs text-muted-foreground line-through ${product.hasActivePromotion ? "visible" : "invisible"
+                    }`}
                 >
                   {formatCurrency(product.displayOriginPrice)}
                 </span>

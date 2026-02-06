@@ -4,7 +4,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { axiosInstance } from "@/utils/axios";
+import { axiosClient } from "@/utils/axios";
 import { PaginationResponseModel } from "@/redux/features/master-data/store/models/response/pagination-response";
 import { CategoriesResponseModel } from "@/redux/features/master-data/store/models/response/categories-response";
 
@@ -25,7 +25,7 @@ export const fetchPublicCategories = createAsyncThunk<
   { rejectValue: string }
 >("publicCategories/fetchAll", async (params, { rejectWithValue }) => {
   try {
-    const response = await axiosInstance.get<
+    const response = await axiosClient.get<
       PaginationResponseModel<CategoriesResponseModel>
     >("/public/categories", {
       params: {

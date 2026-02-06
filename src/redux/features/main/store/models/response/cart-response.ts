@@ -22,6 +22,7 @@ export interface CartItemModel {
   promotionType: string | null;
   promotionValue: number | null;
   promotionEndDate: string | null;
+  lastOptimisticTimestamp?: number;
 }
 
 // Backward compatible alias

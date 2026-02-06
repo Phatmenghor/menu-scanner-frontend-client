@@ -39,7 +39,7 @@ import { ROUTES } from "@/constants/app-routes/routes";
 import { clearToken } from "@/utils/local-storage/token";
 import { CustomAvatar } from "@/components/shared/avator/custom-avator";
 import { isBase64Image, uploadImage } from "@/utils/common/upload-image";
-import { removeUserInfo } from "@/utils/local-storage/userInfo";
+import { clearUserInfo } from "@/utils/local-storage/userInfo";
 import { TelegramSyncCard } from "@/components/shared/telegram/telegram-sync-card";
 import Link from "next/link";
 import { Loading } from "@/components/shared/common/loading";
@@ -174,7 +174,7 @@ export default function UserProfilePage() {
 
       // Clear all auth data
       clearToken();
-      removeUserInfo();
+      clearUserInfo();
 
       // Redirect to login
       setTimeout(() => {

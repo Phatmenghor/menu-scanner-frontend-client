@@ -21,7 +21,7 @@ import {
 } from "../thunks/social-auth-thunks";
 import { AuthState } from "../models/type/auth-types";
 import { storeTokens, clearAllTokens } from "@/utils/local-storage/token";
-import { storeUserInfo, removeUserInfo } from "@/utils/local-storage/userInfo";
+import { storeUserInfo, clearUserInfo } from "@/utils/local-storage/userInfo";
 import { SocialSyncResponse } from "../models/response/social-auth-response";
 
 /**
@@ -339,7 +339,7 @@ const authSlice = createSlice({
         state.socialSync = null;
         state.isNewUser = false;
         clearAllTokens();
-        removeUserInfo();
+        clearUserInfo();
       });
   },
 });

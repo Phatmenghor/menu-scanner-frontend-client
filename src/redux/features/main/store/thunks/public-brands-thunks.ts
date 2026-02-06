@@ -4,7 +4,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { axiosInstance } from "@/utils/axios";
+import { axiosClient } from "@/utils/axios";
 import { PaginationResponseModel } from "@/redux/features/master-data/store/models/response/pagination-response";
 import { BrandResponseModel } from "@/redux/features/master-data/store/models/response/brand-response";
 
@@ -27,7 +27,7 @@ export const fetchPublicBrands = createAsyncThunk<
   "publicBrands/fetchAll",
   async (params, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get<
+      const response = await axiosClient.get<
         PaginationResponseModel<BrandResponseModel>
       >("/public/brands", {
         params: {
