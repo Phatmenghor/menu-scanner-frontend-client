@@ -265,11 +265,11 @@ export function SizeSelectionModal({
         // Optimistic local update
         if (originalQty === 0 && newQty > 0) {
           const size = displayProduct.sizes?.find((s) => s.id === sizeId);
-          const displayPrice =
+          const itemFinalPrice =
             size?.finalPrice || displayProduct.displayPrice || 0;
-          const originalPrice = size?.hasPromotion
+          const itemCurrentPrice = size?.hasPromotion
             ? size.price
-            : displayProduct.displayOriginPrice || displayPrice;
+            : displayProduct.displayOriginPrice || itemFinalPrice;
           const hasDiscount = size
             ? size.hasPromotion
             : displayProduct.hasActivePromotion;
@@ -280,11 +280,11 @@ export function SizeSelectionModal({
               productSizeId: sizeId,
               quantity: newQty,
               productName: displayProduct.name,
-              productMainImageUrl: displayProduct.mainImageUrl,
-              productSizeName: size?.name || null,
-              displayPrice,
-              originalPrice,
-              hasActivePromotion: hasDiscount,
+              productImageUrl: displayProduct.mainImageUrl,
+              sizeName: size?.name || null,
+              finalPrice: itemFinalPrice,
+              currentPrice: itemCurrentPrice,
+              hasPromotion: hasDiscount,
             }),
           );
         } else {

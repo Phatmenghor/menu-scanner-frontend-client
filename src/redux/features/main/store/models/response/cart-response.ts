@@ -1,35 +1,27 @@
 export interface CartResponseModel {
   items: CartItemModel[];
   totalItems: number;
-  totalOriginalPrice: number;
+  subtotal: number;
   totalDiscount: number;
-  totalPayment: number;
+  finalTotal: number;
 }
 
 export interface CartItemModel {
   id: string;
-  createdAt: string;
-  updatedAt: string;
-  createdBy: string;
-  updatedBy: string;
   productId: string;
   productName: string;
-  productMainImageUrl: string;
+  productImageUrl: string;
   productSizeId: string | null;
-  productSizeName: string | null;
+  sizeName: string | null;
+  currentPrice: number;
+  finalPrice: number;
+  hasPromotion: boolean;
   quantity: number;
-  originalPrice: number;
-  displayPrice: number;
-  unitPrice: number;
-  totalOriginalPrice: number;
   totalPrice: number;
-  discountAmount: number;
-  promotionType: string;
-  promotionValue: number;
-  promotionFromDate: string;
-  promotionToDate: string;
-  hasActivePromotion: boolean;
-  note: string | null;
+  isAvailable: boolean;
+  promotionType: string | null;
+  promotionValue: number | null;
+  promotionEndDate: string | null;
 }
 
 // Backward compatible alias

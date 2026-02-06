@@ -24,6 +24,7 @@ import {
   fetchCart,
   updateCartItem,
 } from "@/redux/features/main/store/thunks/cart-thunks";
+import { updateLocalCartItem } from "@/redux/features/main/store/slice/cart-slice";
 
 export default function CartPage() {
   const router = useRouter();
@@ -32,9 +33,9 @@ export default function CartPage() {
     dispatch,
     items,
     totalItems,
-    totalOriginalPrice,
+    subtotal,
     totalDiscount,
-    totalPayment,
+    finalTotal,
     loading,
     loaded,
   } = useCartState();
@@ -51,43 +52,66 @@ export default function CartPage() {
     }
   }, [isAuthenticated, loaded, loading.fetch, dispatch, router]);
 
-  const handleUpdateQuantity = async (
+  // Optimistic update + background API call (no blocking)
+  const handleUpdateQuantity = (
     productId: string,
     productSizeId: string | null,
     newQuantity: number,
   ) => {
-    try {
-      await dispatch(
-        updateCartItem({
-          productId,
-          productSizeId,
-          quantity: newQuantity,
-        }),
-      ).unwrap();
-      if (newQuantity === 0) {
-        showToast.success("Item removed from cart");
-      }
-    } catch (error: any) {
-      showToast.error(error?.message || "Failed to update cart");
+    // Optimistic local update first
+    dispatch(
+      updateLocalCartItem({
+        productId,
+        productSizeId,
+        quantity: newQuantity,
+      }),
+    );
+
+    if (newQuantity === 0) {
+      showToast.success("Item removed from cart");
     }
+
+    // API call in background (not awaited, not blocking)
+    dispatch(
+      updateCartItem({
+        productId,
+        productSizeId,
+        quantity: newQuantity,
+      }),
+    )
+      .unwrap()
+      .catch((error: any) => {
+        showToast.error(error?.message || "Failed to update cart");
+      });
   };
 
-  const handleRemoveItem = async (
+  const handleRemoveItem = (
     productId: string,
     productSizeId: string | null,
   ) => {
-    try {
-      await dispatch(
-        updateCartItem({
-          productId,
-          productSizeId,
-          quantity: 0,
-        }),
-      ).unwrap();
-      showToast.success("Item removed from cart");
-    } catch (error: any) {
-      showToast.error(error?.message || "Failed to remove item");
-    }
+    // Optimistic local update
+    dispatch(
+      updateLocalCartItem({
+        productId,
+        productSizeId,
+        quantity: 0,
+      }),
+    );
+
+    showToast.success("Item removed from cart");
+
+    // API call in background
+    dispatch(
+      updateCartItem({
+        productId,
+        productSizeId,
+        quantity: 0,
+      }),
+    )
+      .unwrap()
+      .catch((error: any) => {
+        showToast.error(error?.message || "Failed to remove item");
+      });
   };
 
   const handleClearCart = async () => {
@@ -190,7 +214,7 @@ export default function CartPage() {
                     <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden bg-muted">
                       <Image
                         src={
-                          item.productMainImageUrl ||
+                          item.productImageUrl ||
                           `https://picsum.photos/200/200?random=${item.productId}`
                         }
                         alt={item.productName}
@@ -207,20 +231,20 @@ export default function CartPage() {
                         {item.productName}
                       </h3>
                     </Link>
-                    {item.productSizeName && (
+                    {item.sizeName && (
                       <p className="text-xs text-muted-foreground mb-2">
-                        Size: {item.productSizeName}
+                        Size: {item.sizeName}
                       </p>
                     )}
                     <div className="flex items-center gap-2 mb-3">
                       <span className="font-bold text-primary">
-                        {formatCurrency(item.displayPrice)}
+                        {formatCurrency(item.finalPrice)}
                       </span>
-                      {item.hasActivePromotion &&
-                        item.originalPrice > item.displayPrice && (
+                      {item.hasPromotion &&
+                        item.currentPrice > item.finalPrice && (
                           <>
                             <span className="text-xs text-muted-foreground line-through">
-                              {formatCurrency(item.originalPrice)}
+                              {formatCurrency(item.currentPrice)}
                             </span>
                             <Badge variant="destructive" className="text-xs">
                               {item.promotionType === "PERCENTAGE"
@@ -231,7 +255,7 @@ export default function CartPage() {
                         )}
                     </div>
 
-                    {/* Quantity Controls */}
+                    {/* Quantity Controls - never disabled, optimistic updates */}
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-2">
                         <CustomButton
@@ -245,7 +269,6 @@ export default function CartPage() {
                               item.quantity - 1,
                             )
                           }
-                          disabled={loading.update}
                         >
                           <Minus className="h-3 w-3" />
                         </CustomButton>
@@ -263,7 +286,6 @@ export default function CartPage() {
                               item.quantity + 1,
                             )
                           }
-                          disabled={loading.update}
                         >
                           <Plus className="h-3 w-3" />
                         </CustomButton>
@@ -274,7 +296,6 @@ export default function CartPage() {
                         onClick={() =>
                           handleRemoveItem(item.productId, item.productSizeId)
                         }
-                        disabled={loading.update}
                         className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -290,7 +311,7 @@ export default function CartPage() {
                     </p>
                     {item.quantity > 1 && (
                       <p className="text-xs text-muted-foreground">
-                        {formatCurrency(item.displayPrice)} each
+                        {formatCurrency(item.finalPrice)} each
                       </p>
                     )}
                   </div>
@@ -323,7 +344,7 @@ export default function CartPage() {
                     Subtotal ({totalItems} items)
                   </span>
                   <span className="font-semibold">
-                    {formatCurrency(totalOriginalPrice)}
+                    {formatCurrency(subtotal)}
                   </span>
                 </div>
                 {totalDiscount > 0 && (
@@ -342,7 +363,7 @@ export default function CartPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-bold">Total</span>
                     <span className="text-2xl font-bold text-primary">
-                      {formatCurrency(totalPayment)}
+                      {formatCurrency(finalTotal)}
                     </span>
                   </div>
                   {totalDiscount > 0 && (

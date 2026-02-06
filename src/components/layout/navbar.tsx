@@ -313,9 +313,9 @@ export function Navbar() {
                 {cartItemCount > 0 && (
                   <Badge
                     variant="destructive"
-                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                    className="absolute -top-1 -right-1 min-w-[20px] h-5 flex items-center justify-center px-1 text-xs"
                   >
-                    {cartItemCount}
+                    {cartItemCount > 99 ? "99+" : cartItemCount}
                   </Badge>
                 )}
               </CustomButton>

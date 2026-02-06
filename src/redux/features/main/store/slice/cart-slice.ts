@@ -13,9 +13,9 @@ import {
 interface CartState {
   items: CartItemModel[];
   totalItems: number;
-  totalOriginalPrice: number;
+  subtotal: number;
   totalDiscount: number;
-  totalPayment: number;
+  finalTotal: number;
   loading: {
     fetch: boolean;
     add: boolean;
@@ -29,9 +29,9 @@ interface CartState {
 const initialState: CartState = {
   items: [],
   totalItems: 0,
-  totalOriginalPrice: 0,
+  subtotal: 0,
   totalDiscount: 0,
-  totalPayment: 0,
+  finalTotal: 0,
   loading: {
     fetch: false,
     add: false,
@@ -49,9 +49,20 @@ const updateCartFromResponse = (
 ) => {
   state.items = response.items || [];
   state.totalItems = response.totalItems || 0;
-  state.totalOriginalPrice = response.totalOriginalPrice || 0;
+  state.subtotal = response.subtotal || 0;
   state.totalDiscount = response.totalDiscount || 0;
-  state.totalPayment = response.totalPayment || 0;
+  state.finalTotal = response.finalTotal || 0;
+};
+
+// Helper to recalculate local totals from items
+const recalculateTotals = (state: CartState) => {
+  state.totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
+  state.subtotal = state.items.reduce(
+    (sum, i) => sum + i.currentPrice * i.quantity,
+    0
+  );
+  state.finalTotal = state.items.reduce((sum, i) => sum + i.totalPrice, 0);
+  state.totalDiscount = state.subtotal - state.finalTotal;
 };
 
 const cartSlice = createSlice({
@@ -61,9 +72,9 @@ const cartSlice = createSlice({
     resetCart: (state) => {
       state.items = [];
       state.totalItems = 0;
-      state.totalOriginalPrice = 0;
+      state.subtotal = 0;
       state.totalDiscount = 0;
-      state.totalPayment = 0;
+      state.finalTotal = 0;
       state.loaded = false;
       state.error = null;
     },
@@ -75,11 +86,11 @@ const cartSlice = createSlice({
         productSizeId?: string | null;
         quantity: number;
         productName: string;
-        productMainImageUrl: string;
-        productSizeName?: string | null;
-        displayPrice: number;
-        originalPrice: number;
-        hasActivePromotion?: boolean;
+        productImageUrl: string;
+        sizeName?: string | null;
+        finalPrice: number;
+        currentPrice: number;
+        hasPromotion?: boolean;
       }>
     ) => {
       const {
@@ -87,11 +98,11 @@ const cartSlice = createSlice({
         productSizeId,
         quantity,
         productName,
-        productMainImageUrl,
-        productSizeName,
-        displayPrice,
-        originalPrice,
-        hasActivePromotion,
+        productImageUrl,
+        sizeName,
+        finalPrice,
+        currentPrice,
+        hasPromotion,
       } = action.payload;
 
       // Check if item already exists
@@ -104,46 +115,30 @@ const cartSlice = createSlice({
       if (existingItem) {
         // Update existing item quantity
         existingItem.quantity += quantity;
-        existingItem.totalPrice = existingItem.displayPrice * existingItem.quantity;
-        existingItem.totalOriginalPrice = existingItem.originalPrice * existingItem.quantity;
+        existingItem.totalPrice = existingItem.finalPrice * existingItem.quantity;
       } else {
         // Add new item with temporary ID
         const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         state.items.push({
           id: tempId,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          createdBy: "",
-          updatedBy: "",
           productId,
           productName,
-          productMainImageUrl,
+          productImageUrl,
           productSizeId: productSizeId || null,
-          productSizeName: productSizeName || null,
+          sizeName: sizeName || null,
           quantity,
-          originalPrice,
-          displayPrice,
-          unitPrice: displayPrice,
-          totalOriginalPrice: originalPrice * quantity,
-          totalPrice: displayPrice * quantity,
-          discountAmount: (originalPrice - displayPrice) * quantity,
-          promotionType: "",
-          promotionValue: 0,
-          promotionFromDate: "",
-          promotionToDate: "",
-          hasActivePromotion: hasActivePromotion || false,
-          note: null,
+          currentPrice,
+          finalPrice,
+          totalPrice: finalPrice * quantity,
+          hasPromotion: hasPromotion || false,
+          isAvailable: true,
+          promotionType: null,
+          promotionValue: null,
+          promotionEndDate: null,
         });
       }
 
-      // Recalculate totals
-      state.totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
-      state.totalOriginalPrice = state.items.reduce(
-        (sum, i) => sum + i.totalOriginalPrice,
-        0
-      );
-      state.totalPayment = state.items.reduce((sum, i) => sum + i.totalPrice, 0);
-      state.totalDiscount = state.totalOriginalPrice - state.totalPayment;
+      recalculateTotals(state);
     },
     updateLocalCartItem: (
       state,
@@ -164,20 +159,9 @@ const cartSlice = createSlice({
           state.items = state.items.filter((i) => i.id !== item.id);
         } else {
           item.quantity = action.payload.quantity;
-          item.totalPrice = item.displayPrice * action.payload.quantity;
-          item.totalOriginalPrice = item.originalPrice * action.payload.quantity;
+          item.totalPrice = item.finalPrice * action.payload.quantity;
         }
-        // Recalculate totals
-        state.totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
-        state.totalOriginalPrice = state.items.reduce(
-          (sum, i) => sum + i.totalOriginalPrice,
-          0
-        );
-        state.totalPayment = state.items.reduce(
-          (sum, i) => sum + i.totalPrice,
-          0
-        );
-        state.totalDiscount = state.totalOriginalPrice - state.totalPayment;
+        recalculateTotals(state);
       }
     },
   },
@@ -248,9 +232,9 @@ const cartSlice = createSlice({
         state.loading.clear = false;
         state.items = [];
         state.totalItems = 0;
-        state.totalOriginalPrice = 0;
+        state.subtotal = 0;
         state.totalDiscount = 0;
-        state.totalPayment = 0;
+        state.finalTotal = 0;
         state.error = null;
       })
       .addCase(clearCart.rejected, (state, action) => {

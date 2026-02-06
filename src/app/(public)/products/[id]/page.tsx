@@ -241,11 +241,11 @@ export default function ProductDetailPage() {
             productSizeId: sizeId,
             quantity: newQuantity,
             productName: product.name,
-            productMainImageUrl: product.mainImageUrl,
-            productSizeName: selectedSize?.name || null,
-            displayPrice: price,
-            originalPrice: origPrice,
-            hasActivePromotion: isDiscounted,
+            productImageUrl: product.mainImageUrl,
+            sizeName: selectedSize?.name || null,
+            finalPrice: price,
+            currentPrice: origPrice,
+            hasPromotion: isDiscounted,
           })
         );
       } else {

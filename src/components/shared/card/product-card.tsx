@@ -102,11 +102,11 @@ export function ProductCard({ product, className }: ProductCardProps) {
         productSizeId: null,
         quantity: 1,
         productName: product.name,
-        productMainImageUrl: product.mainImageUrl,
-        productSizeName: null,
-        displayPrice: product.displayPrice,
-        originalPrice: product.displayOriginPrice || product.displayPrice,
-        hasActivePromotion: product.hasActivePromotion,
+        productImageUrl: product.mainImageUrl,
+        sizeName: null,
+        finalPrice: product.displayPrice,
+        currentPrice: product.displayOriginPrice || product.displayPrice,
+        hasPromotion: product.hasActivePromotion,
       })
     );
 
