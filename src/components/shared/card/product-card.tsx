@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, ShoppingCart, Plus, Minus, Ruler } from "lucide-react";
@@ -44,6 +44,16 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSizeModal, setShowSizeModal] = useState(false);
+
+  // Ref for debounced API calls
+  const apiDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (apiDebounceRef.current) clearTimeout(apiDebounceRef.current);
+    };
+  }, []);
 
   // Get current cart item for this product (without size)
   const cartItem = cartItems.find(
@@ -124,83 +134,93 @@ export function ProductCard({ product, className }: ProductCardProps) {
     }
   };
 
-  const handleIncrement = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleIncrement = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
 
-    // If product has sizes, show size selection modal
-    if (product.hasSizes) {
-      setShowSizeModal(true);
-      return;
-    }
+      // If product has sizes, show size selection modal
+      if (product.hasSizes) {
+        setShowSizeModal(true);
+        return;
+      }
 
-    if (!cartItem) return;
+      if (!cartItem) return;
 
-    // Optimistic update
-    cartDispatch(
-      updateLocalCartItem({
-        productId: product.id,
-        productSizeId: null,
-        quantity: quantity + 1,
-      })
-    );
+      const newQuantity = quantity + 1;
 
-    // API call in background
-    setIsAddingToCart(true);
-    try {
-      await cartDispatch(
-        updateCartItem({
+      // Optimistic update
+      cartDispatch(
+        updateLocalCartItem({
           productId: product.id,
-          quantity: quantity + 1,
-        }),
-      ).unwrap();
-    } catch (error: any) {
-      showToast.error(error?.message || "Failed to update cart");
-    } finally {
-      setIsAddingToCart(false);
-    }
-  };
+          productSizeId: null,
+          quantity: newQuantity,
+        })
+      );
 
-  const handleDecrement = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+      // Debounced API call
+      if (apiDebounceRef.current) clearTimeout(apiDebounceRef.current);
+      apiDebounceRef.current = setTimeout(() => {
+        cartDispatch(
+          updateCartItem({
+            productId: product.id,
+            quantity: newQuantity,
+          }),
+        )
+          .unwrap()
+          .catch((error: any) => {
+            showToast.error(error?.message || "Failed to update cart");
+          });
+      }, 500);
+    },
+    [product, cartItem, quantity, cartDispatch],
+  );
 
-    // If product has sizes, show size selection modal for management
-    if (product.hasSizes) {
-      setShowSizeModal(true);
-      return;
-    }
+  const handleDecrement = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
 
-    if (!cartItem) return;
+      // If product has sizes, show size selection modal for management
+      if (product.hasSizes) {
+        setShowSizeModal(true);
+        return;
+      }
 
-    // Optimistic update
-    cartDispatch(
-      updateLocalCartItem({
-        productId: product.id,
-        productSizeId: null,
-        quantity: quantity - 1,
-      })
-    );
+      if (!cartItem) return;
 
-    if (quantity === 1) {
-      showToast.success("Removed from cart");
-    }
+      const newQuantity = quantity - 1;
 
-    // API call in background
-    setIsAddingToCart(true);
-    try {
-      await cartDispatch(
-        updateCartItem({
+      // Optimistic update
+      cartDispatch(
+        updateLocalCartItem({
           productId: product.id,
-          quantity: quantity - 1,
-        }),
-      ).unwrap();
-    } catch (error: any) {
-      showToast.error(error?.message || "Failed to update cart");
-    } finally {
-      setIsAddingToCart(false);
-    }
-  };
+          productSizeId: null,
+          quantity: newQuantity,
+        })
+      );
+
+      if (quantity === 1) {
+        showToast.success("Removed from cart");
+      }
+
+      // Debounced API call
+      if (apiDebounceRef.current) clearTimeout(apiDebounceRef.current);
+      apiDebounceRef.current = setTimeout(() => {
+        cartDispatch(
+          updateCartItem({
+            productId: product.id,
+            quantity: newQuantity,
+          }),
+        )
+          .unwrap()
+          .catch((error: any) => {
+            showToast.error(error?.message || "Failed to update cart");
+          });
+      }, 500);
+    },
+    [product, cartItem, quantity, cartDispatch],
+  );
 
   // Favorite handler - toggle only (auto add/remove)
   const handleToggleFavorite = async (e: React.MouseEvent) => {

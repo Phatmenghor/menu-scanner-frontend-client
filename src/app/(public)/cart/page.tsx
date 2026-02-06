@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -24,6 +24,7 @@ import {
   fetchCart,
   updateCartItem,
 } from "@/redux/features/main/store/thunks/cart-thunks";
+import { updateLocalCartItem } from "@/redux/features/main/store/slice/cart-slice";
 
 export default function CartPage() {
   const router = useRouter();
@@ -39,6 +40,9 @@ export default function CartPage() {
     loaded,
   } = useCartState();
 
+  // Refs for debounced API calls
+  const debounceTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
   useEffect(() => {
     if (!isAuthenticated) {
       router.push("/");
@@ -51,44 +55,94 @@ export default function CartPage() {
     }
   }, [isAuthenticated, loaded, loading.fetch, dispatch, router]);
 
-  const handleUpdateQuantity = async (
-    productId: string,
-    productSizeId: string | null,
-    newQuantity: number,
-  ) => {
-    try {
-      await dispatch(
-        updateCartItem({
+  // Cleanup debounce timers on unmount
+  useEffect(() => {
+    return () => {
+      debounceTimersRef.current.forEach((timer) => clearTimeout(timer));
+    };
+  }, []);
+
+  const handleUpdateQuantity = useCallback(
+    (
+      productId: string,
+      productSizeId: string | null,
+      newQuantity: number,
+    ) => {
+      const key = `${productId}_${productSizeId}`;
+
+      // Optimistic update immediately
+      dispatch(
+        updateLocalCartItem({
           productId,
           productSizeId,
           quantity: newQuantity,
         }),
-      ).unwrap();
+      );
+
       if (newQuantity === 0) {
         showToast.success("Item removed from cart");
       }
-    } catch (error: any) {
-      showToast.error(error?.message || "Failed to update cart");
-    }
-  };
 
-  const handleRemoveItem = async (
-    productId: string,
-    productSizeId: string | null,
-  ) => {
-    try {
-      await dispatch(
+      // Debounce the API call
+      const existingTimer = debounceTimersRef.current.get(key);
+      if (existingTimer) clearTimeout(existingTimer);
+
+      debounceTimersRef.current.set(
+        key,
+        setTimeout(() => {
+          debounceTimersRef.current.delete(key);
+          dispatch(
+            updateCartItem({
+              productId,
+              productSizeId,
+              quantity: newQuantity,
+            }),
+          )
+            .unwrap()
+            .catch((error: any) => {
+              showToast.error(error?.message || "Failed to update cart");
+            });
+        }, 500),
+      );
+    },
+    [dispatch],
+  );
+
+  const handleRemoveItem = useCallback(
+    (productId: string, productSizeId: string | null) => {
+      const key = `${productId}_${productSizeId}`;
+
+      // Cancel any pending debounced update for this item
+      const existingTimer = debounceTimersRef.current.get(key);
+      if (existingTimer) clearTimeout(existingTimer);
+      debounceTimersRef.current.delete(key);
+
+      // Optimistic update immediately
+      dispatch(
+        updateLocalCartItem({
+          productId,
+          productSizeId,
+          quantity: 0,
+        }),
+      );
+
+      showToast.success("Item removed from cart");
+
+      // API call immediately for explicit remove
+      dispatch(
         updateCartItem({
           productId,
           productSizeId,
           quantity: 0,
         }),
-      ).unwrap();
-      showToast.success("Item removed from cart");
-    } catch (error: any) {
-      showToast.error(error?.message || "Failed to remove item");
-    }
-  };
+      )
+        .unwrap()
+        .catch((error: any) => {
+          showToast.error(error?.message || "Failed to remove item");
+        });
+    },
+    [dispatch],
+  );
 
   const handleClearCart = async () => {
     if (!confirm("Are you sure you want to clear your cart?")) return;
@@ -245,7 +299,6 @@ export default function CartPage() {
                               item.quantity - 1,
                             )
                           }
-                          disabled={loading.update}
                         >
                           <Minus className="h-3 w-3" />
                         </CustomButton>
@@ -263,7 +316,6 @@ export default function CartPage() {
                               item.quantity + 1,
                             )
                           }
-                          disabled={loading.update}
                         >
                           <Plus className="h-3 w-3" />
                         </CustomButton>
@@ -274,7 +326,6 @@ export default function CartPage() {
                         onClick={() =>
                           handleRemoveItem(item.productId, item.productSizeId)
                         }
-                        disabled={loading.update}
                         className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
                       >
                         <Trash2 className="h-4 w-4" />
