@@ -52,6 +52,7 @@ export function SizeSelectionModal({
     useState<ProductDetailResponseModel | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [clearingSize, setClearingSize] = useState<string | null>(null);
 
   // Local pending quantities: key = sizeId (or "no_size"), value = quantity
   const [pendingQuantities, setPendingQuantities] = useState<
@@ -174,31 +175,68 @@ export function SizeSelectionModal({
     [displayProduct, selectedSize, getCartQuantityForSize],
   );
 
-  // Clear a specific size from cart
+  // Clear a specific size from cart - calls API immediately
   const handleClearSize = useCallback(
-    (sizeId: string | null) => {
+    async (sizeId: string | null) => {
       if (!displayProduct) return;
 
       const key = sizeId || "no_size";
-      const originalQty = getCartQuantityForSize(sizeId);
+      const currentQty = getCartQuantityForSize(sizeId);
 
+      // If already 0 in cart and just pending, just reset the pending state
+      if (currentQty === 0) {
+        setPendingQuantities((prev) => {
+          const next = new Map(prev);
+          next.delete(key);
+          return next;
+        });
+        setModifiedSizes((prev) => {
+          const next = new Set(prev);
+          next.delete(key);
+          return next;
+        });
+        return;
+      }
+
+      // Optimistic local update
+      dispatch(
+        updateLocalCartItem({
+          productId: displayProduct.id,
+          productSizeId: sizeId,
+          quantity: 0,
+        }),
+      );
+
+      // Clear any pending state for this size since we're syncing directly
       setPendingQuantities((prev) => {
         const next = new Map(prev);
-        next.set(key, 0);
+        next.delete(key);
+        return next;
+      });
+      setModifiedSizes((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
         return next;
       });
 
-      setModifiedSizes((prev) => {
-        const next = new Set(prev);
-        if (originalQty === 0) {
-          next.delete(key);
-        } else {
-          next.add(key);
-        }
-        return next;
-      });
+      // Call API immediately
+      setClearingSize(key);
+      try {
+        await dispatch(
+          updateCartItem({
+            productId: displayProduct.id,
+            productSizeId: sizeId,
+            quantity: 0,
+          }),
+        ).unwrap();
+        showToast.success("Removed from cart");
+      } catch (error: any) {
+        showToast.error(error?.message || "Failed to remove from cart");
+      } finally {
+        setClearingSize(null);
+      }
     },
-    [displayProduct, getCartQuantityForSize],
+    [displayProduct, dispatch, getCartQuantityForSize],
   );
 
   // Discard all pending changes
@@ -447,17 +485,22 @@ export function SizeSelectionModal({
                     min={0}
                     size="sm"
                   />
-                  {/* Clear button for selected size */}
-                  {currentQuantity > 0 && (
+                  {/* Clear button for selected size - calls API immediately */}
+                  {(currentQuantity > 0 || getCartQuantityForSize(selectedSize?.id || null) > 0) && (
                     <CustomButton
                       variant="outline"
                       size="sm"
                       className="h-8 px-2 text-destructive border-destructive/30 hover:bg-destructive hover:text-destructive-foreground"
+                      disabled={clearingSize === (selectedSize?.id || "no_size")}
                       onClick={() =>
                         handleClearSize(selectedSize?.id || null)
                       }
                     >
-                      <Trash2 className="h-3.5 w-3.5 mr-1" />
+                      {clearingSize === (selectedSize?.id || "no_size") ? (
+                        <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-3.5 w-3.5 mr-1" />
+                      )}
                       Clear
                     </CustomButton>
                   )}
