@@ -1,0 +1,135 @@
+{
+  "app": {
+    "[project]/src/app/(auth)/login/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/(public)/brands/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/(public)/business-profile/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/(public)/cart/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/(public)/categories/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/(public)/favorites/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/(public)/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/(public)/products/[id]/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/(public)/products/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/(public)/profile/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/_not-found/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/admin/(business)/product-promotions/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/admin/(business)/products/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/admin/(master-data)/banner/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/admin/(master-data)/brand/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/admin/(master-data)/categories/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/admin/(master-data)/delivery-options/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/admin/(master-data)/exchange-rate/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/admin/admin-sessions/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/admin/business-profile/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/admin/hr/(master-data)/leave-type/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/admin/hr/(master-data)/work-schedule-type/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/admin/hr/(master-data)/work-schedule/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/admin/hr/attendance/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/admin/hr/leave/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/admin/hr/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/admin/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/admin/profile/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/admin/reviews/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/admin/users/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/admin/users/roles/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ],
+    "[project]/src/app/admin/users/sessions/page": [
+      "static/media/GeistVF-s.p.4c3c0b96.woff",
+      "static/media/GeistMonoVF-s.p.2cee7d16.woff"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pages": {},
+  "pagesUsingSizeAdjust": false
+}
