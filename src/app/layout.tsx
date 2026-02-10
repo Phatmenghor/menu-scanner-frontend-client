@@ -2,13 +2,12 @@ import type { Metadata } from "next";
 import { ClientProviders } from "@/context/client-provider";
 import { getMessages } from "next-intl/server";
 import localFont from "next/font/local";
-import { locales, defaultLocale, type Locale } from "@/i18n/request";
 import "../styles/globals.css";
 import PageProgressBar from "@/components/shared/progress/global-n-progress";
 import { LocaleProvider } from "@/context/locale-provider";
-import { headers } from "next/headers";
 import { ScrollToTop } from "@/components/shared/common/scroll-to-top";
 import { AuthProvider } from "@/context/auth-provider";
+import { defaultLocale, type Locale } from "@/i18n/request";
 
 const geistSans = localFont({
   src: "../../public/fonts/GeistVF.woff",
@@ -29,17 +28,12 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params?: { locale?: Locale };
 }) {
-  const headersList = headers();
-  const localeHeader = headersList.get("x-locale");
-  const locale = (
-    localeHeader && locales.includes(localeHeader as Locale)
-      ? localeHeader
-      : defaultLocale
-  ) as Locale;
-
+  const locale = params?.locale ?? defaultLocale;
   const messages = await getMessages({ locale });
 
   return (
