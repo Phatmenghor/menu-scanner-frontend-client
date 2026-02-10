@@ -11,43 +11,41 @@ import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { CustomAvatar } from "@/components/shared/avator/custom-avator";
 import {
   selectIsFetchingDetail,
-  selectSelectedDeliveryOptions,
-} from "../store/selectors/delivery-options-selector";
-import { fetchDeliveryOptionsByIdService } from "../store/thunks/delivery-options-thunks";
-import { clearSelectedDeliveryOptions } from "../store/slice/delivery-options-slice";
+  selectSelectedOrderStatus,
+} from "../store/selectors/order-status-selector";
+import { fetchOrderStatusByIdService } from "../store/thunks/order-status-thunks";
+import { clearSelectedOrderStatus } from "../store/slice/order-status-slice";
 
-interface DeliveryOptionsDetailModalProps {
-  deliveryOptionsId?: string;
+interface OrderStatusDetailModalProps {
+  orderStatusId?: string;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function DeliveryOptionsDetailModal({
-  deliveryOptionsId,
+export function OrderStatusDetailModal({
+  orderStatusId,
   isOpen,
   onClose,
-}: DeliveryOptionsDetailModalProps) {
+}: OrderStatusDetailModalProps) {
   const dispatch = useAppDispatch();
   const isFetchingDetail = useAppSelector(selectIsFetchingDetail);
-  const deliveryOptionsData = useAppSelector(selectSelectedDeliveryOptions);
+  const orderStatusData = useAppSelector(selectSelectedOrderStatus);
 
   useEffect(() => {
-    const fetchDeliveryOptionsData = async () => {
-      if (!deliveryOptionsId || !isOpen) return;
+    const fetchOrderStatusData = async () => {
+      if (!orderStatusId || !isOpen) return;
       try {
-        await dispatch(
-          fetchDeliveryOptionsByIdService(deliveryOptionsId)
-        ).unwrap();
+        await dispatch(fetchOrderStatusByIdService(orderStatusId)).unwrap();
       } catch (error: any) {
-        console.error("Error fetching delivery options data:", error);
+        console.error("Error fetching order status data:", error);
       }
     };
 
-    fetchDeliveryOptionsData();
-  }, [deliveryOptionsId, isOpen, dispatch]);
+    fetchOrderStatusData();
+  }, [orderStatusId, isOpen, dispatch]);
 
   const handleClose = () => {
-    dispatch(clearSelectedDeliveryOptions());
+    dispatch(clearSelectedOrderStatus());
     onClose();
   };
 
@@ -56,78 +54,69 @@ export function DeliveryOptionsDetailModal({
       isOpen={isOpen}
       onClose={handleClose}
       isLoading={isFetchingDetail}
-      title={"Delivery Options Information Details"}
+      title={"Order Status Information Details"}
       description={
-        deliveryOptionsData?.name || "Loading delivery options information..."
+        orderStatusData?.name || "Loading order status information..."
       }
     >
-      {deliveryOptionsData ? (
+      {orderStatusData ? (
         <div className="space-y-6">
-          {/* Delivery Options Information */}
+          {/* Order Status Information */}
           <DetailSection title="Personal Information">
-            <CustomAvatar
-              imageUrl={deliveryOptionsData.imageUrl}
-              name={deliveryOptionsData?.name}
-              size="xl"
-            />
-
             <DetailRow
-              label="Delivery Options Name"
-              value={deliveryOptionsData?.name || "---"}
-            />
-
-            <DetailRow
-              label="Price"
-              value={deliveryOptionsData?.price || "---"}
+              label="Order Status Name"
+              value={orderStatusData?.name || "---"}
             />
 
             <DetailRow
               label="Status"
-              value={deliveryOptionsData?.status || "---"}
+              value={orderStatusData?.status || "---"}
             />
 
             <DetailRow
-              label="Description"
-              value={deliveryOptionsData?.description || "---"}
+              label="description"
+              value={orderStatusData?.description || "---"}
             />
           </DetailSection>
 
           {/* System Information */}
           <DetailSection title="System Information">
             <DetailRow
-              label="Banner ID"
+              label="Order Status ID"
               value={
                 <span className="text-xs font-mono bg-muted px-2 py-1 rounded break-all">
-                  {deliveryOptionsData?.id}
+                  {orderStatusData?.id}
                 </span>
               }
             />
             <DetailRow
               label="Business Name"
-              value={deliveryOptionsData?.businessName || "---"}
+              value={orderStatusData?.businessName || "---"}
             />
             <DetailRow
               label="Created At"
-              value={dateTimeFormat(deliveryOptionsData?.createdAt ?? "")}
+              value={dateTimeFormat(orderStatusData?.createdAt ?? "")}
             />
             <DetailRow
               label="Created By"
-              value={deliveryOptionsData?.createdBy || "---"}
+              value={orderStatusData?.createdBy || "---"}
             />
             <DetailRow
               label="Last Updated"
-              value={dateTimeFormat(deliveryOptionsData?.updatedAt ?? "")}
+              value={dateTimeFormat(orderStatusData?.updatedAt ?? "")}
             />
             <DetailRow
               label="Updated By"
-              value={deliveryOptionsData?.updatedBy || "---"}
+              value={orderStatusData?.updatedBy || "---"}
               isLast
             />
           </DetailSection>
         </div>
       ) : (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">No user data available</p>
+          <p className="text-muted-foreground">
+            No order status data available
+          </p>
         </div>
       )}
     </DetailModal>

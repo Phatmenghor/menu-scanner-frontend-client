@@ -28,6 +28,7 @@ export const ROUTES = {
     CATEGORIES: "/admin/categories",
     EXCHANGE_RATE: "/admin/exchange-rate",
     DELIVERY_OPTIONS: "/admin/delivery-options",
+    ORDER_STATUS: "/admin/order-status",
     PRODUCTS: "/admin/products",
     PRODUCTS_PROMOTION: "/admin/product-promotions",
   },
@@ -82,36 +83,13 @@ export const SIDEBAR_MENU: MenuItem[] = [
   },
 
   {
-    title: "HR",
-    icon: Database,
-    items: [
-      {
-        title: "Work Schedule Types",
-        href: ROUTES.HR.WORK_SCHEDULE_TYPE,
-      },
-      {
-        title: "Leave Type",
-        href: ROUTES.HR.LEAVE_TYPE,
-      },
-      {
-        title: "Work Schedules",
-        href: ROUTES.HR.WORK_SCHEDULE,
-      },
-      {
-        title: "Leave",
-        href: ROUTES.HR.LEAVE,
-      },
-      {
-        title: "Attendance",
-        href: ROUTES.HR.ATTENDANCE,
-      },
-    ],
-  },
-
-  {
     title: "Master Data",
     icon: Database,
     items: [
+      {
+        title: "Order Status",
+        href: ROUTES.ADMIN.ORDER_STATUS,
+      },
       {
         title: "Banner",
         href: ROUTES.ADMIN.BANNER,
@@ -145,6 +123,32 @@ export const SIDEBAR_MENU: MenuItem[] = [
       {
         title: "Products Promotion",
         href: ROUTES.ADMIN.PRODUCTS_PROMOTION,
+      },
+    ],
+  },
+  {
+    title: "HR",
+    icon: Database,
+    items: [
+      {
+        title: "Work Schedule Types",
+        href: ROUTES.HR.WORK_SCHEDULE_TYPE,
+      },
+      {
+        title: "Leave Type",
+        href: ROUTES.HR.LEAVE_TYPE,
+      },
+      {
+        title: "Work Schedules",
+        href: ROUTES.HR.WORK_SCHEDULE,
+      },
+      {
+        title: "Leave",
+        href: ROUTES.HR.LEAVE,
+      },
+      {
+        title: "Attendance",
+        href: ROUTES.HR.ATTENDANCE,
       },
     ],
   },

@@ -53,6 +53,12 @@ export const DELIVERY_OPTIONS_FILTER = [
   { value: Status.INACTIVE, label: "Draft" },
 ];
 
+export const ORDER_STATUS_FILTER = [
+  { value: Status.ALL, label: "All Status" },
+  { value: Status.ACTIVE, label: "Active" },
+  { value: Status.INACTIVE, label: "Draft" },
+];
+
 export const SUBSCRIPTION_PLAN_FILTER = [
   { value: SubscriptionPlanStatus.ALL, label: "All" },
   { value: SubscriptionPlanStatus.PUBLIC, label: "Public" },

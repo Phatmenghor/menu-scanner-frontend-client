@@ -84,6 +84,11 @@ export const DELIVERY_OPTIONS_STATUS_CREATE_UPDATE = [
   { value: Status.INACTIVE, label: "Draft" },
 ];
 
+export const ORDER_STATUS_CREATE_UPDATE = [
+  { value: Status.ACTIVE, label: "Active" },
+  { value: Status.INACTIVE, label: "Draft" },
+];
+
 export const PRODUCT_STATUS_CREATE_UPDATE = [
   { value: ProductStatus.ACTIVE, label: "Active" },
   { value: ProductStatus.INACTIVE, label: "Draft" },
