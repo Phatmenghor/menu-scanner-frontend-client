@@ -30,6 +30,8 @@ import publicCategoriesReducer from "../features/main/store/slice/public-categor
 import scrollReducer from "../features/main/store/slice/scroll-slice";
 import cartReducer from "../features/main/store/slice/cart-slice";
 import globalSettingsReducer from "./slices/global-settings-slice";
+import locationReducer from "../features/location/store/slice/location-slice";
+import publicLocationReducer from "../features/location/store/slice/public-location-slice";
 
 /**
  * Root reducer configuration
@@ -71,4 +73,8 @@ export const reducers = {
   scroll: scrollReducer,
   favorites: favoritesReducer,
   cart: cartReducer,
+
+  // Location
+  location: locationReducer,
+  publicLocation: publicLocationReducer,
 };
