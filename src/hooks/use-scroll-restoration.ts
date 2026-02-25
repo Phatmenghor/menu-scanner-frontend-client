@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   useScrollState,
   useScrollPosition,
@@ -89,18 +89,18 @@ export function useScrollRestoration(options: UseScrollRestorationOptions = {}) 
   } = options;
 
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const { saveScrollPosition, setCurrentRoute, clearScrollPosition } = useScrollState();
 
   const hasMounted = useRef(false);
   const timeoutRef = useRef<NodeJS.Timeout>();
   const restoreTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Generate route key
+  // Generate route key (client-side only; scroll restoration has no SSR concern)
+  const search = typeof window !== "undefined" ? window.location.search : "";
   const routeKey = customKey
     ? customKey
-    : includeSearchParams && searchParams.toString()
-    ? `${pathname}?${searchParams.toString()}`
+    : includeSearchParams && search
+    ? `${pathname}${search}`
     : pathname;
 
   // Get scroll position for this route

@@ -48,12 +48,11 @@ export default function PublicLayout({
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Navbar - wrapped in Suspense because it calls useSearchParams */}
-      <Suspense>
-        <Navbar />
-      </Suspense>
+      {/* Navbar - no longer uses useSearchParams, safe without Suspense */}
+      <Navbar />
 
-      {/* Main Content - wrapped in Suspense for pages that call useSearchParams */}
+      {/* Main Content - Suspense covers pages (e.g. /products) that still
+          call useSearchParams directly */}
       <main className="flex-1">
         <Suspense>{children}</Suspense>
       </main>

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Menu,
   Search,
@@ -54,7 +54,6 @@ export function Navbar() {
 
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   // Auth state
   const { isAuthenticated, profile, fullName, email, profileImage, dispatch } =
@@ -84,24 +83,23 @@ export function Navbar() {
   // Debounce search query
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
-  // Initialize search query from URL on mount
+  // Initialize search query from URL on mount (client-only, no SSR dependency)
   useEffect(() => {
-    const urlSearchQuery = searchParams.get("q");
+    const urlSearchQuery = new URLSearchParams(window.location.search).get("q");
     if (urlSearchQuery) {
       setSearchQuery(urlSearchQuery);
     }
-  }, [searchParams]);
+  }, []);
 
   // Handle debounced search - update URL when debounced value changes
   useEffect(() => {
     // Only handle search if there's actually a search query
     if (!debouncedSearchQuery.trim()) {
-      const hasSearchParam = searchParams.get("q");
-      if (hasSearchParam) {
-        const params = new URLSearchParams(searchParams.toString());
-        params.delete("q");
-        const newUrl = params.toString()
-          ? `${pathname}?${params.toString()}`
+      const currentParams = new URLSearchParams(window.location.search);
+      if (currentParams.has("q")) {
+        currentParams.delete("q");
+        const newUrl = currentParams.toString()
+          ? `${pathname}?${currentParams.toString()}`
           : pathname;
         router.push(newUrl);
       }
@@ -109,17 +107,17 @@ export function Navbar() {
     }
 
     // Handle search query - redirect to /products if on home page
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(window.location.search);
     const searchRoute = pathname === "/" ? "/products" : pathname;
     params.set("q", debouncedSearchQuery.trim());
     router.push(`${searchRoute}?${params.toString()}`);
-  }, [debouncedSearchQuery, pathname, searchParams, router]);
+  }, [debouncedSearchQuery, pathname, router]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      const params = new URLSearchParams(searchParams.toString());
-      let searchRoute = pathname === "/" ? "/products" : pathname;
+      const params = new URLSearchParams(window.location.search);
+      const searchRoute = pathname === "/" ? "/products" : pathname;
       params.set("q", searchQuery.trim());
       router.push(`${searchRoute}?${params.toString()}`);
       setIsMobileMenuOpen(false);
