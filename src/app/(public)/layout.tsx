@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
 import { useAuthState } from "@/redux/features/auth/store/state/auth-state";
@@ -48,11 +48,15 @@ export default function PublicLayout({
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Navbar - Shared across all public pages */}
-      <Navbar />
+      {/* Navbar - wrapped in Suspense because it calls useSearchParams */}
+      <Suspense>
+        <Navbar />
+      </Suspense>
 
-      {/* Main Content - Changes per page */}
-      <main className="flex-1">{children}</main>
+      {/* Main Content - wrapped in Suspense for pages that call useSearchParams */}
+      <main className="flex-1">
+        <Suspense>{children}</Suspense>
+      </main>
 
       {/* Footer - Shared across all public pages */}
       <Footer />

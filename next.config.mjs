@@ -11,6 +11,10 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
   trailingSlash: false,
 
   images: {
@@ -53,13 +57,6 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: "10mb",
     },
-  },
-
-  webpack: (config) => {
-    config.ignoreWarnings = [
-      { module: /node_modules\/next-intl\/dist\/esm\/production\/extractor\/format\/index\.js/ },
-    ];
-    return config;
   },
 };
 

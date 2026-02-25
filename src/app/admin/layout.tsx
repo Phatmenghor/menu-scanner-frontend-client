@@ -1,6 +1,10 @@
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import type { ReactNode } from "react";
 
+// Force all admin routes to use dynamic rendering so useSearchParams() in
+// client components is not subject to the static pre-render Suspense check.
+export const dynamic = "force-dynamic";
+
 interface DashboardGroupLayoutProps {
   children: ReactNode;
 }
