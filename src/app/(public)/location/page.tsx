@@ -38,6 +38,7 @@ export default function LocationPage() {
   const [deletingLocation, setDeletingLocation] =
     useState<LocationResponseModel | null>(null);
   const [settingPrimaryId, setSettingPrimaryId] = useState<string | null>(null);
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [currentCoords, setCurrentCoords] = useState<{
     lat: number;
     lng: number;
@@ -75,6 +76,10 @@ export default function LocationPage() {
   const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
     setEditingLocation(null);
+  }, []);
+
+  const handleCardClick = useCallback((location: LocationResponseModel) => {
+    setSelectedLocationId((prev) => (prev === location.id ? null : location.id));
   }, []);
 
   const handleDeleteLocation = async () => {
@@ -189,9 +194,11 @@ export default function LocationPage() {
                 key={location.id}
                 location={location}
                 settingPrimaryId={settingPrimaryId}
+                isSelected={selectedLocationId === location.id}
                 onEdit={handleEditLocation}
                 onDelete={setDeletingLocation}
                 onSetPrimary={handleSetPrimary}
+                onClick={handleCardClick}
               />
             ))}
           </div>

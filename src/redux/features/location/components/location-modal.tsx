@@ -10,7 +10,6 @@ import React, {
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TextField } from "@/components/shared/form-field/text-field";
 import { TextareaField } from "@/components/shared/form-field/text-area-field";
 import { CancelButton } from "@/components/shared/form-field/cancel-button";
@@ -20,18 +19,28 @@ import { FormBody } from "@/components/shared/form-field/form-body";
 import { FormFooter } from "@/components/shared/form-field/form-footer";
 import { showToast } from "@/components/shared/common/show-toast";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 import {
   Map,
   ListFilter,
   Star,
-  Plus,
+  Upload,
   X,
   ImageIcon,
-  Upload,
+  Search,
+  LocateFixed,
+  Maximize2,
+  Minimize2,
+  MapPin,
+  Loader2,
+  AlertTriangle,
+  CheckCircle2,
+  Navigation2,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 import { useLocationState } from "../store/state/location-state";
 import { usePublicLocationState } from "../store/state/public-location-state";
@@ -46,80 +55,39 @@ import {
   CommuneResponseModel,
   VillageResponseModel,
 } from "../store/models/response/location-response";
-import { LocationMapTab } from "./location-map-tab";
 import { LocationSelectTab } from "./location-select-tab";
 
 // ---------------------------------------------------------------------------
-// Google Maps script loader (singleton promise)
+// Google Maps script loader
 // ---------------------------------------------------------------------------
 let gmapLoadPromise: Promise<void> | null = null;
 
 export function loadGoogleMapsScript(): Promise<void> {
   if (gmapLoadPromise) return gmapLoadPromise;
-
   gmapLoadPromise = new Promise<void>((resolve, reject) => {
-    if (window.google?.maps?.Map) {
-      resolve();
-      return;
-    }
-
-    const existing = document.querySelector(
-      'script[src*="maps.googleapis.com"]'
-    ) as HTMLScriptElement | null;
-
+    if (window.google?.maps?.Map) { resolve(); return; }
+    const existing = document.querySelector('script[src*="maps.googleapis.com"]') as HTMLScriptElement | null;
     if (existing) {
-      const id = setInterval(() => {
-        if (window.google?.maps?.Map) {
-          clearInterval(id);
-          resolve();
-        }
-      }, 100);
-      setTimeout(() => {
-        clearInterval(id);
-        if (window.google?.maps?.Map) resolve();
-        else reject(new Error("Timeout waiting for Google Maps"));
-      }, 10000);
+      const id = setInterval(() => { if (window.google?.maps?.Map) { clearInterval(id); resolve(); } }, 100);
+      setTimeout(() => { clearInterval(id); if (window.google?.maps?.Map) resolve(); else reject(new Error("Timeout")); }, 10000);
       return;
     }
-
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    if (!apiKey) {
-      reject(new Error("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not configured"));
-      return;
-    }
-
+    if (!apiKey) { reject(new Error("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not configured")); return; }
     const script = document.createElement("script");
     script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-    script.async = true;
-    script.defer = true;
+    script.async = true; script.defer = true;
     script.onload = () => {
-      const id = setInterval(() => {
-        if (window.google?.maps?.Map) {
-          clearInterval(id);
-          resolve();
-        }
-      }, 100);
-      setTimeout(() => {
-        clearInterval(id);
-        if (window.google?.maps?.Map) resolve();
-        else reject(new Error("Google Maps loaded but Map unavailable"));
-      }, 10000);
+      const id = setInterval(() => { if (window.google?.maps?.Map) { clearInterval(id); resolve(); } }, 100);
+      setTimeout(() => { clearInterval(id); if (window.google?.maps?.Map) resolve(); else reject(new Error("Map unavailable")); }, 10000);
     };
-    script.onerror = () => {
-      gmapLoadPromise = null;
-      reject(new Error("Failed to load Google Maps script"));
-    };
+    script.onerror = () => { gmapLoadPromise = null; reject(new Error("Failed to load Google Maps")); };
     document.head.appendChild(script);
   });
-
-  gmapLoadPromise.catch(() => {
-    gmapLoadPromise = null;
-  });
+  gmapLoadPromise.catch(() => { gmapLoadPromise = null; });
   return gmapLoadPromise;
 }
 
-// ---------------------------------------------------------------------------
-// Types
 // ---------------------------------------------------------------------------
 type SelectionMode = "map" | "select";
 
@@ -131,126 +99,123 @@ interface LocationModalProps {
 }
 
 // ---------------------------------------------------------------------------
-// Multi-image upload component
+// Center pin
+// ---------------------------------------------------------------------------
+function CenterPin({ size = "h-9 w-9", isDragging }: { size?: string; isDragging: boolean }) {
+  return (
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-10">
+      <div className={`transition-transform duration-150 ${isDragging ? "-translate-y-3 scale-110" : ""}`}>
+        <MapPin className={`${size} text-red-500 drop-shadow-lg`} fill="currentColor" strokeWidth={1.5} />
+      </div>
+      <div className={`h-1 bg-black/30 rounded-full mx-auto transition-all duration-150 ${isDragging ? "w-3 opacity-40" : "w-2 opacity-60"}`} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Multi-image upload
 // ---------------------------------------------------------------------------
 interface MultiImageUploadProps {
   images: { imageUrl: string }[];
-  onAdd: (imageUrl: string) => void;
-  onRemove: (index: number) => void;
+  onAdd: (url: string) => void;
+  onRemove: (idx: number) => void;
   disabled?: boolean;
 }
 
-function MultiImageUpload({
-  images,
-  onAdd,
-  onRemove,
-  disabled,
-}: MultiImageUploadProps) {
+function MultiImageUpload({ images, onAdd, onRemove, disabled }: MultiImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [lightbox, setLightbox] = useState<string | null>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    files.forEach((file) => {
+  const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    Array.from(e.target.files ?? []).forEach((file) => {
       if (!file.type.startsWith("image/")) return;
       const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === "string") onAdd(reader.result);
-      };
+      reader.onload = () => { if (typeof reader.result === "string") onAdd(reader.result); };
       reader.readAsDataURL(file);
     });
-    // reset input so same file can be re-added
     if (inputRef.current) inputRef.current.value = "";
   };
 
   return (
     <div className="space-y-2">
-      <Label className="text-sm font-medium flex items-center gap-1">
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-[300] bg-black/80 flex items-center justify-center"
+          onClick={() => setLightbox(null)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={lightbox} alt="Preview" className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl" />
+          <button
+            type="button"
+            onClick={() => setLightbox(null)}
+            className="absolute top-4 right-4 rounded-full bg-white/20 text-white p-2 hover:bg-white/40 transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      )}
+
+      <Label className="text-sm font-medium flex items-center gap-1.5">
         <ImageIcon className="h-4 w-4" />
         Location Images
-        <span className="text-muted-foreground text-xs font-normal ml-1">
-          (optional)
-        </span>
+        <span className="text-muted-foreground text-xs font-normal">(optional — click to expand)</span>
       </Label>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         {images.map((img, idx) => (
           <div
             key={idx}
-            className="relative aspect-square rounded-lg overflow-hidden border bg-muted"
+            className="relative aspect-square rounded-lg overflow-hidden border bg-muted cursor-pointer hover:opacity-90 transition-opacity"
+            onClick={() => setLightbox(img.imageUrl)}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={img.imageUrl}
-              alt={`Location image ${idx + 1}`}
-              className="w-full h-full object-cover"
-            />
+            <img src={img.imageUrl} alt={`Location ${idx + 1}`} className="w-full h-full object-cover" />
             {!disabled && (
               <button
                 type="button"
-                onClick={() => onRemove(idx)}
-                className="absolute top-1 right-1 rounded-full bg-destructive/90 text-destructive-foreground p-0.5 hover:bg-destructive transition-colors"
+                onClick={(e) => { e.stopPropagation(); onRemove(idx); }}
+                className="absolute top-1 right-1 rounded-full bg-destructive/90 text-white p-0.5 hover:bg-destructive transition-colors"
               >
-                <X className="h-3 w-3" />
+                <X className="h-2.5 w-2.5" />
               </button>
             )}
           </div>
         ))}
-
-        {/* Add button */}
         {!disabled && (
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
             className="aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 flex flex-col items-center justify-center gap-1 transition-colors text-muted-foreground hover:text-primary"
           >
-            <Upload className="h-5 w-5" />
+            <Upload className="h-4 w-4" />
             <span className="text-xs font-medium">Add</span>
           </button>
         )}
       </div>
-
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        onChange={handleFileChange}
-      />
+      <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Component
+// Main component
 // ---------------------------------------------------------------------------
-export default function LocationModal({
-  isOpen,
-  onClose,
-  editData,
-  initialCoords,
-}: LocationModalProps) {
+export default function LocationModal({ isOpen, onClose, editData, initialCoords }: LocationModalProps) {
   const isCreate = !editData;
-
-  const { create, update, operations, error: reduxError, clearError } =
-    useLocationState();
+  const { create, update, operations, error: reduxError, clearError } = useLocationState();
   const {
-    selectedProvince,
-    selectedDistrict,
-    selectedCommune,
-    selectProvince,
-    selectDistrict,
-    selectCommune,
+    selectedProvince, selectedDistrict, selectedCommune,
+    selectProvince, selectDistrict, selectCommune,
     reset: resetPublicLocation,
   } = usePublicLocationState();
 
   const { isCreating, isUpdating } = operations;
   const isSubmitting = isCreate ? isCreating : isUpdating;
 
-  // ── Mode state ──────────────────────────────────────────────────────────
+  // Mode
   const [selectionMode, setSelectionMode] = useState<SelectionMode>("map");
 
-  // ── Map state ───────────────────────────────────────────────────────────
+  // Map refs
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const googleMapRef = useRef<google.maps.Map | null>(null);
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
@@ -267,124 +232,60 @@ export default function LocationModal({
   const [isDragging, setIsDragging] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
 
-  // ── Select-mode state ───────────────────────────────────────────────────
-  const [selectedVillage, setSelectedVillage] =
-    useState<VillageResponseModel | null>(null);
+  // Select mode
+  const [selectedVillage, setSelectedVillage] = useState<VillageResponseModel | null>(null);
   const [isGeocodingAddress, setIsGeocodingAddress] = useState(false);
-  const [geocodedCoords, setGeocodedCoords] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
+  const [geocodedCoords, setGeocodedCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [geocodeSuccess, setGeocodeSuccess] = useState(false);
 
-  // ── Form ────────────────────────────────────────────────────────────────
-  const {
-    control,
-    handleSubmit,
-    reset,
-    setValue,
-    watch,
-    formState: { errors, isDirty },
-  } = useForm<LocationFormData>({
+  // Form
+  const { control, handleSubmit, reset, setValue, watch, formState: { errors, isDirty } } = useForm<LocationFormData>({
     resolver: zodResolver(createLocationSchema) as any,
     defaultValues: {
-      label: "",
-      latitude: 0,
-      longitude: 0,
-      houseNumber: "",
-      streetNumber: "",
-      village: "",
-      commune: "",
-      district: "",
-      province: "",
-      country: "",
-      note: "",
-      isPrimary: false,
-      locationImages: [],
+      label: "", latitude: 0, longitude: 0,
+      houseNumber: "", streetNumber: "", village: "", commune: "",
+      district: "", province: "", country: "", note: "",
+      isPrimary: false, locationImages: [],
     },
     mode: "onChange",
   });
 
-  const { fields: imageFields, append: appendImage, remove: removeImage } =
-    useFieldArray({ control, name: "locationImages" });
-
-  // Keep setValue ref fresh for callbacks
+  const { fields: imageFields, append: appendImage, remove: removeImage } = useFieldArray({ control, name: "locationImages" });
   setValueRef.current = setValue;
   const latitude = watch("latitude");
   const longitude = watch("longitude");
   const isPrimaryValue = watch("isPrimary");
+  const hasCoords = latitude !== 0 || longitude !== 0;
 
-  // ── Build address preview for Select mode ───────────────────────────────
+  // Address preview (select mode)
   const addressPreview = useMemo(() => {
-    const parts = [
-      watch("houseNumber"),
-      watch("streetNumber"),
-      watch("village"),
-      watch("commune"),
-      watch("district"),
-      watch("province"),
-    ].filter(Boolean);
+    const parts = [watch("houseNumber"), watch("streetNumber"), watch("village"), watch("commune"), watch("district"), watch("province")].filter(Boolean);
     return parts.length > 0 ? parts.join(", ") : null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    watch("houseNumber"),
-    watch("streetNumber"),
-    watch("village"),
-    watch("commune"),
-    watch("district"),
-    watch("province"),
-  ]);
+  }, [watch("houseNumber"), watch("streetNumber"), watch("village"), watch("commune"), watch("district"), watch("province")]);
 
-  // ── Reset form on open/close ────────────────────────────────────────────
+  // Reset on open
   useEffect(() => {
     if (!isOpen) return;
     if (editData) {
       reset({
-        label: editData.label ?? "",
-        latitude: editData.latitude ?? 0,
-        longitude: editData.longitude ?? 0,
-        houseNumber: editData.houseNumber ?? "",
-        streetNumber: editData.streetNumber ?? "",
-        village: editData.village ?? "",
-        commune: editData.commune ?? "",
-        district: editData.district ?? "",
-        province: editData.province ?? "",
-        country: editData.country ?? "",
-        note: editData.note ?? "",
+        label: editData.label ?? "", latitude: editData.latitude ?? 0, longitude: editData.longitude ?? 0,
+        houseNumber: editData.houseNumber ?? "", streetNumber: editData.streetNumber ?? "",
+        village: editData.village ?? "", commune: editData.commune ?? "",
+        district: editData.district ?? "", province: editData.province ?? "",
+        country: editData.country ?? "", note: editData.note ?? "",
         isPrimary: editData.isPrimary || editData.isDefault || false,
         locationImages: editData.locationImages ?? [],
       });
     } else {
-      reset({
-        label: "",
-        latitude: 0,
-        longitude: 0,
-        houseNumber: "",
-        streetNumber: "",
-        village: "",
-        commune: "",
-        district: "",
-        province: "",
-        country: "",
-        note: "",
-        isPrimary: false,
-        locationImages: [],
-      });
+      reset({ label: "", latitude: 0, longitude: 0, houseNumber: "", streetNumber: "", village: "", commune: "", district: "", province: "", country: "", note: "", isPrimary: false, locationImages: [] });
     }
     clearError();
   }, [isOpen, editData, reset, clearError]);
 
-  // ── Load Google Maps when in map mode ───────────────────────────────────
+  // Load Google Maps — as soon as modal opens
   useEffect(() => {
-    if (!isOpen || selectionMode !== "map") {
-      if (!isOpen) {
-        setIsMapReady(false);
-        setIsFullScreen(false);
-        setMapError(null);
-      }
-      return;
-    }
-
+    if (!isOpen) { setIsMapReady(false); setIsFullScreen(false); setMapError(null); return; }
     let cancelled = false;
     (async () => {
       try {
@@ -394,625 +295,427 @@ export default function LocationModal({
         if (!cancelled) setMapError(err?.message ?? "Failed to load map");
       }
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, selectionMode]);
+    return () => { cancelled = true; };
+  }, [isOpen]);
 
-  // ── Reverse geocode ─────────────────────────────────────────────────────
+  // Reverse geocode
   const reverseGeocode = useCallback((lat: number, lng: number) => {
-    const geocoder = geocoderRef.current;
-    if (!geocoder) return;
-
+    if (!geocoderRef.current) return;
     setIsReverseGeocoding(true);
-    geocoder.geocode(
-      { location: { lat, lng } },
-      (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
-        setIsReverseGeocoding(false);
-        if (status !== "OK" || !results?.length) return;
-
-        const components = results[0].address_components || [];
-        let streetNumber = "";
-        let village = "";
-        let commune = "";
-        let district = "";
-        let province = "";
-        let country = "";
-
-        for (const comp of components) {
-          const t = comp.types;
-          if (t.includes("street_number")) {
-            streetNumber = comp.long_name;
-          } else if (t.includes("route")) {
-            streetNumber = streetNumber
-              ? `${streetNumber} ${comp.long_name}`
-              : comp.long_name;
-          } else if (t.includes("sublocality_level_1") || t.includes("sublocality")) {
-            village = comp.long_name;
-          } else if (t.includes("locality")) {
-            commune = comp.long_name;
-          } else if (t.includes("administrative_area_level_2")) {
-            district = comp.long_name;
-          } else if (t.includes("administrative_area_level_1")) {
-            province = comp.long_name;
-          } else if (t.includes("country")) {
-            country = comp.long_name;
-          }
-        }
-
-        const sv = setValueRef.current;
-        sv("streetNumber", streetNumber, { shouldDirty: true });
-        sv("village", village, { shouldDirty: true });
-        sv("commune", commune, { shouldDirty: true });
-        sv("district", district, { shouldDirty: true });
-        sv("province", province, { shouldDirty: true });
-        sv("country", country, { shouldDirty: true });
+    geocoderRef.current.geocode({ location: { lat, lng } }, (results: any, status: any) => {
+      setIsReverseGeocoding(false);
+      if (status !== "OK" || !results?.length) return;
+      const comps = results[0].address_components || [];
+      let streetNumber = "", village = "", commune = "", district = "", province = "", country = "";
+      for (const comp of comps) {
+        const t = comp.types;
+        if (t.includes("street_number")) streetNumber = comp.long_name;
+        else if (t.includes("route")) streetNumber = streetNumber ? `${streetNumber} ${comp.long_name}` : comp.long_name;
+        else if (t.includes("sublocality_level_1") || t.includes("sublocality")) village = comp.long_name;
+        else if (t.includes("locality")) commune = comp.long_name;
+        else if (t.includes("administrative_area_level_2")) district = comp.long_name;
+        else if (t.includes("administrative_area_level_1")) province = comp.long_name;
+        else if (t.includes("country")) country = comp.long_name;
       }
-    );
+      const sv = setValueRef.current;
+      sv("streetNumber", streetNumber, { shouldDirty: true });
+      sv("village", village, { shouldDirty: true });
+      sv("commune", commune, { shouldDirty: true });
+      sv("district", district, { shouldDirty: true });
+      sv("province", province, { shouldDirty: true });
+      sv("country", country, { shouldDirty: true });
+    });
   }, []);
 
-  // ── Map idle handler ────────────────────────────────────────────────────
   const onMapIdle = useCallback(() => {
     const map = googleMapRef.current;
     if (!map) return;
     const center = map.getCenter();
     if (!center) return;
-
-    const lat = center.lat();
-    const lng = center.lng();
+    const lat = center.lat(); const lng = center.lng();
     setValueRef.current("latitude", lat, { shouldDirty: true });
     setValueRef.current("longitude", lng, { shouldDirty: true });
     setIsDragging(false);
-
     if (geocodeTimerRef.current) clearTimeout(geocodeTimerRef.current);
     geocodeTimerRef.current = setTimeout(() => reverseGeocode(lat, lng), 400);
   }, [reverseGeocode]);
 
-  // ── Setup autocomplete ──────────────────────────────────────────────────
-  const setupAutocomplete = useCallback(
-    (
-      input: HTMLInputElement,
-      ref: React.MutableRefObject<google.maps.places.Autocomplete | null>
-    ) => {
-      const map = googleMapRef.current;
-      if (!map || !google.maps.places) return;
-      if (ref.current) google.maps.event.clearInstanceListeners(ref.current);
+  const setupAutocomplete = useCallback((input: HTMLInputElement, ref: React.MutableRefObject<google.maps.places.Autocomplete | null>) => {
+    const map = googleMapRef.current;
+    if (!map || !google.maps.places) return;
+    if (ref.current) google.maps.event.clearInstanceListeners(ref.current);
+    const ac = new google.maps.places.Autocomplete(input, { types: ["geocode", "establishment"] });
+    ac.bindTo("bounds", map);
+    ac.addListener("place_changed", () => {
+      const place = ac.getPlace();
+      if (place.geometry?.location) { map.setCenter(place.geometry.location); map.setZoom(17); }
+    });
+    ref.current = ac;
+  }, []);
 
-      const ac = new google.maps.places.Autocomplete(input, {
-        types: ["geocode", "establishment"],
-      });
-      ac.bindTo("bounds", map);
-      ac.addListener("place_changed", () => {
-        const place = ac.getPlace();
-        if (place.geometry?.location) {
-          map.setCenter(place.geometry.location);
-          map.setZoom(17);
-        }
-      });
-      ref.current = ac;
-    },
-    []
-  );
+  const initMap = useCallback((container: HTMLDivElement, lat: number, lng: number) => {
+    const map = new google.maps.Map(container, {
+      center: { lat, lng }, zoom: 17,
+      mapTypeControl: false, streetViewControl: false, fullscreenControl: false, zoomControl: true, gestureHandling: "greedy",
+    });
+    googleMapRef.current = map;
+    geocoderRef.current = new google.maps.Geocoder();
+    map.addListener("dragstart", () => setIsDragging(true));
+    map.addListener("dragend", () => setIsDragging(false));
+    map.addListener("idle", onMapIdle);
+    setValueRef.current("latitude", lat, { shouldDirty: true });
+    setValueRef.current("longitude", lng, { shouldDirty: true });
+    reverseGeocode(lat, lng);
+    if (normalSearchRef.current && google.maps.places) setupAutocomplete(normalSearchRef.current, normalAutocompleteRef);
+  }, [onMapIdle, reverseGeocode, setupAutocomplete]);
 
-  // ── Init map ────────────────────────────────────────────────────────────
-  const initMap = useCallback(
-    (container: HTMLDivElement, lat: number, lng: number) => {
-      const map = new google.maps.Map(container, {
-        center: { lat, lng },
-        zoom: 17,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
-        zoomControl: true,
-        gestureHandling: "greedy",
-      });
-      googleMapRef.current = map;
-      geocoderRef.current = new google.maps.Geocoder();
-
-      map.addListener("dragstart", () => setIsDragging(true));
-      map.addListener("dragend", () => setIsDragging(false));
-      map.addListener("idle", onMapIdle);
-
-      setValueRef.current("latitude", lat, { shouldDirty: true });
-      setValueRef.current("longitude", lng, { shouldDirty: true });
-      reverseGeocode(lat, lng);
-
-      if (normalSearchRef.current && google.maps.places) {
-        setupAutocomplete(normalSearchRef.current, normalAutocompleteRef);
-      }
-    },
-    [onMapIdle, reverseGeocode, setupAutocomplete]
-  );
-
-  // ── Create map when ready ───────────────────────────────────────────────
+  // Init map when ready — only once per modal open
   useEffect(() => {
-    if (!isMapReady || !mapContainerRef.current || selectionMode !== "map") return;
-
+    if (!isMapReady || !mapContainerRef.current) return;
+    if (googleMapRef.current) return; // already initialised
     const lat = editData?.latitude || initialCoords?.lat || 11.5564;
     const lng = editData?.longitude || initialCoords?.lng || 104.9282;
-
     initMap(mapContainerRef.current, lat, lng);
     return () => {
       if (geocodeTimerRef.current) clearTimeout(geocodeTimerRef.current);
-      googleMapRef.current = null;
-      geocoderRef.current = null;
-      normalAutocompleteRef.current = null;
-      fullscreenAutocompleteRef.current = null;
+      googleMapRef.current = null; geocoderRef.current = null;
+      normalAutocompleteRef.current = null; fullscreenAutocompleteRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMapReady, selectionMode]);
+  }, [isMapReady]);
 
-  // ── Handle fullscreen resize ────────────────────────────────────────────
+  // Trigger resize when switching BACK to map tab or toggling fullscreen
   useEffect(() => {
     const map = googleMapRef.current;
     if (!map || !isMapReady) return;
-
-    const resizeTimer = setTimeout(() => {
+    const t = setTimeout(() => {
       google.maps.event.trigger(map, "resize");
-      const center = map.getCenter();
-      if (center) map.setCenter(center);
+      const c = map.getCenter();
+      if (c) map.setCenter(c);
+      if (isFullScreen && fullscreenSearchRef.current && google.maps.places) {
+        setupAutocomplete(fullscreenSearchRef.current, fullscreenAutocompleteRef);
+      }
     }, 100);
+    return () => clearTimeout(t);
+  }, [isFullScreen, selectionMode, isMapReady, setupAutocomplete]);
 
-    if (isFullScreen && fullscreenSearchRef.current && google.maps.places) {
-      const acTimer = setTimeout(() => {
-        if (fullscreenSearchRef.current) {
-          setupAutocomplete(fullscreenSearchRef.current, fullscreenAutocompleteRef);
-        }
-      }, 150);
-      return () => {
-        clearTimeout(resizeTimer);
-        clearTimeout(acTimer);
-      };
-    }
-    return () => clearTimeout(resizeTimer);
-  }, [isFullScreen, isMapReady, setupAutocomplete]);
-
-  // ── My location ─────────────────────────────────────────────────────────
+  // My location
   const handleMyLocation = useCallback(() => {
-    if (!navigator.geolocation) {
-      showToast.error("Geolocation is not supported");
-      return;
-    }
+    if (!navigator.geolocation) { showToast.error("Geolocation not supported"); return; }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const map = googleMapRef.current;
-        if (map) {
-          map.panTo({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-          map.setZoom(17);
-        }
+        if (map) { map.panTo({ lat: pos.coords.latitude, lng: pos.coords.longitude }); map.setZoom(17); }
       },
-      () => showToast.error("Unable to retrieve your location")
+      () => showToast.error("Unable to get your location")
     );
   }, []);
 
-  // ── Select-mode handlers ────────────────────────────────────────────────
-  const handleProvinceChange = useCallback(
-    (province: ProvinceResponseModel | null) => {
-      if (!province) return;
-      selectProvince(province);
-      selectDistrict(null);
-      selectCommune(null);
-      setSelectedVillage(null);
-      setGeocodeSuccess(false);
-      setGeocodedCoords(null);
-      setValue("province", province.provinceEn, { shouldDirty: true });
-      setValue("district", "", { shouldDirty: true });
-      setValue("commune", "", { shouldDirty: true });
-      setValue("village", "", { shouldDirty: true });
-      setValue("latitude", 0, { shouldDirty: true });
-      setValue("longitude", 0, { shouldDirty: true });
-    },
-    [selectProvince, selectDistrict, selectCommune, setValue]
-  );
+  // Select mode handlers
+  const handleProvinceChange = useCallback((province: ProvinceResponseModel | null) => {
+    if (!province) return;
+    selectProvince(province); selectDistrict(null); selectCommune(null);
+    setSelectedVillage(null); setGeocodeSuccess(false); setGeocodedCoords(null);
+    setValue("province", province.provinceEn, { shouldDirty: true });
+    setValue("district", "", { shouldDirty: true }); setValue("commune", "", { shouldDirty: true });
+    setValue("village", "", { shouldDirty: true }); setValue("latitude", 0, { shouldDirty: true }); setValue("longitude", 0, { shouldDirty: true });
+  }, [selectProvince, selectDistrict, selectCommune, setValue]);
 
-  const handleDistrictChange = useCallback(
-    (district: DistrictResponseModel | null) => {
-      if (!district) return;
-      selectDistrict(district);
-      selectCommune(null);
-      setSelectedVillage(null);
-      setGeocodeSuccess(false);
-      setGeocodedCoords(null);
-      setValue("district", district.districtEn, { shouldDirty: true });
-      setValue("commune", "", { shouldDirty: true });
-      setValue("village", "", { shouldDirty: true });
-      setValue("latitude", 0, { shouldDirty: true });
-      setValue("longitude", 0, { shouldDirty: true });
-    },
-    [selectDistrict, selectCommune, setValue]
-  );
+  const handleDistrictChange = useCallback((district: DistrictResponseModel | null) => {
+    if (!district) return;
+    selectDistrict(district); selectCommune(null);
+    setSelectedVillage(null); setGeocodeSuccess(false); setGeocodedCoords(null);
+    setValue("district", district.districtEn, { shouldDirty: true });
+    setValue("commune", "", { shouldDirty: true }); setValue("village", "", { shouldDirty: true });
+    setValue("latitude", 0, { shouldDirty: true }); setValue("longitude", 0, { shouldDirty: true });
+  }, [selectDistrict, selectCommune, setValue]);
 
-  const handleCommuneChange = useCallback(
-    (commune: CommuneResponseModel | null) => {
-      if (!commune) return;
-      selectCommune(commune);
-      setSelectedVillage(null);
-      setGeocodeSuccess(false);
-      setGeocodedCoords(null);
-      setValue("commune", commune.communeEn, { shouldDirty: true });
-      setValue("village", "", { shouldDirty: true });
-      setValue("latitude", 0, { shouldDirty: true });
-      setValue("longitude", 0, { shouldDirty: true });
-    },
-    [selectCommune, setValue]
-  );
+  const handleCommuneChange = useCallback((commune: CommuneResponseModel | null) => {
+    if (!commune) return;
+    selectCommune(commune); setSelectedVillage(null); setGeocodeSuccess(false); setGeocodedCoords(null);
+    setValue("commune", commune.communeEn, { shouldDirty: true });
+    setValue("village", "", { shouldDirty: true }); setValue("latitude", 0, { shouldDirty: true }); setValue("longitude", 0, { shouldDirty: true });
+  }, [selectCommune, setValue]);
 
-  const handleVillageChange = useCallback(
-    (village: VillageResponseModel | null) => {
-      setSelectedVillage(village);
-      setGeocodeSuccess(false);
-      setGeocodedCoords(null);
-      setValue("village", village?.villageEn ?? "", { shouldDirty: true });
-      setValue("latitude", 0, { shouldDirty: true });
-      setValue("longitude", 0, { shouldDirty: true });
-    },
-    [setValue]
-  );
+  const handleVillageChange = useCallback((village: VillageResponseModel | null) => {
+    setSelectedVillage(village); setGeocodeSuccess(false); setGeocodedCoords(null);
+    setValue("village", village?.villageEn ?? "", { shouldDirty: true });
+    setValue("latitude", 0, { shouldDirty: true }); setValue("longitude", 0, { shouldDirty: true });
+  }, [setValue]);
 
   const handleGetCoordinates = useCallback(async () => {
-    const parts = [
-      watch("houseNumber"),
-      watch("streetNumber"),
-      watch("village"),
-      watch("commune"),
-      watch("district"),
-      watch("province"),
-    ].filter(Boolean);
-
-    if (parts.length === 0) {
-      showToast.error("Please select at least a province");
-      return;
-    }
-
-    setIsGeocodingAddress(true);
-    setGeocodeSuccess(false);
-
+    const parts = [watch("houseNumber"), watch("streetNumber"), watch("village"), watch("commune"), watch("district"), watch("province")].filter(Boolean);
+    if (!parts.length) { showToast.error("Please select at least a province"); return; }
+    setIsGeocodingAddress(true); setGeocodeSuccess(false);
     try {
       await loadGoogleMapsScript();
-      const geocoder = new google.maps.Geocoder();
-      geocoder.geocode(
-        { address: parts.join(", ") },
-        (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
-          setIsGeocodingAddress(false);
-          if (status === "OK" && results?.length) {
-            const loc = results[0].geometry.location;
-            const lat = loc.lat();
-            const lng = loc.lng();
-            setValue("latitude", lat, { shouldDirty: true });
-            setValue("longitude", lng, { shouldDirty: true });
-            setGeocodedCoords({ lat, lng });
-            setGeocodeSuccess(true);
-            showToast.success("Coordinates found successfully");
-          } else {
-            showToast.error("Could not resolve coordinates. Add more address details.");
-          }
-        }
-      );
-    } catch (err: any) {
-      setIsGeocodingAddress(false);
-      showToast.error(err?.message ?? "Failed to geocode address");
-    }
+      new google.maps.Geocoder().geocode({ address: parts.join(", ") }, (results: any, status: any) => {
+        setIsGeocodingAddress(false);
+        if (status === "OK" && results?.length) {
+          const loc = results[0].geometry.location;
+          const lat = loc.lat(); const lng = loc.lng();
+          setValue("latitude", lat, { shouldDirty: true }); setValue("longitude", lng, { shouldDirty: true });
+          setGeocodedCoords({ lat, lng }); setGeocodeSuccess(true);
+          showToast.success("Coordinates found");
+        } else { showToast.error("Could not resolve coordinates"); }
+      });
+    } catch (err: any) { setIsGeocodingAddress(false); showToast.error(err?.message ?? "Failed to geocode"); }
   }, [watch, setValue]);
 
-  // ── Submit ──────────────────────────────────────────────────────────────
+  // Submit
   const onSubmit = async (data: LocationFormData) => {
     try {
       const payload = {
-        label: data.label,
-        latitude: data.latitude,
-        longitude: data.longitude,
-        houseNumber: data.houseNumber || "",
-        streetNumber: data.streetNumber || "",
-        village: data.village || "",
-        commune: data.commune || "",
-        district: data.district || "",
-        province: data.province || "",
-        country: data.country || "",
-        note: data.note || "",
-        isPrimary: data.isPrimary,
-        locationImages: data.locationImages ?? [],
+        label: data.label, latitude: data.latitude, longitude: data.longitude,
+        houseNumber: data.houseNumber || "", streetNumber: data.streetNumber || "",
+        village: data.village || "", commune: data.commune || "",
+        district: data.district || "", province: data.province || "",
+        country: data.country || "", note: data.note || "",
+        isPrimary: data.isPrimary, locationImages: data.locationImages ?? [],
       };
-
-      if (isCreate) {
-        await create(payload).unwrap();
-        showToast.success("Location created successfully");
-      } else {
-        await update({ locationId: editData!.id, locationData: payload }).unwrap();
-        showToast.success("Location updated successfully");
-      }
+      if (isCreate) { await create(payload).unwrap(); showToast.success("Location created"); }
+      else { await update({ locationId: editData!.id, locationData: payload }).unwrap(); showToast.success("Location updated"); }
       handleClose();
-    } catch (error: any) {
-      showToast.error(
-        error?.message ?? `Failed to ${isCreate ? "create" : "update"} location`
-      );
-    }
+    } catch (error: any) { showToast.error(error?.message ?? `Failed to ${isCreate ? "create" : "update"} location`); }
   };
 
-  // ── Close ───────────────────────────────────────────────────────────────
   const handleClose = useCallback(() => {
-    setIsFullScreen(false);
-    setSelectionMode("map");
-    setSelectedVillage(null);
-    setGeocodedCoords(null);
-    setGeocodeSuccess(false);
-    resetPublicLocation();
-    reset();
-    clearError();
-    onClose();
+    setIsFullScreen(false); setSelectionMode("map"); setSelectedVillage(null);
+    setGeocodedCoords(null); setGeocodeSuccess(false);
+    resetPublicLocation(); reset(); clearError(); onClose();
   }, [reset, clearError, onClose, resetPublicLocation]);
 
   const handleModeChange = (mode: SelectionMode) => {
     setSelectionMode(mode);
     if (mode === "select") {
-      setValue("latitude", 0, { shouldDirty: true });
-      setValue("longitude", 0, { shouldDirty: true });
-      setGeocodeSuccess(false);
-      setGeocodedCoords(null);
+      setValue("latitude", 0, { shouldDirty: true }); setValue("longitude", 0, { shouldDirty: true });
+      setGeocodeSuccess(false); setGeocodedCoords(null);
     }
   };
 
-  // ── Render ──────────────────────────────────────────────────────────────
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent
-        className="p-0 flex flex-col transition-all duration-300 overflow-hidden w-[95%] max-w-4xl max-h-[90vh]"
-        onInteractOutside={(e) => {
-          const target = e.target as HTMLElement;
-          if (target.closest(".pac-container")) e.preventDefault();
-        }}
-        onPointerDownOutside={(e) => {
-          const target = e.target as HTMLElement;
-          if (target.closest(".pac-container")) e.preventDefault();
-        }}
+        className={cn(
+          "p-0 overflow-hidden flex flex-col transition-all duration-200",
+          isFullScreen
+            ? "w-screen max-w-none h-screen max-h-none rounded-none m-0"
+            : "w-[95%] max-w-4xl max-h-[90vh]"
+        )}
+        onInteractOutside={(e) => { if ((e.target as HTMLElement).closest(".pac-container")) e.preventDefault(); }}
+        onPointerDownOutside={(e) => { if ((e.target as HTMLElement).closest(".pac-container")) e.preventDefault(); }}
       >
-        {/* ── Modal header ── */}
-        <FormHeader
-          title={isCreate ? "Add New Location" : "Edit Location"}
-          description={
-            isCreate
-              ? "Choose how you want to select your location"
-              : "Update your location information"
-          }
-          isCreate={isCreate}
-        />
+        {/* ── Fullscreen toolbar ── */}
+        {isFullScreen && (
+          <div className="flex items-center justify-between px-4 py-3 border-b bg-background shrink-0">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-primary" />
+              <h2 className="text-base font-semibold">Select on Map</h2>
+              {hasCoords && (
+                <span className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                  {latitude.toFixed(5)}, {longitude.toFixed(5)}
+                  {isReverseGeocoding && <Loader2 className="inline-block h-3 w-3 ml-1 animate-spin" />}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={handleMyLocation}>
+                <LocateFixed className="h-4 w-4 mr-1" /> My Location
+              </Button>
+              <Button type="button" variant="default" size="sm" onClick={() => setIsFullScreen(false)}>
+                <Minimize2 className="h-4 w-4 mr-1" /> Done
+              </Button>
+            </div>
+          </div>
+        )}
 
-        {/* ── Form ── */}
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="flex flex-col flex-1 overflow-hidden"
-        >
-          <FormBody>
-            {/* Redux error banner */}
-            {reduxError && (
-              <div className="p-3 bg-destructive/10 border border-destructive rounded-lg">
-                <p className="text-sm text-destructive font-medium">
-                  {reduxError}
-                </p>
+        {/* ── Fullscreen search ── */}
+        {isFullScreen && (
+          <div className="px-4 py-2 border-b bg-background shrink-0">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input ref={fullscreenSearchRef} type="text" placeholder="Search for a place..." className="pl-10" autoComplete="off" />
+            </div>
+          </div>
+        )}
+
+        {/* ── Map container — single div, always in DOM so ref stays valid ── */}
+        <div className={cn(
+          "relative shrink-0",
+          isFullScreen ? "flex-1 min-h-0" : (selectionMode === "map" ? "mx-4 mt-3" : "hidden")
+        )}>
+          {/* Single ref element — never unmounted, only restyled */}
+          <div
+            ref={mapContainerRef}
+            className={cn(
+              "w-full",
+              isFullScreen ? "h-full" : "h-[260px] rounded-lg overflow-hidden border"
+            )}
+          />
+          <CenterPin isDragging={isDragging} size={isFullScreen ? "h-10 w-10" : "h-9 w-9"} />
+          {!isFullScreen && !isMapReady && !mapError && (
+            <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-lg">
+              <div className="flex flex-col items-center gap-2"><Loader2 className="h-8 w-8 animate-spin text-primary" /><span className="text-sm text-muted-foreground">Loading map...</span></div>
+            </div>
+          )}
+          {!isFullScreen && mapError && (
+            <div className="absolute top-2 left-2 right-2 z-20 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-yellow-600 shrink-0 mt-0.5" />
+              <div className="text-xs text-yellow-800"><p className="font-medium">Google Maps API key issue</p><p>Enable Maps JavaScript API &amp; Geocoding API in Google Cloud Console.</p></div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Normal map controls (shown below map when on map tab) ── */}
+        {!isFullScreen && selectionMode === "map" && (
+          <div className="px-4 pt-2 space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input ref={normalSearchRef} type="text" placeholder="Search for a place..." className="pl-10 h-9" autoComplete="off" />
+              </div>
+              <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={handleMyLocation} title="My location"><LocateFixed className="h-4 w-4" /></Button>
+              <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={() => setIsFullScreen(true)} title="Fullscreen"><Maximize2 className="h-4 w-4" /></Button>
+            </div>
+            {hasCoords && (
+              <div className="bg-muted/50 px-3 py-1.5 rounded-md flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <MapPin className="h-3 w-3 text-red-500 shrink-0" />
+                  <span className="font-mono">{latitude.toFixed(6)}, {longitude.toFixed(6)}</span>
+                  {isReverseGeocoding && <Loader2 className="h-3 w-3 animate-spin" />}
+                </div>
+                <Badge variant="secondary" className="text-xs">Pin dropped</Badge>
               </div>
             )}
+          </div>
+        )}
 
-            <div className="space-y-5">
-              {/* ── Mode Tabs ── */}
-              <Tabs
-                value={selectionMode}
-                onValueChange={(v) => handleModeChange(v as SelectionMode)}
-              >
-                <TabsList className="grid w-full grid-cols-2 h-11">
-                  <TabsTrigger value="map" className="flex items-center gap-2">
-                    <Map className="h-4 w-4" />
-                    Map Selection
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="select"
-                    className="flex items-center gap-2"
-                  >
-                    <ListFilter className="h-4 w-4" />
-                    Location Selector
-                  </TabsTrigger>
-                </TabsList>
-
-                {/* ── Map tab ── */}
-                <TabsContent value="map" className="mt-4">
-                  <LocationMapTab
-                    mapContainerRef={mapContainerRef}
-                    searchInputRef={normalSearchRef}
-                    fullscreenSearchInputRef={fullscreenSearchRef}
-                    isMapReady={isMapReady}
-                    isFullScreen={isFullScreen}
-                    isDragging={isDragging}
-                    isReverseGeocoding={isReverseGeocoding}
-                    mapError={mapError}
-                    latitude={latitude}
-                    longitude={longitude}
-                    onMyLocation={handleMyLocation}
-                    onToggleFullscreen={() => setIsFullScreen((v) => !v)}
-                  />
-                </TabsContent>
-
-                {/* ── Select tab ── */}
-                <TabsContent value="select" className="mt-4">
-                  <LocationSelectTab
-                    selectedProvince={selectedProvince}
-                    selectedDistrict={selectedDistrict}
-                    selectedCommune={selectedCommune}
-                    selectedVillage={selectedVillage}
-                    isGeocodingAddress={isGeocodingAddress}
-                    geocodedCoords={geocodedCoords}
-                    geocodeSuccess={geocodeSuccess}
-                    addressPreview={addressPreview}
-                    onProvinceChange={handleProvinceChange}
-                    onDistrictChange={handleDistrictChange}
-                    onCommuneChange={handleCommuneChange}
-                    onVillageChange={handleVillageChange}
-                    onGetCoordinates={handleGetCoordinates}
-                  />
-                </TabsContent>
-              </Tabs>
-
-              {/* ── Address Details ── */}
-              <div className="pt-2 border-t space-y-4">
-                <div>
-                  <h3 className="text-sm font-semibold">Address Details</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {selectionMode === "map"
-                      ? "Auto-filled from map. Edit if needed."
-                      : "Add house/street number for a precise address."}
-                  </p>
-                </div>
-
-                {/* Label — inside Address Details */}
-                <TextField
-                  control={control}
-                  name="label"
-                  label="Label"
-                  placeholder="e.g., Home, Office, Shop"
-                  required
-                  disabled={isSubmitting}
-                  error={errors.label}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <TextField
-                    control={control}
-                    name="houseNumber"
-                    label="House Number"
-                    placeholder="Enter house number"
-                    disabled={isSubmitting}
-                    error={errors.houseNumber}
-                  />
-                  <TextField
-                    control={control}
-                    name="streetNumber"
-                    label="Street"
-                    placeholder="Enter street"
-                    disabled={isSubmitting}
-                    error={errors.streetNumber}
-                  />
-
-                  {/* Extra fields only shown for map mode */}
-                  {selectionMode === "map" && (
-                    <>
-                      <TextField
-                        control={control}
-                        name="village"
-                        label="Village / Sangkat"
-                        placeholder="Auto-filled"
-                        disabled={isSubmitting}
-                        error={errors.village}
-                      />
-                      <TextField
-                        control={control}
-                        name="commune"
-                        label="Commune / City"
-                        placeholder="Auto-filled"
-                        required
-                        disabled={isSubmitting}
-                        error={errors.commune}
-                      />
-                      <TextField
-                        control={control}
-                        name="district"
-                        label="District / Khan"
-                        placeholder="Auto-filled"
-                        disabled={isSubmitting}
-                        error={errors.district}
-                      />
-                      <TextField
-                        control={control}
-                        name="province"
-                        label="Province"
-                        placeholder="Auto-filled"
-                        disabled={isSubmitting}
-                        error={errors.province}
-                      />
-                      <TextField
-                        control={control}
-                        name="country"
-                        label="Country"
-                        placeholder="Auto-filled"
-                        disabled={isSubmitting}
-                        error={errors.country}
-                      />
-                    </>
-                  )}
-                </div>
-
-                <TextareaField
-                  control={control}
-                  name="note"
-                  label="Note"
-                  placeholder="Delivery instructions or extra details"
-                  rows={2}
-                  disabled={isSubmitting}
-                  error={errors.note}
-                />
-
-                {/* ── Set as Primary — Switch ── */}
-                <div
-                  className={cn(
-                    "flex items-center justify-between rounded-lg border p-3 transition-colors",
-                    isPrimaryValue
-                      ? "border-amber-300 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-700"
-                      : "border-border bg-muted/30"
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <Star
-                      className={cn(
-                        "h-4 w-4 transition-colors",
-                        isPrimaryValue
-                          ? "text-amber-500 fill-amber-500"
-                          : "text-muted-foreground"
-                      )}
-                    />
-                    <div>
-                      <p className="text-sm font-medium leading-none">
-                        Set as Primary Location
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Used by default for deliveries
-                      </p>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={isPrimaryValue}
-                    onCheckedChange={(checked) =>
-                      setValue("isPrimary", checked, { shouldDirty: true })
-                    }
-                    disabled={isSubmitting}
-                  />
-                </div>
-
-                {/* ── Location Images ── */}
-                <MultiImageUpload
-                  images={imageFields.map((f) => ({ imageUrl: (f as any).imageUrl }))}
-                  onAdd={(url) => appendImage({ imageUrl: url })}
-                  onRemove={(idx) => removeImage(idx)}
-                  disabled={isSubmitting}
-                />
-              </div>
+        {/* ── Normal header (hidden in fullscreen) ── */}
+        {!isFullScreen && (
+          <div className="px-6 pt-4 pb-2 border-b shrink-0">
+            <div className="flex items-center gap-2 mb-0.5">
+              <MapPin className={cn("h-5 w-5", isCreate ? "text-primary" : "text-amber-500")} />
+              <h2 className="text-lg font-semibold">{isCreate ? "Add New Location" : "Edit Location"}</h2>
             </div>
-          </FormBody>
+            <p className="text-sm text-muted-foreground">
+              {isCreate ? "Choose how to select your location" : "Update your location information"}
+            </p>
+          </div>
+        )}
 
-          <FormFooter
-            isSubmitting={isSubmitting}
-            isDirty={isDirty}
-            isCreate={isCreate}
-            createMessage="Creating location..."
-            updateMessage="Updating location..."
-          >
-            <CancelButton onClick={handleClose} disabled={isSubmitting} />
-            <SubmitButton
-              isSubmitting={isSubmitting}
-              isDirty={isDirty}
-              isCreate={isCreate}
-              createText="Add Location"
-              updateText="Update Location"
-              submittingCreateText="Creating..."
-              submittingUpdateText="Updating..."
-            />
-          </FormFooter>
-        </form>
+        {/* ── Form (hidden when fullscreen) ── */}
+        {!isFullScreen && (
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
+            <FormBody>
+              {reduxError && (
+                <div className="p-3 bg-destructive/10 border border-destructive rounded-lg">
+                  <p className="text-sm text-destructive font-medium">{reduxError}</p>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                {/* ── Mode toggle (custom, not Radix Tabs) ── */}
+                <div className="flex rounded-lg border bg-muted/40 p-1 gap-1">
+                  {(["map", "select"] as SelectionMode[]).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => handleModeChange(mode)}
+                      className={cn(
+                        "flex-1 flex items-center justify-center gap-2 rounded-md py-2 text-sm font-medium transition-all",
+                        selectionMode === mode
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {mode === "map" ? <Map className="h-4 w-4" /> : <ListFilter className="h-4 w-4" />}
+                      {mode === "map" ? "Map Selection" : "Location Selector"}
+                    </button>
+                  ))}
+                </div>
+
+                {/* ── Select mode UI ── */}
+                {selectionMode === "select" && (
+                  <div className="space-y-3">
+                    <LocationSelectTab
+                      selectedProvince={selectedProvince}
+                      selectedDistrict={selectedDistrict}
+                      selectedCommune={selectedCommune}
+                      selectedVillage={selectedVillage}
+                      isGeocodingAddress={isGeocodingAddress}
+                      geocodedCoords={geocodedCoords}
+                      geocodeSuccess={geocodeSuccess}
+                      addressPreview={addressPreview}
+                      onProvinceChange={handleProvinceChange}
+                      onDistrictChange={handleDistrictChange}
+                      onCommuneChange={handleCommuneChange}
+                      onVillageChange={handleVillageChange}
+                      onGetCoordinates={handleGetCoordinates}
+                    />
+                  </div>
+                )}
+
+                {/* ── Address Details ── */}
+                <div className="pt-2 border-t space-y-4">
+                  <div>
+                    <h3 className="text-sm font-semibold">Address Details</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {selectionMode === "map" ? "Auto-filled from map pin. Edit if needed." : "Add house/street number for a precise address."}
+                    </p>
+                  </div>
+
+                  <TextField control={control} name="label" label="Label" placeholder="e.g., Home, Office, Shop" required disabled={isSubmitting} error={errors.label} />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <TextField control={control} name="houseNumber" label="House Number" placeholder="Enter house number" disabled={isSubmitting} error={errors.houseNumber} />
+                    <TextField control={control} name="streetNumber" label="Street" placeholder="Enter street" disabled={isSubmitting} error={errors.streetNumber} />
+                    {selectionMode === "map" && (
+                      <>
+                        <TextField control={control} name="village" label="Village / Sangkat" placeholder="Auto-filled" disabled={isSubmitting} error={errors.village} />
+                        <TextField control={control} name="commune" label="Commune / City" placeholder="Auto-filled" required disabled={isSubmitting} error={errors.commune} />
+                        <TextField control={control} name="district" label="District / Khan" placeholder="Auto-filled" disabled={isSubmitting} error={errors.district} />
+                        <TextField control={control} name="province" label="Province" placeholder="Auto-filled" disabled={isSubmitting} error={errors.province} />
+                        <TextField control={control} name="country" label="Country" placeholder="Auto-filled" disabled={isSubmitting} error={errors.country} />
+                      </>
+                    )}
+                  </div>
+
+                  <TextareaField control={control} name="note" label="Note" placeholder="Delivery instructions or extra details" rows={2} disabled={isSubmitting} error={errors.note} />
+
+                  {/* isPrimary Switch */}
+                  <div className={cn("flex items-center justify-between rounded-lg border p-3 transition-colors",
+                    isPrimaryValue ? "border-amber-300 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-700" : "border-border bg-muted/30"
+                  )}>
+                    <div className="flex items-center gap-2">
+                      <Star className={cn("h-4 w-4 transition-colors", isPrimaryValue ? "text-amber-500 fill-amber-500" : "text-muted-foreground")} />
+                      <div>
+                        <p className="text-sm font-medium leading-none">Set as Primary Location</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Used by default for deliveries</p>
+                      </div>
+                    </div>
+                    <Switch checked={isPrimaryValue} onCheckedChange={(v) => setValue("isPrimary", v, { shouldDirty: true })} disabled={isSubmitting} />
+                  </div>
+
+                  {/* Location Images */}
+                  <MultiImageUpload
+                    images={imageFields.map((f) => ({ imageUrl: (f as any).imageUrl }))}
+                    onAdd={(url) => appendImage({ imageUrl: url })}
+                    onRemove={(idx) => removeImage(idx)}
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </div>
+            </FormBody>
+
+            <FormFooter isSubmitting={isSubmitting} isDirty={isDirty} isCreate={isCreate} createMessage="Creating location..." updateMessage="Updating location...">
+              <CancelButton onClick={handleClose} disabled={isSubmitting} />
+              <SubmitButton isSubmitting={isSubmitting} isDirty={isDirty} isCreate={isCreate} createText="Add Location" updateText="Update Location" submittingCreateText="Creating..." submittingUpdateText="Updating..." />
+            </FormFooter>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );
