@@ -107,6 +107,7 @@ export default function LocationPage() {
           country: location.country || "",
           note: location.note || "",
           isPrimary: true,
+          locationImages: location.locationImages ?? [],
         },
       }).unwrap();
       showToast.success("Primary location updated");

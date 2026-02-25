@@ -1,20 +1,31 @@
 import { RootState } from "@/redux/store";
 import { createSelector } from "@reduxjs/toolkit";
 
+// Stable empty array — avoids creating new references on every selector call
+const EMPTY: never[] = [];
+
 export const selectPublicLocationState = (state: RootState) =>
   state.publicLocation;
 
-export const selectProvinces = (state: RootState) =>
-  state.publicLocation.provinces?.content || [];
+export const selectProvinces = createSelector(
+  [selectPublicLocationState],
+  (s) => s.provinces?.content ?? EMPTY
+);
 
-export const selectDistricts = (state: RootState) =>
-  state.publicLocation.districts?.content || [];
+export const selectDistricts = createSelector(
+  [selectPublicLocationState],
+  (s) => s.districts?.content ?? EMPTY
+);
 
-export const selectCommunes = (state: RootState) =>
-  state.publicLocation.communes?.content || [];
+export const selectCommunes = createSelector(
+  [selectPublicLocationState],
+  (s) => s.communes?.content ?? EMPTY
+);
 
-export const selectVillages = (state: RootState) =>
-  state.publicLocation.villages?.content || [];
+export const selectVillages = createSelector(
+  [selectPublicLocationState],
+  (s) => s.villages?.content ?? EMPTY
+);
 
 export const selectSelectedProvince = (state: RootState) =>
   state.publicLocation.selectedProvince;
