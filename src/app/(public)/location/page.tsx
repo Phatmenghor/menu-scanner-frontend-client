@@ -182,7 +182,7 @@ export default function LocationPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="flex flex-col gap-3">
             {locations.map((location) => (
               <LocationCard
                 key={location.id}
@@ -193,22 +193,6 @@ export default function LocationPage() {
                 onSetPrimary={handleSetPrimary}
               />
             ))}
-
-            {/* Add-new card */}
-            <button
-              onClick={handleAddLocation}
-              className="flex flex-col items-center justify-center gap-3 p-5 rounded-xl border-2 border-dashed border-border/60 text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all duration-200 min-h-[160px] group"
-            >
-              <div className="p-3 rounded-xl bg-muted group-hover:bg-primary/10 transition-colors">
-                <Plus className="h-6 w-6" />
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-medium">Add Location</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Map or select from list
-                </p>
-              </div>
-            </button>
           </div>
         )}
       </div>

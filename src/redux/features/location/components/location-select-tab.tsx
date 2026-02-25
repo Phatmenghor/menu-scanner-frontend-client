@@ -2,14 +2,6 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   MapPin,
   Loader2,
@@ -23,29 +15,17 @@ import {
   CommuneResponseModel,
   VillageResponseModel,
 } from "../store/models/response/location-response";
-
-interface SelectTabLoading {
-  provinces: boolean;
-  districts: boolean;
-  communes: boolean;
-  villages: boolean;
-}
+import { ComboboxSelectProvince } from "@/components/shared/combobox/combobox_select_province";
+import { ComboboxSelectDistrict } from "@/components/shared/combobox/combobox_select_district";
+import { ComboboxSelectCommune } from "@/components/shared/combobox/combobox_select_commune";
+import { ComboboxSelectVillage } from "@/components/shared/combobox/combobox_select_village";
 
 interface LocationSelectTabProps {
-  // Data
-  provinces: ProvinceResponseModel[];
-  districts: DistrictResponseModel[];
-  communes: CommuneResponseModel[];
-  villages: VillageResponseModel[];
-
   // Selected values
   selectedProvince: ProvinceResponseModel | null;
   selectedDistrict: DistrictResponseModel | null;
   selectedCommune: CommuneResponseModel | null;
   selectedVillage: VillageResponseModel | null;
-
-  // Loading
-  loading: SelectTabLoading;
 
   // Geocode state
   isGeocodingAddress: boolean;
@@ -56,10 +36,10 @@ interface LocationSelectTabProps {
   addressPreview: string | null;
 
   // Handlers
-  onProvinceChange: (code: string) => void;
-  onDistrictChange: (code: string) => void;
-  onCommuneChange: (code: string) => void;
-  onVillageChange: (code: string) => void;
+  onProvinceChange: (province: ProvinceResponseModel | null) => void;
+  onDistrictChange: (district: DistrictResponseModel | null) => void;
+  onCommuneChange: (commune: CommuneResponseModel | null) => void;
+  onVillageChange: (village: VillageResponseModel | null) => void;
   onGetCoordinates: () => void;
 }
 
@@ -84,15 +64,10 @@ function HierarchyLabel({
 }
 
 export function LocationSelectTab({
-  provinces,
-  districts,
-  communes,
-  villages,
   selectedProvince,
   selectedDistrict,
   selectedCommune,
   selectedVillage,
-  loading,
   isGeocodingAddress,
   geocodedCoords,
   geocodeSuccess,
@@ -116,140 +91,49 @@ export function LocationSelectTab({
         </div>
 
         {/* Province */}
-        <div className="space-y-1.5">
-          <Label className="text-sm font-medium">
-            Province / City <span className="text-red-500">*</span>
-          </Label>
-          <Select
-            value={selectedProvince?.provinceCode ?? ""}
-            onValueChange={onProvinceChange}
-            disabled={loading.provinces}
-          >
-            <SelectTrigger>
-              <SelectValue
-                placeholder={
-                  loading.provinces ? "Loading provinces..." : "Select province..."
-                }
-              />
-            </SelectTrigger>
-            <SelectContent className="max-h-60">
-              {provinces.map((p) => (
-                <SelectItem key={p.provinceCode} value={p.provinceCode}>
-                  {p.provinceEn}
-                  <span className="ml-2 text-muted-foreground text-xs">
-                    {p.provinceKh}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <ComboboxSelectProvince
+          dataSelect={selectedProvince}
+          onChangeSelected={onProvinceChange}
+          label="Province / City"
+          required
+        />
 
         {/* District */}
         <div className="space-y-1.5">
-          <Label>
-            <HierarchyLabel level={1}>District / Khan</HierarchyLabel>
-          </Label>
-          <Select
-            value={selectedDistrict?.districtCode ?? ""}
-            onValueChange={onDistrictChange}
-            disabled={!selectedProvince || loading.districts}
-          >
-            <SelectTrigger>
-              <SelectValue
-                placeholder={
-                  !selectedProvince
-                    ? "Select province first"
-                    : loading.districts
-                    ? "Loading districts..."
-                    : "Select district..."
-                }
-              />
-            </SelectTrigger>
-            <SelectContent className="max-h-60">
-              {districts.map((d) => (
-                <SelectItem key={d.districtCode} value={d.districtCode}>
-                  {d.districtEn}
-                  <span className="ml-2 text-muted-foreground text-xs">
-                    {d.districtKh}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <HierarchyLabel level={1}>District / Khan</HierarchyLabel>
+          <ComboboxSelectDistrict
+            dataSelect={selectedDistrict}
+            onChangeSelected={onDistrictChange}
+            provinceCode={selectedProvince?.provinceCode}
+            label=""
+          />
         </div>
 
         {/* Commune */}
         <div className="space-y-1.5">
-          <Label>
-            <HierarchyLabel level={2}>Commune / Sangkat</HierarchyLabel>
-          </Label>
-          <Select
-            value={selectedCommune?.communeCode ?? ""}
-            onValueChange={onCommuneChange}
-            disabled={!selectedDistrict || loading.communes}
-          >
-            <SelectTrigger>
-              <SelectValue
-                placeholder={
-                  !selectedDistrict
-                    ? "Select district first"
-                    : loading.communes
-                    ? "Loading communes..."
-                    : "Select commune..."
-                }
-              />
-            </SelectTrigger>
-            <SelectContent className="max-h-60">
-              {communes.map((c) => (
-                <SelectItem key={c.communeCode} value={c.communeCode}>
-                  {c.communeEn}
-                  <span className="ml-2 text-muted-foreground text-xs">
-                    {c.communeKh}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <HierarchyLabel level={2}>Commune / Sangkat</HierarchyLabel>
+          <ComboboxSelectCommune
+            dataSelect={selectedCommune}
+            onChangeSelected={onCommuneChange}
+            districtCode={selectedDistrict?.districtCode}
+            label=""
+          />
         </div>
 
         {/* Village */}
         <div className="space-y-1.5">
-          <Label>
-            <HierarchyLabel level={3}>
-              Village / Phum
-              <span className="text-muted-foreground text-xs font-normal ml-1">
-                (optional)
-              </span>
-            </HierarchyLabel>
-          </Label>
-          <Select
-            value={selectedVillage?.villageCode ?? ""}
-            onValueChange={onVillageChange}
-            disabled={!selectedCommune || loading.villages}
-          >
-            <SelectTrigger>
-              <SelectValue
-                placeholder={
-                  !selectedCommune
-                    ? "Select commune first"
-                    : loading.villages
-                    ? "Loading villages..."
-                    : "Select village..."
-                }
-              />
-            </SelectTrigger>
-            <SelectContent className="max-h-60">
-              {villages.map((v) => (
-                <SelectItem key={v.villageCode} value={v.villageCode}>
-                  {v.villageEn}
-                  <span className="ml-2 text-muted-foreground text-xs">
-                    {v.villageKh}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <HierarchyLabel level={3}>
+            Village / Phum
+            <span className="text-muted-foreground text-xs font-normal ml-1">
+              (optional)
+            </span>
+          </HierarchyLabel>
+          <ComboboxSelectVillage
+            dataSelect={selectedVillage}
+            onChangeSelected={onVillageChange}
+            communeCode={selectedCommune?.communeCode}
+            label=""
+          />
         </div>
       </div>
 

@@ -118,7 +118,7 @@ export function LocationMapTab({
     <>
       {/* ── Fullscreen overlay ── */}
       {isFullScreen && (
-        <div className="absolute inset-0 z-50 flex flex-col bg-background">
+        <div className="absolute inset-0 z-50 flex flex-col">
           {/* Top bar */}
           <div className="flex items-center justify-between px-4 py-3 border-b bg-background z-10 shrink-0">
             <h2 className="text-lg font-semibold">Select Location on Map</h2>
@@ -158,10 +158,10 @@ export function LocationMapTab({
             </div>
           </div>
 
-          {/* Fullscreen map area */}
-          <div className="flex-1 relative">
+          {/* Fullscreen map area — transparent so fixed map behind is visible */}
+          <div className="flex-1 relative pointer-events-none">
             <CenterPin size="h-10 w-10" isDragging={isDragging} />
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg z-10">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg z-10 pointer-events-auto">
               <CoordsBadge
                 latitude={latitude}
                 longitude={longitude}
@@ -169,11 +169,15 @@ export function LocationMapTab({
               />
             </div>
             {!isMapReady && !mapError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-muted z-20">
+              <div className="absolute inset-0 flex items-center justify-center bg-muted/80 z-20 pointer-events-auto">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             )}
-            {mapError && <MapErrorBanner />}
+            {mapError && (
+              <div className="pointer-events-auto">
+                <MapErrorBanner />
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -28,8 +28,13 @@ import {
   createLocationSchema,
   LocationFormData,
 } from "../store/models/schema/location-schema";
-import { LocationResponseModel } from "../store/models/response/location-response";
-import { VillageResponseModel } from "../store/models/response/location-response";
+import {
+  LocationResponseModel,
+  ProvinceResponseModel,
+  DistrictResponseModel,
+  CommuneResponseModel,
+  VillageResponseModel,
+} from "../store/models/response/location-response";
 import { LocationMapTab } from "./location-map-tab";
 import { LocationSelectTab } from "./location-select-tab";
 
@@ -128,18 +133,9 @@ export default function LocationModal({
   const { create, update, operations, error: reduxError, clearError } =
     useLocationState();
   const {
-    provinces,
-    districts,
-    communes,
-    villages,
     selectedProvince,
     selectedDistrict,
     selectedCommune,
-    loading: publicLoading,
-    fetchProvinces,
-    fetchDistricts,
-    fetchCommunes,
-    fetchVillages,
     selectProvince,
     selectDistrict,
     selectCommune,
@@ -231,13 +227,6 @@ export default function LocationModal({
     watch("district"),
     watch("province"),
   ]);
-
-  // ── Load provinces when modal opens ────────────────────────────────────
-  useEffect(() => {
-    if (isOpen && provinces.length === 0) {
-      fetchProvinces();
-    }
-  }, [isOpen, provinces.length, fetchProvinces]);
 
   // ── Reset form on open/close ────────────────────────────────────────────
   useEffect(() => {
@@ -489,14 +478,14 @@ export default function LocationModal({
 
   // ── Select-mode handlers ────────────────────────────────────────────────
   const handleProvinceChange = useCallback(
-    (provinceCode: string) => {
-      const province = provinces.find((p) => p.provinceCode === provinceCode);
+    (province: ProvinceResponseModel | null) => {
       if (!province) return;
       selectProvince(province);
+      selectDistrict(null);
+      selectCommune(null);
       setSelectedVillage(null);
       setGeocodeSuccess(false);
       setGeocodedCoords(null);
-      fetchDistricts({ provinceCode });
       setValue("province", province.provinceEn, { shouldDirty: true });
       setValue("district", "", { shouldDirty: true });
       setValue("commune", "", { shouldDirty: true });
@@ -504,56 +493,51 @@ export default function LocationModal({
       setValue("latitude", 0, { shouldDirty: true });
       setValue("longitude", 0, { shouldDirty: true });
     },
-    [provinces, selectProvince, fetchDistricts, setValue]
+    [selectProvince, selectDistrict, selectCommune, setValue]
   );
 
   const handleDistrictChange = useCallback(
-    (districtCode: string) => {
-      const district = districts.find((d) => d.districtCode === districtCode);
+    (district: DistrictResponseModel | null) => {
       if (!district) return;
       selectDistrict(district);
+      selectCommune(null);
       setSelectedVillage(null);
       setGeocodeSuccess(false);
       setGeocodedCoords(null);
-      fetchCommunes({ districtCode });
       setValue("district", district.districtEn, { shouldDirty: true });
       setValue("commune", "", { shouldDirty: true });
       setValue("village", "", { shouldDirty: true });
       setValue("latitude", 0, { shouldDirty: true });
       setValue("longitude", 0, { shouldDirty: true });
     },
-    [districts, selectDistrict, fetchCommunes, setValue]
+    [selectDistrict, selectCommune, setValue]
   );
 
   const handleCommuneChange = useCallback(
-    (communeCode: string) => {
-      const commune = communes.find((c) => c.communeCode === communeCode);
+    (commune: CommuneResponseModel | null) => {
       if (!commune) return;
       selectCommune(commune);
       setSelectedVillage(null);
       setGeocodeSuccess(false);
       setGeocodedCoords(null);
-      fetchVillages({ communeCode });
       setValue("commune", commune.communeEn, { shouldDirty: true });
       setValue("village", "", { shouldDirty: true });
       setValue("latitude", 0, { shouldDirty: true });
       setValue("longitude", 0, { shouldDirty: true });
     },
-    [communes, selectCommune, fetchVillages, setValue]
+    [selectCommune, setValue]
   );
 
   const handleVillageChange = useCallback(
-    (villageCode: string) => {
-      const village = villages.find((v) => v.villageCode === villageCode);
-      if (!village) return;
+    (village: VillageResponseModel | null) => {
       setSelectedVillage(village);
       setGeocodeSuccess(false);
       setGeocodedCoords(null);
-      setValue("village", village.villageEn, { shouldDirty: true });
+      setValue("village", village?.villageEn ?? "", { shouldDirty: true });
       setValue("latitude", 0, { shouldDirty: true });
       setValue("longitude", 0, { shouldDirty: true });
     },
-    [villages, setValue]
+    [setValue]
   );
 
   const handleGetCoordinates = useCallback(async () => {
@@ -746,15 +730,10 @@ export default function LocationModal({
                 {/* ── Select tab ── */}
                 <TabsContent value="select" className="mt-4">
                   <LocationSelectTab
-                    provinces={provinces}
-                    districts={districts}
-                    communes={communes}
-                    villages={villages}
                     selectedProvince={selectedProvince}
                     selectedDistrict={selectedDistrict}
                     selectedCommune={selectedCommune}
                     selectedVillage={selectedVillage}
-                    loading={publicLoading}
                     isGeocodingAddress={isGeocodingAddress}
                     geocodedCoords={geocodedCoords}
                     geocodeSuccess={geocodeSuccess}
