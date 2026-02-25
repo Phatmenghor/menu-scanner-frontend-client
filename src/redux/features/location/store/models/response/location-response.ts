@@ -1,5 +1,9 @@
 import { BasePagination } from "@/utils/common/pagination";
 
+export interface LocationImageModel {
+  imageUrl: string;
+}
+
 export interface LocationResponseModel {
   id: string;
   userId: string;
@@ -18,6 +22,7 @@ export interface LocationResponseModel {
   isDefault: boolean;
   fullAddress: string;
   hasCoordinates: boolean;
+  locationImages: LocationImageModel[];
   createdAt: string;
   updatedAt: string;
   createdBy: string;

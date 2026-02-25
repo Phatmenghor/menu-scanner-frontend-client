@@ -8,19 +8,30 @@ import React, {
   useMemo,
 } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TextField } from "@/components/shared/form-field/text-field";
 import { TextareaField } from "@/components/shared/form-field/text-area-field";
-import { CheckboxField } from "@/components/shared/form-field/checkbox-field";
 import { CancelButton } from "@/components/shared/form-field/cancel-button";
 import { SubmitButton } from "@/components/shared/form-field/submid-button";
 import { FormHeader } from "@/components/shared/form-field/form-header";
 import { FormBody } from "@/components/shared/form-field/form-body";
 import { FormFooter } from "@/components/shared/form-field/form-footer";
 import { showToast } from "@/components/shared/common/show-toast";
-import { Map, ListFilter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  Map,
+  ListFilter,
+  Star,
+  Plus,
+  X,
+  ImageIcon,
+  Upload,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 import { useLocationState } from "../store/state/location-state";
 import { usePublicLocationState } from "../store/state/public-location-state";
@@ -120,6 +131,97 @@ interface LocationModalProps {
 }
 
 // ---------------------------------------------------------------------------
+// Multi-image upload component
+// ---------------------------------------------------------------------------
+interface MultiImageUploadProps {
+  images: { imageUrl: string }[];
+  onAdd: (imageUrl: string) => void;
+  onRemove: (index: number) => void;
+  disabled?: boolean;
+}
+
+function MultiImageUpload({
+  images,
+  onAdd,
+  onRemove,
+  disabled,
+}: MultiImageUploadProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    files.forEach((file) => {
+      if (!file.type.startsWith("image/")) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === "string") onAdd(reader.result);
+      };
+      reader.readAsDataURL(file);
+    });
+    // reset input so same file can be re-added
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-sm font-medium flex items-center gap-1">
+        <ImageIcon className="h-4 w-4" />
+        Location Images
+        <span className="text-muted-foreground text-xs font-normal ml-1">
+          (optional)
+        </span>
+      </Label>
+
+      <div className="grid grid-cols-3 gap-2">
+        {images.map((img, idx) => (
+          <div
+            key={idx}
+            className="relative aspect-square rounded-lg overflow-hidden border bg-muted"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={img.imageUrl}
+              alt={`Location image ${idx + 1}`}
+              className="w-full h-full object-cover"
+            />
+            {!disabled && (
+              <button
+                type="button"
+                onClick={() => onRemove(idx)}
+                className="absolute top-1 right-1 rounded-full bg-destructive/90 text-destructive-foreground p-0.5 hover:bg-destructive transition-colors"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        ))}
+
+        {/* Add button */}
+        {!disabled && (
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 flex flex-col items-center justify-center gap-1 transition-colors text-muted-foreground hover:text-primary"
+          >
+            <Upload className="h-5 w-5" />
+            <span className="text-xs font-medium">Add</span>
+          </button>
+        )}
+      </div>
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={handleFileChange}
+      />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 export default function LocationModal({
@@ -198,14 +300,19 @@ export default function LocationModal({
       country: "",
       note: "",
       isPrimary: false,
+      locationImages: [],
     },
     mode: "onChange",
   });
+
+  const { fields: imageFields, append: appendImage, remove: removeImage } =
+    useFieldArray({ control, name: "locationImages" });
 
   // Keep setValue ref fresh for callbacks
   setValueRef.current = setValue;
   const latitude = watch("latitude");
   const longitude = watch("longitude");
+  const isPrimaryValue = watch("isPrimary");
 
   // ── Build address preview for Select mode ───────────────────────────────
   const addressPreview = useMemo(() => {
@@ -245,6 +352,7 @@ export default function LocationModal({
         country: editData.country ?? "",
         note: editData.note ?? "",
         isPrimary: editData.isPrimary || editData.isDefault || false,
+        locationImages: editData.locationImages ?? [],
       });
     } else {
       reset({
@@ -260,6 +368,7 @@ export default function LocationModal({
         country: "",
         note: "",
         isPrimary: false,
+        locationImages: [],
       });
     }
     clearError();
@@ -601,6 +710,7 @@ export default function LocationModal({
         country: data.country || "",
         note: data.note || "",
         isPrimary: data.isPrimary,
+        locationImages: data.locationImages ?? [],
       };
 
       if (isCreate) {
@@ -645,11 +755,7 @@ export default function LocationModal({
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent
-        className={`p-0 flex flex-col transition-all duration-300 overflow-hidden ${
-          isFullScreen
-            ? "w-screen max-w-none h-screen max-h-none rounded-none m-0"
-            : "w-[95%] max-w-4xl max-h-[90vh]"
-        }`}
+        className="p-0 flex flex-col transition-all duration-300 overflow-hidden w-[95%] max-w-4xl max-h-[90vh]"
         onInteractOutside={(e) => {
           const target = e.target as HTMLElement;
           if (target.closest(".pac-container")) e.preventDefault();
@@ -659,25 +765,21 @@ export default function LocationModal({
           if (target.closest(".pac-container")) e.preventDefault();
         }}
       >
-        {/* ── Modal header (hidden during fullscreen) ── */}
-        <div className={isFullScreen ? "invisible h-0 overflow-hidden" : ""}>
-          <FormHeader
-            title={isCreate ? "Add New Location" : "Edit Location"}
-            description={
-              isCreate
-                ? "Choose how you want to select your location"
-                : "Update your location information"
-            }
-            isCreate={isCreate}
-          />
-        </div>
+        {/* ── Modal header ── */}
+        <FormHeader
+          title={isCreate ? "Add New Location" : "Edit Location"}
+          description={
+            isCreate
+              ? "Choose how you want to select your location"
+              : "Update your location information"
+          }
+          isCreate={isCreate}
+        />
 
         {/* ── Form ── */}
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className={`flex flex-col flex-1 overflow-hidden ${
-            isFullScreen ? "h-0" : ""
-          }`}
+          className="flex flex-col flex-1 overflow-hidden"
         >
           <FormBody>
             {/* Redux error banner */}
@@ -747,8 +849,18 @@ export default function LocationModal({
                 </TabsContent>
               </Tabs>
 
-              {/* ── Shared fields ── */}
+              {/* ── Address Details ── */}
               <div className="pt-2 border-t space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold">Address Details</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {selectionMode === "map"
+                      ? "Auto-filled from map. Edit if needed."
+                      : "Add house/street number for a precise address."}
+                  </p>
+                </div>
+
+                {/* Label — inside Address Details */}
                 <TextField
                   control={control}
                   name="label"
@@ -759,80 +871,70 @@ export default function LocationModal({
                   error={errors.label}
                 />
 
-                <div className="space-y-3">
-                  <div>
-                    <h3 className="text-sm font-semibold">Address Details</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {selectionMode === "map"
-                        ? "Auto-filled from map. Edit if needed."
-                        : "Add house/street number for a precise address."}
-                    </p>
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <TextField
+                    control={control}
+                    name="houseNumber"
+                    label="House Number"
+                    placeholder="Enter house number"
+                    disabled={isSubmitting}
+                    error={errors.houseNumber}
+                  />
+                  <TextField
+                    control={control}
+                    name="streetNumber"
+                    label="Street"
+                    placeholder="Enter street"
+                    disabled={isSubmitting}
+                    error={errors.streetNumber}
+                  />
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <TextField
-                      control={control}
-                      name="houseNumber"
-                      label="House Number"
-                      placeholder="Enter house number"
-                      disabled={isSubmitting}
-                      error={errors.houseNumber}
-                    />
-                    <TextField
-                      control={control}
-                      name="streetNumber"
-                      label="Street"
-                      placeholder="Enter street"
-                      disabled={isSubmitting}
-                      error={errors.streetNumber}
-                    />
-
-                    {/* Extra fields only shown for map mode */}
-                    {selectionMode === "map" && (
-                      <>
-                        <TextField
-                          control={control}
-                          name="village"
-                          label="Village / Sangkat"
-                          placeholder="Auto-filled"
-                          disabled={isSubmitting}
-                          error={errors.village}
-                        />
-                        <TextField
-                          control={control}
-                          name="commune"
-                          label="Commune / City"
-                          placeholder="Auto-filled"
-                          disabled={isSubmitting}
-                          error={errors.commune}
-                        />
-                        <TextField
-                          control={control}
-                          name="district"
-                          label="District / Khan"
-                          placeholder="Auto-filled"
-                          disabled={isSubmitting}
-                          error={errors.district}
-                        />
-                        <TextField
-                          control={control}
-                          name="province"
-                          label="Province"
-                          placeholder="Auto-filled"
-                          disabled={isSubmitting}
-                          error={errors.province}
-                        />
-                        <TextField
-                          control={control}
-                          name="country"
-                          label="Country"
-                          placeholder="Auto-filled"
-                          disabled={isSubmitting}
-                          error={errors.country}
-                        />
-                      </>
-                    )}
-                  </div>
+                  {/* Extra fields only shown for map mode */}
+                  {selectionMode === "map" && (
+                    <>
+                      <TextField
+                        control={control}
+                        name="village"
+                        label="Village / Sangkat"
+                        placeholder="Auto-filled"
+                        disabled={isSubmitting}
+                        error={errors.village}
+                      />
+                      <TextField
+                        control={control}
+                        name="commune"
+                        label="Commune / City"
+                        placeholder="Auto-filled"
+                        required
+                        disabled={isSubmitting}
+                        error={errors.commune}
+                      />
+                      <TextField
+                        control={control}
+                        name="district"
+                        label="District / Khan"
+                        placeholder="Auto-filled"
+                        disabled={isSubmitting}
+                        error={errors.district}
+                      />
+                      <TextField
+                        control={control}
+                        name="province"
+                        label="Province"
+                        placeholder="Auto-filled"
+                        disabled={isSubmitting}
+                        error={errors.province}
+                      />
+                      <TextField
+                        control={control}
+                        name="country"
+                        label="Country"
+                        placeholder="Auto-filled"
+                        disabled={isSubmitting}
+                        error={errors.country}
+                      />
+                    </>
+                  )}
                 </div>
 
                 <TextareaField
@@ -845,12 +947,48 @@ export default function LocationModal({
                   error={errors.note}
                 />
 
-                <CheckboxField
-                  control={control}
-                  name="isPrimary"
-                  label="Set as primary location"
+                {/* ── Set as Primary — Switch ── */}
+                <div
+                  className={cn(
+                    "flex items-center justify-between rounded-lg border p-3 transition-colors",
+                    isPrimaryValue
+                      ? "border-amber-300 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-700"
+                      : "border-border bg-muted/30"
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <Star
+                      className={cn(
+                        "h-4 w-4 transition-colors",
+                        isPrimaryValue
+                          ? "text-amber-500 fill-amber-500"
+                          : "text-muted-foreground"
+                      )}
+                    />
+                    <div>
+                      <p className="text-sm font-medium leading-none">
+                        Set as Primary Location
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Used by default for deliveries
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={isPrimaryValue}
+                    onCheckedChange={(checked) =>
+                      setValue("isPrimary", checked, { shouldDirty: true })
+                    }
+                    disabled={isSubmitting}
+                  />
+                </div>
+
+                {/* ── Location Images ── */}
+                <MultiImageUpload
+                  images={imageFields.map((f) => ({ imageUrl: (f as any).imageUrl }))}
+                  onAdd={(url) => appendImage({ imageUrl: url })}
+                  onRemove={(idx) => removeImage(idx)}
                   disabled={isSubmitting}
-                  error={errors.isPrimary}
                 />
               </div>
             </div>

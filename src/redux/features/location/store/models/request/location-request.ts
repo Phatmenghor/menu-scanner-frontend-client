@@ -11,6 +11,7 @@ export interface LocationCreateRequest {
   country: string;
   note: string;
   isPrimary: boolean;
+  locationImages: { imageUrl: string }[];
 }
 
 export interface LocationUpdateRequest {

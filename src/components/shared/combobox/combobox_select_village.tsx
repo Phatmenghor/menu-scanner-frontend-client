@@ -165,16 +165,7 @@ export function ComboboxSelectVillage({
             )}
             disabled={disabled || !communeCode}
           >
-            {dataSelect ? (
-              <>
-                {dataSelect.villageEn}
-                <span className="ml-2 text-muted-foreground text-xs">
-                  {dataSelect.villageKh}
-                </span>
-              </>
-            ) : (
-              resolvedPlaceholder
-            )}
+            {dataSelect ? dataSelect.villageEn : resolvedPlaceholder}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>

@@ -147,16 +147,7 @@ export function ComboboxSelectProvince({
             )}
             disabled={disabled}
           >
-            {dataSelect ? (
-              <>
-                {dataSelect.provinceEn}
-                <span className="ml-2 text-muted-foreground text-xs">
-                  {dataSelect.provinceKh}
-                </span>
-              </>
-            ) : (
-              placeholder
-            )}
+            {dataSelect ? dataSelect.provinceEn : placeholder}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>

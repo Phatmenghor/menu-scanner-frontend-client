@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -116,12 +116,12 @@ export function LocationMapTab({
 
   return (
     <>
-      {/* ── Fullscreen overlay ── */}
+      {/* ── Fullscreen controls overlay (rendered on top of fixed map) ── */}
       {isFullScreen && (
-        <div className="absolute inset-0 z-50 flex flex-col">
+        <div className="fixed inset-0 z-[201] flex flex-col pointer-events-none">
           {/* Top bar */}
-          <div className="flex items-center justify-between px-4 py-3 border-b bg-background z-10 shrink-0">
-            <h2 className="text-lg font-semibold">Select Location on Map</h2>
+          <div className="flex items-center justify-between px-4 py-3 border-b bg-background/95 backdrop-blur-sm pointer-events-auto shrink-0">
+            <h2 className="text-base font-semibold">Select Location on Map</h2>
             <div className="flex items-center gap-2">
               <Button
                 type="button"
@@ -134,7 +134,7 @@ export function LocationMapTab({
               </Button>
               <Button
                 type="button"
-                variant="outline"
+                variant="default"
                 size="sm"
                 onClick={onToggleFullscreen}
               >
@@ -145,7 +145,7 @@ export function LocationMapTab({
           </div>
 
           {/* Fullscreen search */}
-          <div className="px-4 py-2 border-b bg-background z-10 shrink-0">
+          <div className="px-4 py-2 border-b bg-background/95 backdrop-blur-sm pointer-events-auto shrink-0">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -158,79 +158,72 @@ export function LocationMapTab({
             </div>
           </div>
 
-          {/* Fullscreen map area — transparent so fixed map behind is visible */}
-          <div className="flex-1 relative pointer-events-none">
+          {/* Coords badge at bottom */}
+          <div className="flex-1 relative">
             <CenterPin size="h-10 w-10" isDragging={isDragging} />
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg z-10 pointer-events-auto">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur-sm border rounded-full px-4 py-2 shadow-lg pointer-events-auto">
               <CoordsBadge
                 latitude={latitude}
                 longitude={longitude}
                 isReverseGeocoding={isReverseGeocoding}
               />
             </div>
-            {!isMapReady && !mapError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-muted/80 z-20 pointer-events-auto">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            )}
-            {mapError && (
-              <div className="pointer-events-auto">
-                <MapErrorBanner />
-              </div>
-            )}
           </div>
         </div>
       )}
 
-      {/* ── Normal map view ── */}
+      {/* ── Normal map view (search + controls) ── */}
       <div className="space-y-3">
-        {/* Search bar + controls */}
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              ref={searchInputRef}
-              type="text"
-              placeholder="Search for a place..."
-              className="pl-10"
-              autoComplete="off"
-            />
+        {!isFullScreen && (
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search for a place..."
+                className="pl-10"
+                autoComplete="off"
+              />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={onMyLocation}
+              title="Use my location"
+            >
+              <LocateFixed className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={onToggleFullscreen}
+              title="Fullscreen map"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={onMyLocation}
-            title="Use my location"
-          >
-            <LocateFixed className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={onToggleFullscreen}
-            title="Fullscreen map"
-          >
-            <Maximize2 className="h-4 w-4" />
-          </Button>
-        </div>
+        )}
 
-        {/* Map container - always rendered, fixed-positioned when fullscreen */}
+        {/*
+          Map container — always rendered so Google Maps ref stays valid.
+          When fullscreen: fixed inset-0 z-[200] (behind the controls overlay).
+          When normal: relative, rounded border.
+        */}
         <div
           className={`relative ${
             isFullScreen
-              ? "fixed inset-0 z-[49] top-[105px] visible"
+              ? "fixed inset-0 z-[200]"
               : "rounded-lg overflow-hidden border"
           }`}
         >
           <div
             ref={mapContainerRef}
-            className={isFullScreen ? "w-full h-full visible" : "w-full h-[260px]"}
+            className={isFullScreen ? "w-full h-full" : "w-full h-[260px]"}
           />
-          {!isFullScreen && (
-            <CenterPin isDragging={isDragging} />
-          )}
+          {!isFullScreen && <CenterPin isDragging={isDragging} />}
           {!isFullScreen && !isMapReady && !mapError && (
             <div className="absolute inset-0 flex items-center justify-center bg-muted">
               <div className="flex flex-col items-center gap-2">

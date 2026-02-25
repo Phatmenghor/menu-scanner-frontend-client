@@ -6,7 +6,6 @@ import {
   MapPin,
   Loader2,
   Navigation2,
-  ChevronRight,
   CheckCircle2,
 } from "lucide-react";
 import {
@@ -43,26 +42,6 @@ interface LocationSelectTabProps {
   onGetCoordinates: () => void;
 }
 
-function HierarchyLabel({
-  level,
-  children,
-}: {
-  level: 1 | 2 | 3;
-  children: React.ReactNode;
-}) {
-  return (
-    <span className="text-sm font-medium flex items-center gap-0.5">
-      {Array.from({ length: level }).map((_, i) => (
-        <ChevronRight
-          key={i}
-          className={`h-3.5 w-3.5 text-muted-foreground ${i > 0 ? "-ml-2.5" : ""}`}
-        />
-      ))}
-      {children}
-    </span>
-  );
-}
-
 export function LocationSelectTab({
   selectedProvince,
   selectedDistrict,
@@ -81,7 +60,7 @@ export function LocationSelectTab({
   return (
     <div className="space-y-4">
       {/* ── Hierarchy selectors ── */}
-      <div className="bg-muted/40 rounded-lg p-4 space-y-4">
+      <div className="bg-muted/40 rounded-lg p-4 space-y-3">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Navigation2 className="h-4 w-4 text-primary shrink-0" />
           <p>
@@ -99,42 +78,29 @@ export function LocationSelectTab({
         />
 
         {/* District */}
-        <div className="space-y-1.5">
-          <HierarchyLabel level={1}>District / Khan</HierarchyLabel>
-          <ComboboxSelectDistrict
-            dataSelect={selectedDistrict}
-            onChangeSelected={onDistrictChange}
-            provinceCode={selectedProvince?.provinceCode}
-            label=""
-          />
-        </div>
+        <ComboboxSelectDistrict
+          dataSelect={selectedDistrict}
+          onChangeSelected={onDistrictChange}
+          provinceCode={selectedProvince?.provinceCode}
+          label="District / Khan"
+        />
 
-        {/* Commune */}
-        <div className="space-y-1.5">
-          <HierarchyLabel level={2}>Commune / Sangkat</HierarchyLabel>
-          <ComboboxSelectCommune
-            dataSelect={selectedCommune}
-            onChangeSelected={onCommuneChange}
-            districtCode={selectedDistrict?.districtCode}
-            label=""
-          />
-        </div>
+        {/* Commune — required */}
+        <ComboboxSelectCommune
+          dataSelect={selectedCommune}
+          onChangeSelected={onCommuneChange}
+          districtCode={selectedDistrict?.districtCode}
+          label="Commune / Sangkat"
+          required
+        />
 
-        {/* Village */}
-        <div className="space-y-1.5">
-          <HierarchyLabel level={3}>
-            Village / Phum
-            <span className="text-muted-foreground text-xs font-normal ml-1">
-              (optional)
-            </span>
-          </HierarchyLabel>
-          <ComboboxSelectVillage
-            dataSelect={selectedVillage}
-            onChangeSelected={onVillageChange}
-            communeCode={selectedCommune?.communeCode}
-            label=""
-          />
-        </div>
+        {/* Village — optional */}
+        <ComboboxSelectVillage
+          dataSelect={selectedVillage}
+          onChangeSelected={onVillageChange}
+          communeCode={selectedCommune?.communeCode}
+          label="Village / Phum"
+        />
       </div>
 
       {/* ── Address preview ── */}
