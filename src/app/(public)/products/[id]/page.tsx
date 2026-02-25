@@ -35,6 +35,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { formatCurrency } from "@/utils/common/currency-format";
+import { sanitizeImageUrl } from "@/utils/common/common";
+import { appImages } from "@/constants/app-resource/icons/app-images";
 import {
   ProductDetailResponseModel,
   ProductSize,
@@ -92,12 +94,13 @@ export default function ProductDetailPage() {
     ? getCartQuantityForSize(null)
     : 0;
 
-  // Get all images (main + additional)
+  // Get all images (main + additional), sanitizing placeholder URLs
   const allImages = product
     ? [
-        { id: "main", imageUrl: product.mainImageUrl, displayOrder: 0 },
+        { id: "main", imageUrl: sanitizeImageUrl(product.mainImageUrl, appImages.NoImage), displayOrder: 0 },
         ...(product.images || []).map((img, idx) => ({
           ...img,
+          imageUrl: sanitizeImageUrl(img.imageUrl, appImages.NoImage),
           displayOrder: idx + 1,
         })),
       ]
@@ -114,7 +117,7 @@ export default function ProductDetailPage() {
   // Set initial image and size
   useEffect(() => {
     if (product) {
-      setSelectedImage(product.mainImageUrl);
+      setSelectedImage(sanitizeImageUrl(product.mainImageUrl, appImages.NoImage));
       setCurrentImageIndex(0);
       setImageLoaded(false);
 
@@ -326,7 +329,7 @@ export default function ProductDetailPage() {
                 <Skeleton className="absolute inset-0 w-full h-full" />
               )}
               <Image
-                src={selectedImage || "https://picsum.photos/800/800"}
+                src={selectedImage || appImages.NoImage}
                 alt={product.name}
                 fill
                 className={cn(

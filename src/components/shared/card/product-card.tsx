@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/utils/common/currency-format";
+import { sanitizeImageUrl } from "@/utils/common/common";
 import { CustomButton } from "../button/custom-button";
 import { ProductDetailResponseModel } from "@/redux/features/business/store/models/response/product-response";
 import { useCartState } from "@/redux/features/main/store/state/cart-state";
@@ -57,8 +58,8 @@ export function ProductCard({ product, className }: ProductCardProps) {
     .filter((item) => item.productId === product.id)
     .reduce((sum, item) => sum + item.quantity, 0);
 
-  // Image URL (fallback automatically handled)
-  const imageUrl = product.mainImageUrl || appImages.NoImage;
+  // Image URL (sanitize known unreachable placeholder domains, then fallback)
+  const imageUrl = sanitizeImageUrl(product.mainImageUrl, appImages.NoImage);
 
   // Image load/error state
   const [imageLoaded, setImageLoaded] = useState(

@@ -1,3 +1,20 @@
+const UNREACHABLE_IMAGE_DOMAINS = ["via.placeholder.com"];
+
+/**
+ * Returns the fallback image path when the given URL belongs to a known
+ * unreachable / placeholder domain, preventing server-side fetch failures.
+ */
+export function sanitizeImageUrl(
+  url: string | null | undefined,
+  fallback: string
+): string {
+  if (!url) return fallback;
+  if (UNREACHABLE_IMAGE_DOMAINS.some((domain) => url.includes(domain))) {
+    return fallback;
+  }
+  return url;
+}
+
 export function toRoman(num: number): string {
   const roman = [
     "M",

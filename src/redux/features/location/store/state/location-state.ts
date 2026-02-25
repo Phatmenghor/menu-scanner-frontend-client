@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import {
   selectLocations,
@@ -29,6 +30,14 @@ import {
 export const useLocationState = () => {
   const dispatch = useAppDispatch();
 
+  const fetchAll = useCallback(() => dispatch(fetchAllLocationsService()), [dispatch]);
+  const create = useCallback((data: LocationCreateRequest) => dispatch(createLocationService(data)), [dispatch]);
+  const update = useCallback((params: LocationUpdateRequest) => dispatch(updateLocationService(params)), [dispatch]);
+  const remove = useCallback((locationId: string) => dispatch(deleteLocationService(locationId)), [dispatch]);
+  const fetchDefault = useCallback(() => dispatch(fetchDefaultLocationService()), [dispatch]);
+  const clearError = useCallback(() => dispatch(clearLocationError()), [dispatch]);
+  const reset = useCallback(() => dispatch(resetLocationState()), [dispatch]);
+
   return {
     // ── State ──────────────────────────────────────────────────────────
     locations: useAppSelector(selectLocations),
@@ -43,15 +52,13 @@ export const useLocationState = () => {
     operations: useAppSelector(selectLocationOperations),
 
     // ── Actions ────────────────────────────────────────────────────────
-    fetchAll: () => dispatch(fetchAllLocationsService()),
-    create: (data: LocationCreateRequest) =>
-      dispatch(createLocationService(data)),
-    update: (params: LocationUpdateRequest) =>
-      dispatch(updateLocationService(params)),
-    remove: (locationId: string) => dispatch(deleteLocationService(locationId)),
-    fetchDefault: () => dispatch(fetchDefaultLocationService()),
-    clearError: () => dispatch(clearLocationError()),
-    reset: () => dispatch(resetLocationState()),
+    fetchAll,
+    create,
+    update,
+    remove,
+    fetchDefault,
+    clearError,
+    reset,
 
     // ── Raw dispatch ──────────────────────────────────────────────────
     dispatch,
