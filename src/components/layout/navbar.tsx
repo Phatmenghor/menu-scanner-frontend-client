@@ -17,7 +17,7 @@ import {
   Settings,
   Bell,
   CreditCard,
-  LocationEdit,
+  MapPin,
   CarTaxiFront,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -145,7 +145,7 @@ export function Navbar() {
         },
         {
           label: "Location",
-          icon: <LocationEdit className="h-4 w-4" />,
+          icon: <MapPin className="h-4 w-4" />,
           onClick: () => router.push(ROUTES.LOCATION),
         },
       ],
