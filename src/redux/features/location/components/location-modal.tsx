@@ -7,7 +7,7 @@ import React, {
   useState,
   useMemo,
 } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { TextField } from "@/components/shared/form-field/text-field";
@@ -22,7 +22,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import {
   Map,
@@ -508,6 +507,11 @@ export default function LocationModal({ isOpen, onClose, editData, initialCoords
         onInteractOutside={(e) => { if ((e.target as HTMLElement).closest(".pac-container")) e.preventDefault(); }}
         onPointerDownOutside={(e) => { if ((e.target as HTMLElement).closest(".pac-container")) e.preventDefault(); }}
       >
+        {/* Hidden accessible title for screen readers */}
+        <DialogTitle className="sr-only">
+          {isCreate ? "Add New Location" : "Edit Location"}
+        </DialogTitle>
+
         {/* ── Fullscreen toolbar ── */}
         {isFullScreen && (
           <div className="flex items-center justify-between px-4 py-3 border-b bg-background shrink-0">
@@ -595,14 +599,20 @@ export default function LocationModal({ isOpen, onClose, editData, initialCoords
 
         {/* ── Normal header (hidden in fullscreen) ── */}
         {!isFullScreen && (
-          <div className="px-6 pt-4 pb-2 border-b shrink-0">
-            <div className="flex items-center gap-2 mb-0.5">
-              <MapPin className={cn("h-5 w-5", isCreate ? "text-primary" : "text-amber-500")} />
-              <h2 className="text-lg font-semibold">{isCreate ? "Add New Location" : "Edit Location"}</h2>
+          <div className="shrink-0">
+            {/* Coloured accent bar */}
+            <div className={cn("h-1 w-full", isCreate ? "bg-gradient-to-r from-primary/80 via-primary to-primary/60" : "bg-gradient-to-r from-amber-400 via-amber-500 to-amber-300")} />
+            <div className="px-6 pt-4 pb-3 border-b">
+              <div className="flex items-center gap-2.5 mb-0.5">
+                <div className={cn("p-1.5 rounded-lg", isCreate ? "bg-primary/10" : "bg-amber-100 dark:bg-amber-900/30")}>
+                  <MapPin className={cn("h-4 w-4", isCreate ? "text-primary" : "text-amber-600 dark:text-amber-400")} />
+                </div>
+                <h2 className="text-base font-semibold">{isCreate ? "Add New Location" : "Edit Location"}</h2>
+              </div>
+              <p className="text-xs text-muted-foreground ml-9">
+                {isCreate ? "Pin on map or pick from our address list" : "Update your location details below"}
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground">
-              {isCreate ? "Choose how to select your location" : "Update your location information"}
-            </p>
           </div>
         )}
 
@@ -660,11 +670,16 @@ export default function LocationModal({ isOpen, onClose, editData, initialCoords
 
                 {/* ── Address Details ── */}
                 <div className="pt-2 border-t space-y-4">
-                  <div>
-                    <h3 className="text-sm font-semibold">Address Details</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {selectionMode === "map" ? "Auto-filled from map pin. Edit if needed." : "Add house/street number for a precise address."}
-                    </p>
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-md bg-muted">
+                      <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold leading-none">Address Details</h3>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {selectionMode === "map" ? "Auto-filled from map pin — edit if needed" : "Add house / street number for precise delivery"}
+                      </p>
+                    </div>
                   </div>
 
                   <TextField control={control} name="label" label="Label" placeholder="e.g., Home, Office, Shop" required disabled={isSubmitting} error={errors.label} />
@@ -685,19 +700,31 @@ export default function LocationModal({ isOpen, onClose, editData, initialCoords
 
                   <TextareaField control={control} name="note" label="Note" placeholder="Delivery instructions or extra details" rows={2} disabled={isSubmitting} error={errors.note} />
 
-                  {/* isPrimary Switch */}
-                  <div className={cn("flex items-center justify-between rounded-lg border p-3 transition-colors",
-                    isPrimaryValue ? "border-amber-300 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-700" : "border-border bg-muted/30"
-                  )}>
-                    <div className="flex items-center gap-2">
-                      <Star className={cn("h-4 w-4 transition-colors", isPrimaryValue ? "text-amber-500 fill-amber-500" : "text-muted-foreground")} />
-                      <div>
-                        <p className="text-sm font-medium leading-none">Set as Primary Location</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">Used by default for deliveries</p>
-                      </div>
+                  {/* isPrimary — star toggle button */}
+                  <button
+                    type="button"
+                    onClick={() => setValue("isPrimary", !isPrimaryValue, { shouldDirty: true })}
+                    disabled={isSubmitting}
+                    className={cn(
+                      "w-full flex items-center gap-3 rounded-xl border-2 p-3.5 text-left transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      isPrimaryValue
+                        ? "border-amber-300 bg-amber-50/70 dark:bg-amber-950/20 dark:border-amber-700"
+                        : "border-border/60 bg-muted/20 hover:border-border hover:bg-muted/40"
+                    )}
+                  >
+                    <div className={cn("p-2 rounded-xl transition-colors shrink-0", isPrimaryValue ? "bg-amber-100 dark:bg-amber-900/40" : "bg-muted")}>
+                      <Star className={cn("h-5 w-5 transition-all duration-200", isPrimaryValue ? "text-amber-500 fill-amber-500 scale-110" : "text-muted-foreground")} />
                     </div>
-                    <Switch checked={isPrimaryValue} onCheckedChange={(v) => setValue("isPrimary", v, { shouldDirty: true })} disabled={isSubmitting} />
-                  </div>
+                    <div className="flex-1">
+                      <p className={cn("text-sm font-semibold leading-none", isPrimaryValue ? "text-amber-700 dark:text-amber-400" : "text-foreground")}>
+                        {isPrimaryValue ? "Primary Location" : "Set as Primary"}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {isPrimaryValue ? "This is your default delivery address" : "Click to mark as your default delivery address"}
+                      </p>
+                    </div>
+                    {isPrimaryValue && <CheckCircle2 className="h-5 w-5 text-amber-500 shrink-0" />}
+                  </button>
 
                   {/* Location Images */}
                   <MultiImageUpload
