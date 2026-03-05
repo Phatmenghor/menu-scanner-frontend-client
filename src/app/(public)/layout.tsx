@@ -3,6 +3,7 @@
 import { Suspense, useEffect } from "react";
 import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
+import { BottomNav } from "@/components/layout/bottom-nav";
 import { useAuthState } from "@/redux/features/auth/store/state/auth-state";
 import { useCartState } from "@/redux/features/main/store/state/cart-state";
 import { useFavoriteState } from "@/redux/features/main/store/state/favorite-state";
@@ -48,17 +49,20 @@ export default function PublicLayout({
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Navbar - no longer uses useSearchParams, safe without Suspense */}
       <Navbar />
 
-      {/* Main Content - Suspense covers pages (e.g. /products) that still
-          call useSearchParams directly */}
-      <main className="flex-1">
+      {/* Extra bottom padding on mobile so content clears the fixed bottom nav */}
+      <main className="flex-1 pb-16 sm:pb-0">
         <Suspense>{children}</Suspense>
       </main>
 
-      {/* Footer - Shared across all public pages */}
-      <Footer />
+      {/* Footer — hidden on mobile (replaced by bottom nav) */}
+      <div className="hidden sm:block">
+        <Footer />
+      </div>
+
+      {/* Native-style bottom tab bar — mobile only */}
+      <BottomNav />
     </div>
   );
 }
