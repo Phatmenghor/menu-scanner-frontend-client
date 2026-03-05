@@ -1,5 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useState, useRef } from "react";
 import Link from "next/link";
 
@@ -135,6 +135,7 @@ export const UserAvatarCard: React.FC<UserAvatarCardProps> = ({
             onMouseEnter={handlePreviewMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
+            <DialogTitle className="sr-only">{displayName || "Image Preview"}</DialogTitle>
             <div className="relative bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-2xl border border-border">
               <div className="flex flex-col items-center gap-4">
                 {/* Loading spinner */}
