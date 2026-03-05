@@ -1,6 +1,6 @@
 export const AppDefault = {
   RESET_PASSWORD: "88889999",
-  BUSINESS_ID: "0a32d15e-1da6-4c39-bbe7-eec305035828",
+  BUSINESS_ID: "e502ce0d-6f36-4390-ae79-7c54f7dd8c86",
   PAGE_SIZE: 15,
   PAGE_SIZE_OPTIONS: [10, 15, 20, 50, 100],
 };

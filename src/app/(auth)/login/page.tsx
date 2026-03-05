@@ -47,7 +47,7 @@ export default function LoginPage() {
       const result = await dispatch(
         telegramAuthenticateService({
           telegramData,
-          userType: "CUSTOMER",
+          userType: "BUSINESS_USER",
           businessId: AppDefault.BUSINESS_ID,
         }),
       ).unwrap();
@@ -95,7 +95,7 @@ export default function LoginPage() {
     try {
       const result = await dispatch(
         loginService({
-          userIdentifier: values.userIdentifier || "",
+          userIdentifier: values.userIdentifier,
           password: values.password,
           userType: values.userType,
           businessId: values.businessId,
