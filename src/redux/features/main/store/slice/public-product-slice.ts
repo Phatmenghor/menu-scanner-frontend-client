@@ -98,8 +98,11 @@ const publicProductSlice = createSlice({
         const MAX_PAGES_IN_MEMORY = 3;
         const maxItems = MAX_PAGES_IN_MEMORY * pageSize;
 
-        // Append new products
-        const updatedProducts = [...state.products, ...newProducts];
+        // Append new products, deduplicating by ID to prevent duplicate keys
+        // when server-side inserts shift items across page boundaries
+        const existingIds = new Set(state.products.map((p) => p.id));
+        const uniqueNew = newProducts.filter((p) => !existingIds.has(p.id));
+        const updatedProducts = [...state.products, ...uniqueNew];
 
         // If we exceed the limit, remove oldest items
         if (updatedProducts.length > maxItems) {
