@@ -170,7 +170,7 @@ export default function OrderStatusModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="w-[90%] max-w-4xl max-h-[90vh] p-0 flex flex-col">
+      <DialogContent className="w-full sm:max-w-4xl max-h-[92dvh] p-0 flex flex-col">
         <FormHeader
           title={isCreate ? "Create New Order Status" : "Edit Order Status"}
           description={

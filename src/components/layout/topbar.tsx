@@ -62,7 +62,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         </div>
       </header>
       <AlertDialog open={showLogoutAlert} onOpenChange={setShowLogoutAlert}>
-        <AlertDialogContent className="sm:max-w-md">
+        <AlertDialogContent className="w-full sm:max-w-md">
           <AlertDialogHeader>
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">

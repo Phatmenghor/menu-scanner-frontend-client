@@ -460,7 +460,7 @@ export default function ProductModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="w-[95%] max-w-6xl max-h-[90vh] p-0 flex flex-col">
+      <DialogContent className="w-full sm:max-w-6xl max-h-[92dvh] p-0 flex flex-col">
         <FormHeader
           title={isCreate ? "Create New Product" : "Edit Product"}
           description={

@@ -477,8 +477,8 @@ export default function LocationModal({ isOpen, onClose, editData, initialCoords
         className={cn(
           "p-0 overflow-hidden flex flex-col transition-all duration-200",
           isFullScreen
-            ? "w-screen max-w-none h-screen max-h-none rounded-none m-0"
-            : "w-[95%] max-w-2xl max-h-[90vh]"
+            ? "inset-0 w-screen max-w-none h-screen max-h-none rounded-none"
+            : "w-full sm:max-w-4xl max-h-[92dvh]"
         )}
         onInteractOutside={(e) => { if ((e.target as HTMLElement).closest(".pac-container")) e.preventDefault(); }}
         onPointerDownOutside={(e) => { if ((e.target as HTMLElement).closest(".pac-container")) e.preventDefault(); }}

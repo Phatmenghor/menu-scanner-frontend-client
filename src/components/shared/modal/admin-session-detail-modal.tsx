@@ -105,7 +105,7 @@ export function AdminSessionDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="w-full sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Session Details (Admin View)</DialogTitle>
         </DialogHeader>
