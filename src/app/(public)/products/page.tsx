@@ -153,7 +153,7 @@ export default function ProductsPage() {
   const isInitialLoad = products.length === 0 && loading.list;
 
   return (
-    <PageContainer className="py-8 max-w-8xl">
+    <PageContainer className="py-4 sm:py-8 max-w-8xl">
       <div className="flex gap-6 lg:gap-8">
         {/* Desktop Sidebar Filters */}
         <aside className="hidden lg:block w-64 flex-shrink-0">
@@ -169,7 +169,7 @@ export default function ProductsPage() {
         {/* Main Product List */}
         <div className="flex-1 min-w-0">
           {/* Mobile Filters */}
-          <div className="lg:hidden mb-6">
+          <div className="lg:hidden mb-4">
             <ProductFilters
               categories={categories}
               brands={brands}

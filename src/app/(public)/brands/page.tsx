@@ -112,12 +112,12 @@ export default function BrandsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <PageContainer className="py-8">
+      <PageContainer className="py-4 sm:py-8">
         {/* Header & Search */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 sticky top-20 z-10 bg-background/95 backdrop-blur-sm py-4 border-b">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-8 sticky top-16 z-10 bg-background/95 backdrop-blur-sm py-3 sm:py-4 border-b">
           <div>
-            <h1 className="text-3xl font-bold mb-2">All Brands</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-xl sm:text-3xl font-bold">All Brands</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
               {totalBrands > 0
                 ? `Browse all ${totalBrands} brands`
                 : "Discover our brands"}

@@ -63,8 +63,8 @@ export const BannerSection = ({
 
   if (loading) {
     return (
-      <div className="w-full mb-8">
-        <Skeleton className="w-full h-[200px] sm:h-[280px] md:h-[320px] lg:h-[360px] rounded-2xl" />
+      <div className="w-full mb-4 sm:mb-8">
+        <Skeleton className="w-full h-[180px] sm:h-[280px] md:h-[320px] lg:h-[360px] rounded-2xl" />
       </div>
     );
   }
@@ -74,7 +74,7 @@ export const BannerSection = ({
   }
 
   return (
-    <div className="w-full mb-8">
+    <div className="w-full mb-4 sm:mb-8">
       <div className="relative">
         <Carousel
           setApi={setCarouselApi}

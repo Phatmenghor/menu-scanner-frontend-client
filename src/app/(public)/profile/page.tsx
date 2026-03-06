@@ -176,11 +176,11 @@ export default function UserProfilePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Profile Header */}
         <Card className="mb-4">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center gap-3 sm:gap-4">
               <div className="relative">
                 <CustomAvatar
                   imageUrl={userProfile?.profileImageUrl}
@@ -379,8 +379,8 @@ export default function UserProfilePage() {
           <div className="space-y-4">
             {/* Change Password */}
             <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
                     <h3 className="font-semibold text-foreground">
                       Change Password
@@ -391,7 +391,9 @@ export default function UserProfilePage() {
                   </div>
                   <Button
                     variant="outline"
+                    size="sm"
                     onClick={() => setIsChangePasswordModalOpen(true)}
+                    className="w-full sm:w-auto"
                   >
                     <Lock className="h-4 w-4 mr-2" />
                     Change Password
@@ -402,8 +404,8 @@ export default function UserProfilePage() {
 
             {/* Delete Account */}
             <Card className="border-destructive/50">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
                     <h3 className="font-semibold text-destructive">
                       Delete Account
@@ -414,7 +416,9 @@ export default function UserProfilePage() {
                   </div>
                   <Button
                     variant="destructive"
+                    size="sm"
                     onClick={() => setIsDeleteDialogOpen(true)}
+                    className="w-full sm:w-auto"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete Account

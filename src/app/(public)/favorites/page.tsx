@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Heart, ShoppingCart, Trash2, ArrowLeft, LogIn } from "lucide-react";
+import { Heart, ShoppingCart, Trash2, LogIn } from "lucide-react";
 import { useFavoriteState } from "@/redux/features/main/store/state/favorite-state";
 import { useCartState } from "@/redux/features/main/store/state/cart-state";
 import { useAuthState } from "@/redux/features/auth/store/state/auth-state";
@@ -17,6 +17,7 @@ import { ProductCardSkeleton } from "@/components/shared/skeletons/product-card-
 import { CustomButton } from "@/components/shared/button/custom-button";
 import { showToast } from "@/components/shared/common/show-toast";
 import { LoginModal } from "@/components/shared/modal/login-modal";
+import { PageContainer } from "@/components/shared/common/page-container";
 
 export default function FavoritesPage() {
   const router = useRouter();
@@ -26,16 +27,12 @@ export default function FavoritesPage() {
   const [loginModalOpen, setLoginModalOpen] = useState(false);
 
   useEffect(() => {
-    // Wait for auth to initialize before fetching
     if (!authReady) return;
-
-    // Only fetch favorites when authenticated
     if (isAuthenticated && !loaded) {
       dispatch(fetchFavoriteList());
     }
   }, [authReady, isAuthenticated, loaded, dispatch]);
 
-  // Service 3: Remove one favorite
   const handleRemoveOne = async (productId: string) => {
     try {
       await dispatch(toggleFavorite({ productId })).unwrap();
@@ -45,7 +42,6 @@ export default function FavoritesPage() {
     }
   };
 
-  // Service 4: Clear all favorites
   const handleClearAll = async () => {
     if (items.length === 0) return;
     try {
@@ -66,158 +62,128 @@ export default function FavoritesPage() {
     }
   };
 
-  // Show loading skeleton while auth is initializing
-  if (!authReady) {
+  // Loading skeleton
+  if (!authReady || (loading.fetch && !loaded)) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="h-10 w-64 bg-muted rounded mb-8 animate-pulse" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <ProductCardSkeleton key={i} />
-            ))}
-          </div>
+      <PageContainer className="py-4 sm:py-8">
+        <div className="h-7 w-40 bg-muted rounded mb-4 animate-pulse" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <ProductCardSkeleton key={i} />
+          ))}
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
-  // Show not-logged-in state
+  // Not logged in
   if (!isAuthenticated) {
     return (
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-2xl mx-auto text-center">
-          <div className="flex items-center justify-center w-24 h-24 rounded-full bg-red-50 mx-auto mb-6">
-            <Heart className="h-12 w-12 text-red-500" />
+      <>
+        <PageContainer className="py-12 sm:py-20">
+          <div className="max-w-sm mx-auto text-center">
+            <div className="flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-red-50 mx-auto mb-4">
+              <Heart className="h-8 w-8 sm:h-10 sm:w-10 text-red-500" />
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold mb-2">My Favorites</h1>
+            <p className="text-sm text-muted-foreground mb-6">
+              Sign in to save and view your favorite items.
+            </p>
+            <div className="flex flex-col gap-3">
+              <CustomButton
+                onClick={() => setLoginModalOpen(true)}
+                className="w-full gap-2"
+              >
+                <LogIn className="h-4 w-4" />
+                Sign In
+              </CustomButton>
+              <CustomButton
+                variant="outline"
+                onClick={() => router.push("/products")}
+                className="w-full gap-2"
+              >
+                <ShoppingCart className="h-4 w-4" />
+                Browse Products
+              </CustomButton>
+            </div>
           </div>
-          <h1 className="text-3xl font-bold mb-4">My Favorites</h1>
-          <p className="text-muted-foreground mb-8">
-            Please sign in to view and manage your favorite items.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <CustomButton
-              onClick={() => setLoginModalOpen(true)}
-              size="lg"
-              className="gap-2"
-            >
-              <LogIn className="h-5 w-5" />
-              Sign In
-            </CustomButton>
-            <CustomButton
-              variant="outline"
-              onClick={() => router.push("/products")}
-              size="lg"
-              className="gap-2"
-            >
-              <ShoppingCart className="h-5 w-5" />
-              Browse Products
-            </CustomButton>
-          </div>
-        </div>
+        </PageContainer>
         <LoginModal open={loginModalOpen} onOpenChange={setLoginModalOpen} />
-      </div>
+      </>
     );
   }
 
-  if (loading.fetch && !loaded) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="h-10 w-64 bg-muted rounded mb-8 animate-pulse" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <ProductCardSkeleton key={i} />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // Empty state
   if (items.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-2xl mx-auto text-center">
-          <div className="flex items-center justify-center w-24 h-24 rounded-full bg-red-50 mx-auto mb-6">
-            <Heart className="h-12 w-12 text-red-500" />
+      <PageContainer className="py-12 sm:py-20">
+        <div className="max-w-sm mx-auto text-center">
+          <div className="flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-red-50 mx-auto mb-4">
+            <Heart className="h-8 w-8 sm:h-10 sm:w-10 text-red-500" />
           </div>
-          <h1 className="text-3xl font-bold mb-4">Your Favorites is Empty</h1>
-          <p className="text-muted-foreground mb-8">
-            Save your favorite items here to buy them later or share with
-            friends
+          <h1 className="text-xl sm:text-2xl font-bold mb-2">No Favorites Yet</h1>
+          <p className="text-sm text-muted-foreground mb-6">
+            Save your favorite items to find them quickly later.
           </p>
           <CustomButton
             onClick={() => router.push("/products")}
-            size="lg"
-            className="gap-2"
+            className="w-full gap-2"
           >
-            <ShoppingCart className="h-5 w-5" />
+            <ShoppingCart className="h-4 w-4" />
             Start Shopping
           </CustomButton>
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <CustomButton
-              variant="ghost"
-              size="icon"
-              onClick={() => router.back()}
-              className="h-10 w-10"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </CustomButton>
-            <div>
-              <h1 className="text-3xl font-bold mb-1">My Favorites</h1>
-              <p className="text-muted-foreground">
-                {totalItems} {totalItems === 1 ? "item" : "items"} saved
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            {/* Clear All Button */}
-            <CustomButton
-              variant="destructive"
-              size="sm"
-              onClick={handleClearAll}
-              disabled={loading.clearAll}
-              className="gap-2"
-            >
-              {loading.clearAll ? (
-                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Trash2 className="h-4 w-4" />
-              )}
-              Clear All
-            </CustomButton>
-          </div>
+    <PageContainer className="py-4 sm:py-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <Heart className="h-5 w-5 text-red-500 fill-red-500" />
+            My Favorites
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+            {totalItems} {totalItems === 1 ? "item" : "items"} saved
+          </p>
         </div>
-
-        {/* Favorites Items Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {items.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-
-        {/* Actions */}
-        <div className="mt-12 flex justify-center gap-4">
-          <CustomButton
-            size="lg"
-            onClick={() => router.push("/products")}
-            className="gap-2"
-          >
-            <ShoppingCart className="h-5 w-5" />
-            Continue Shopping
-          </CustomButton>
-        </div>
+        <CustomButton
+          variant="ghost"
+          size="sm"
+          onClick={handleClearAll}
+          disabled={loading.clearAll}
+          className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10 text-xs"
+        >
+          {loading.clearAll ? (
+            <div className="h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Trash2 className="h-3.5 w-3.5" />
+          )}
+          Clear All
+        </CustomButton>
       </div>
-    </div>
+
+      {/* Favorites Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+        {items.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
+
+      {/* Bottom action */}
+      <div className="mt-8 sm:mt-12 flex justify-center">
+        <CustomButton
+          variant="outline"
+          onClick={() => router.push("/products")}
+          className="gap-2"
+        >
+          <ShoppingCart className="h-4 w-4" />
+          Continue Shopping
+        </CustomButton>
+      </div>
+    </PageContainer>
   );
 }
