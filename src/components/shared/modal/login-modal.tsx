@@ -4,7 +4,7 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Eye, EyeOff, Loader2, Lock, Mail, User, Phone } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,17 +12,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TextField } from "@/components/shared/form-field/text-field";
+import { PasswordField } from "@/components/shared/form-field/password-field";
 import { useAuthState } from "@/redux/features/auth/store/state/auth-state";
 import {
   loginService,
@@ -40,16 +33,17 @@ interface LoginModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// Login form schema
 const loginSchema = z.object({
   userIdentifier: z.string().min(1, "Email or username is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-// Register form schema
 const registerSchema = z
   .object({
-    userIdentifier: z.string().min(1, "Email is required").email("Invalid email"),
+    userIdentifier: z
+      .string()
+      .min(1, "Email is required")
+      .email("Invalid email"),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string().min(8, "Please confirm your password"),
     firstName: z.string().optional(),
@@ -64,6 +58,19 @@ const registerSchema = z
 type LoginFormData = z.infer<typeof loginSchema>;
 type RegisterFormData = z.infer<typeof registerSchema>;
 
+function Divider({ label }: { label: string }) {
+  return (
+    <div className="relative">
+      <div className="absolute inset-0 flex items-center">
+        <span className="w-full border-t" />
+      </div>
+      <div className="relative flex justify-center text-xs uppercase">
+        <span className="bg-background px-2 text-muted-foreground">{label}</span>
+      </div>
+    </div>
+  );
+}
+
 export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -72,17 +79,13 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
 
   const { isLoading, dispatch } = useAuthState();
   const isSocialLoading = useAppSelector((state) => state.auth.isSocialLoading);
+  const isAnyLoading = isLoading || isSocialLoading || isTelegramLoading;
 
-  // Login form
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      userIdentifier: "",
-      password: "",
-    },
+    defaultValues: { userIdentifier: "", password: "" },
   });
 
-  // Register form
   const registerForm = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -95,7 +98,6 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
     },
   });
 
-  // Handle login submit
   async function onLoginSubmit(values: LoginFormData) {
     try {
       await dispatch(
@@ -103,9 +105,8 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
           userIdentifier: values.userIdentifier,
           password: values.password,
           userType: "CUSTOMER",
-        })
+        }),
       ).unwrap();
-
       showToast.success("Welcome! You've successfully logged in.");
       onOpenChange(false);
       loginForm.reset();
@@ -115,7 +116,6 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
     }
   }
 
-  // Handle register submit
   async function onRegisterSubmit(values: RegisterFormData) {
     try {
       await dispatch(
@@ -126,9 +126,8 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
           firstName: values.firstName,
           lastName: values.lastName,
           phoneNumber: values.phoneNumber,
-        })
+        }),
       ).unwrap();
-
       showToast.success("Account created! Please log in.");
       setActiveTab("login");
       registerForm.reset();
@@ -138,23 +137,14 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
     }
   }
 
-  // Handle Telegram authentication
   const handleTelegramAuth = async (telegramData: TelegramAuthData) => {
     setIsTelegramLoading(true);
     try {
       const result = await dispatch(
-        telegramAuthenticateService({
-          telegramData,
-          userType: "CUSTOMER",
-        })
+        telegramAuthenticateService({ telegramData, userType: "CUSTOMER" }),
       ).unwrap();
-
       if (result) {
-        if (result.isNewUser) {
-          showToast.success("Welcome! Your account has been created.");
-        } else {
-          showToast.success("Welcome back!");
-        }
+        showToast.success(result.isNewUser ? "Welcome! Your account has been created." : "Welcome back!");
         onOpenChange(false);
         window.location.reload();
       }
@@ -165,22 +155,11 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
     }
   };
 
-  const handleKeyPress = (
-    e: React.KeyboardEvent<HTMLInputElement>,
-    submitFn: () => void
-  ) => {
-    if (e.key === "Enter") {
-      submitFn();
-    }
-  };
-
-  const isAnyLoading = isLoading || isSocialLoading || isTelegramLoading;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">
+          <DialogTitle className="text-xl sm:text-2xl font-bold">
             {activeTab === "login" ? "Welcome Back" : "Create Account"}
           </DialogTitle>
           <DialogDescription>
@@ -199,103 +178,42 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
             <TabsTrigger value="register">Register</TabsTrigger>
           </TabsList>
 
-          {/* Login Tab */}
+          {/* ── Login Tab ── */}
           <TabsContent value="login" className="space-y-4 mt-4">
-            <Form {...loginForm}>
-              <form
-                onSubmit={loginForm.handleSubmit(onLoginSubmit)}
-                className="space-y-4"
-              >
-                <FormField
-                  control={loginForm.control}
-                  name="userIdentifier"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Email or Username
-                        <span className="text-red-500 ml-1">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            {...field}
-                            type="text"
-                            placeholder="name@example.com"
-                            disabled={isAnyLoading}
-                            className="pl-10"
-                            onKeyDown={(e) =>
-                              handleKeyPress(e, loginForm.handleSubmit(onLoginSubmit))
-                            }
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <form
+              onSubmit={loginForm.handleSubmit(onLoginSubmit)}
+              className="space-y-4"
+            >
+              <TextField
+                name="userIdentifier"
+                label="Email or Username"
+                placeholder="name@example.com"
+                control={loginForm.control}
+                error={loginForm.formState.errors.userIdentifier}
+                disabled={isAnyLoading}
+                required
+              />
 
-                <FormField
-                  control={loginForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Password
-                        <span className="text-red-500 ml-1">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            {...field}
-                            type={showPassword ? "text" : "password"}
-                            placeholder="Enter your password"
-                            disabled={isAnyLoading}
-                            className="pl-10 pr-10"
-                            onKeyDown={(e) =>
-                              handleKeyPress(e, loginForm.handleSubmit(onLoginSubmit))
-                            }
-                          />
-                          <button
-                            type="button"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            onClick={() => setShowPassword(!showPassword)}
-                            disabled={isAnyLoading}
-                          >
-                            {showPassword ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <PasswordField
+                name="password"
+                label="Password"
+                placeholder="Enter your password"
+                control={loginForm.control}
+                error={loginForm.formState.errors.password}
+                disabled={isAnyLoading}
+                required
+                showPassword={showPassword}
+                onTogglePassword={() => setShowPassword((v) => !v)}
+              />
 
-                <Button type="submit" className="w-full" disabled={isAnyLoading}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {isLoading ? "Signing in..." : "Sign in"}
-                </Button>
-              </form>
-            </Form>
+              <Button type="submit" className="w-full" disabled={isAnyLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isLoading ? "Signing in..." : "Sign in"}
+              </Button>
+            </form>
 
-            {/* Divider */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or continue with
-                </span>
-              </div>
-            </div>
+            <Divider label="Or continue with" />
 
-            {/* Telegram Login */}
             <TelegramLoginButton
               botName={SocialAuthConfig.TELEGRAM_BOT_NAME}
               botId={SocialAuthConfig.TELEGRAM_BOT_ID}
@@ -306,203 +224,84 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
             />
           </TabsContent>
 
-          {/* Register Tab */}
+          {/* ── Register Tab ── */}
           <TabsContent value="register" className="space-y-4 mt-4">
-            <Form {...registerForm}>
-              <form
-                onSubmit={registerForm.handleSubmit(onRegisterSubmit)}
-                className="space-y-4"
-              >
-                {/* Name fields in a row */}
-                <div className="grid grid-cols-2 gap-3">
-                  <FormField
-                    control={registerForm.control}
-                    name="firstName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>First Name</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                              {...field}
-                              placeholder="John"
-                              disabled={isAnyLoading}
-                              className="pl-10"
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={registerForm.control}
-                    name="lastName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Last Name</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            placeholder="Doe"
-                            disabled={isAnyLoading}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
+            <form
+              onSubmit={registerForm.handleSubmit(onRegisterSubmit)}
+              className="space-y-4"
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <TextField
+                  name="firstName"
+                  label="First Name"
+                  placeholder="John"
                   control={registerForm.control}
-                  name="userIdentifier"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Email
-                        <span className="text-red-500 ml-1">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            {...field}
-                            type="email"
-                            placeholder="name@example.com"
-                            disabled={isAnyLoading}
-                            className="pl-10"
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  error={registerForm.formState.errors.firstName}
+                  disabled={isAnyLoading}
                 />
-
-                <FormField
+                <TextField
+                  name="lastName"
+                  label="Last Name"
+                  placeholder="Doe"
                   control={registerForm.control}
-                  name="phoneNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone Number</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            {...field}
-                            type="tel"
-                            placeholder="+855 12 345 678"
-                            disabled={isAnyLoading}
-                            className="pl-10"
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  error={registerForm.formState.errors.lastName}
+                  disabled={isAnyLoading}
                 />
-
-                <FormField
-                  control={registerForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Password
-                        <span className="text-red-500 ml-1">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            {...field}
-                            type={showPassword ? "text" : "password"}
-                            placeholder="Min 8 characters"
-                            disabled={isAnyLoading}
-                            className="pl-10 pr-10"
-                          />
-                          <button
-                            type="button"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            onClick={() => setShowPassword(!showPassword)}
-                            disabled={isAnyLoading}
-                          >
-                            {showPassword ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={registerForm.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Confirm Password
-                        <span className="text-red-500 ml-1">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            {...field}
-                            type={showConfirmPassword ? "text" : "password"}
-                            placeholder="Confirm your password"
-                            disabled={isAnyLoading}
-                            className="pl-10 pr-10"
-                          />
-                          <button
-                            type="button"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            onClick={() =>
-                              setShowConfirmPassword(!showConfirmPassword)
-                            }
-                            disabled={isAnyLoading}
-                          >
-                            {showConfirmPassword ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <Button type="submit" className="w-full" disabled={isAnyLoading}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {isLoading ? "Creating account..." : "Create Account"}
-                </Button>
-              </form>
-            </Form>
-
-            {/* Divider */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
               </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or register with
-                </span>
-              </div>
-            </div>
 
-            {/* Telegram Register */}
+              <TextField
+                name="userIdentifier"
+                label="Email"
+                type="email"
+                placeholder="name@example.com"
+                control={registerForm.control}
+                error={registerForm.formState.errors.userIdentifier}
+                disabled={isAnyLoading}
+                required
+              />
+
+              <TextField
+                name="phoneNumber"
+                label="Phone Number"
+                type="tel"
+                placeholder="+855 12 345 678"
+                control={registerForm.control}
+                error={registerForm.formState.errors.phoneNumber}
+                disabled={isAnyLoading}
+              />
+
+              <PasswordField
+                name="password"
+                label="Password"
+                placeholder="Min 8 characters"
+                control={registerForm.control}
+                error={registerForm.formState.errors.password}
+                disabled={isAnyLoading}
+                required
+                showPassword={showPassword}
+                onTogglePassword={() => setShowPassword((v) => !v)}
+              />
+
+              <PasswordField
+                name="confirmPassword"
+                label="Confirm Password"
+                placeholder="Confirm your password"
+                control={registerForm.control}
+                error={registerForm.formState.errors.confirmPassword}
+                disabled={isAnyLoading}
+                required
+                showPassword={showConfirmPassword}
+                onTogglePassword={() => setShowConfirmPassword((v) => !v)}
+              />
+
+              <Button type="submit" className="w-full" disabled={isAnyLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isLoading ? "Creating account..." : "Create Account"}
+              </Button>
+            </form>
+
+            <Divider label="Or register with" />
+
             <TelegramLoginButton
               botName={SocialAuthConfig.TELEGRAM_BOT_NAME}
               botId={SocialAuthConfig.TELEGRAM_BOT_ID}
