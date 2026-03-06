@@ -106,6 +106,37 @@ export function clearAllTokens(): void {
   clearRefreshToken();
 }
 
+// ─── Admin (BUSINESS_USER) token helpers ────────────────────────────────────
+
+export function storeAdminToken(token: string | undefined): void {
+  if (typeof window === "undefined" || !token) return;
+  const maxAge = getMaxAgeFromToken(token, 7 * 24 * 60 * 60);
+  setCookie(COOKIE_KEYS.ADMIN_ACCESS_TOKEN, token, { maxAge });
+}
+
+export function storeAdminRefreshToken(refreshToken: string | undefined): void {
+  if (typeof window === "undefined" || !refreshToken) return;
+  const maxAge = getMaxAgeFromToken(refreshToken, 30 * 24 * 60 * 60);
+  setCookie(COOKIE_KEYS.ADMIN_REFRESH_TOKEN, refreshToken, { maxAge });
+}
+
+export function storeAdminTokens(
+  accessToken: string | undefined,
+  refreshToken: string | undefined
+): void {
+  storeAdminToken(accessToken);
+  storeAdminRefreshToken(refreshToken);
+}
+
+export function getAdminToken(): string | undefined {
+  return getCookie(COOKIE_KEYS.ADMIN_ACCESS_TOKEN) as string | undefined;
+}
+
+export function clearAdminTokens(): void {
+  deleteCookie(COOKIE_KEYS.ADMIN_ACCESS_TOKEN);
+  deleteCookie(COOKIE_KEYS.ADMIN_REFRESH_TOKEN);
+}
+
 /**
  * Check if user is authenticated
  */

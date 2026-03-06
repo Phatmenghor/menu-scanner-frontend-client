@@ -20,8 +20,20 @@ import {
   logoutService,
 } from "../thunks/social-auth-thunks";
 import { AuthState } from "../models/type/auth-types";
-import { storeTokens, clearAllTokens } from "@/utils/local-storage/token";
-import { storeUserInfo, clearUserInfo } from "@/utils/local-storage/userInfo";
+import {
+  storeTokens,
+  clearAllTokens,
+  storeAdminTokens,
+  clearAdminTokens,
+} from "@/utils/local-storage/token";
+import {
+  storeUserInfo,
+  clearUserInfo,
+  storeAdminUserInfo,
+  clearAdminUserInfo,
+} from "@/utils/local-storage/userInfo";
+
+const isAdmin = (userType?: string) => userType === "BUSINESS_USER";
 import { SocialSyncResponse } from "../models/response/social-auth-response";
 
 /**
@@ -82,9 +94,10 @@ const authSlice = createSlice({
       state.error = null;
       state.socialSync = null;
       state.isNewUser = false;
-      // Clear stored tokens
       clearAllTokens();
-      removeUserInfo();
+      clearUserInfo();
+      clearAdminTokens();
+      clearAdminUserInfo();
     },
 
     /**
@@ -127,13 +140,15 @@ const authSlice = createSlice({
         state.isAuthenticated = !!action.payload.accessToken;
         state.authReady = true;
 
-        // Store authentication data (access + refresh tokens)
+        // Store tokens in admin or customer cookies based on userType
         if (action.payload.accessToken) {
-          storeTokens(action.payload.accessToken, action.payload.refreshToken);
-        }
-
-        if (action.payload) {
-          storeUserInfo(action.payload);
+          if (isAdmin(action.payload.userType)) {
+            storeAdminTokens(action.payload.accessToken, action.payload.refreshToken);
+            storeAdminUserInfo(action.payload);
+          } else {
+            storeTokens(action.payload.accessToken, action.payload.refreshToken);
+            storeUserInfo(action.payload);
+          }
         }
       })
       .addCase(loginService.rejected, (state, action) => {
@@ -239,9 +254,14 @@ const authSlice = createSlice({
           isSubscriptionActive: "",
         };
 
-        // Store tokens
-        storeTokens(socialResponse.accessToken, socialResponse.refreshToken);
-        storeUserInfo(state.user);
+        // Store tokens in admin or customer cookies based on userType
+        if (isAdmin(socialResponse.userType)) {
+          storeAdminTokens(socialResponse.accessToken, socialResponse.refreshToken);
+          storeAdminUserInfo(state.user);
+        } else {
+          storeTokens(socialResponse.accessToken, socialResponse.refreshToken);
+          storeUserInfo(state.user);
+        }
       })
       .addCase(telegramAuthenticateService.rejected, (state, action) => {
         state.isSocialLoading = false;
@@ -277,8 +297,13 @@ const authSlice = createSlice({
           isSubscriptionActive: "",
         };
 
-        storeTokens(socialResponse.accessToken, socialResponse.refreshToken);
-        storeUserInfo(state.user);
+        if (isAdmin(socialResponse.userType)) {
+          storeAdminTokens(socialResponse.accessToken, socialResponse.refreshToken);
+          storeAdminUserInfo(state.user);
+        } else {
+          storeTokens(socialResponse.accessToken, socialResponse.refreshToken);
+          storeUserInfo(state.user);
+        }
       })
       .addCase(socialAuthenticateService.rejected, (state, action) => {
         state.isSocialLoading = false;
@@ -328,7 +353,9 @@ const authSlice = createSlice({
         state.socialSync = null;
         state.isNewUser = false;
         clearAllTokens();
-        removeUserInfo();
+        clearUserInfo();
+        clearAdminTokens();
+        clearAdminUserInfo();
       })
       .addCase(logoutService.rejected, (state) => {
         // Even if server logout fails, clear local state
@@ -340,6 +367,8 @@ const authSlice = createSlice({
         state.isNewUser = false;
         clearAllTokens();
         clearUserInfo();
+        clearAdminTokens();
+        clearAdminUserInfo();
       });
   },
 });

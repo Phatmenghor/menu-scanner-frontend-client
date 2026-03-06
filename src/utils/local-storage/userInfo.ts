@@ -32,3 +32,28 @@ export function getUserInfo() {
 export function clearUserInfo(): void {
   deleteCookie(USER_INFO_KEY);
 }
+
+// ─── Admin (BUSINESS_USER) userInfo helpers ──────────────────────────────────
+
+export function storeAdminUserInfo(userInfo: any): void {
+  if (typeof window === "undefined") return;
+  setCookie(COOKIE_KEYS.ADMIN_USER_INFO, JSON.stringify(userInfo), {
+    maxAge: 365 * 24 * 60 * 60,
+  });
+}
+
+export function getAdminUserInfo() {
+  const userInfo = getCookie(COOKIE_KEYS.ADMIN_USER_INFO);
+  if (userInfo) {
+    try {
+      return JSON.parse(userInfo as string);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+export function clearAdminUserInfo(): void {
+  deleteCookie(COOKIE_KEYS.ADMIN_USER_INFO);
+}
