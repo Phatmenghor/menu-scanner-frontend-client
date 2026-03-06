@@ -6,10 +6,18 @@ import axios, {
 } from "axios";
 import {
   getToken,
+  getAdminToken,
   getRefreshToken,
   storeTokens,
+  storeAdminTokens,
   clearAllTokens,
+  clearAdminTokens,
 } from "../local-storage/token";
+
+/** True when the current page is an admin route (browser only). */
+const isAdminPath = (): boolean =>
+  typeof window !== "undefined" &&
+  window.location.pathname.startsWith("/admin");
 import { toast } from "sonner";
 
 // Define types
@@ -311,9 +319,9 @@ const createAxiosInstance = (requiresAuth = false): AxiosInstance => {
       config.headers = config.headers || {};
       config.headers["X-Request-ID"] = requestId;
 
-      // Handle authentication
+      // Handle authentication — pick admin or customer token by route
       if (requiresAuth) {
-        const token = getToken();
+        const token = isAdminPath() ? getAdminToken() : getToken();
 
         if (token) {
           config.headers["Authorization"] = `Bearer ${token}`;
@@ -473,11 +481,11 @@ const createAxiosInstance = (requiresAuth = false): AxiosInstance => {
       if (err.response?.status === 401 && originalRequest && !originalRequest._retry) {
         // Check if this is the refresh token endpoint itself failing
         if (originalRequest.url?.includes("/api/v1/auth/refresh")) {
-          // Refresh token failed, clear tokens and redirect to login
-          clearAllTokens();
+          const admin = isAdminPath();
+          if (admin) clearAdminTokens(); else clearAllTokens();
           if (typeof window !== "undefined") {
             toast.error("Session expired. Please login again.");
-            window.location.href = "/login";
+            window.location.href = admin ? "/login" : "/";
           }
           return Promise.reject(error);
         }
@@ -501,22 +509,21 @@ const createAxiosInstance = (requiresAuth = false): AxiosInstance => {
         originalRequest._retry = true;
         isRefreshing = true;
 
-        // Try to refresh the token
+        // Try to refresh the token — use the right pair based on route
+        const admin = isAdminPath();
         const refreshToken = getRefreshToken();
 
         if (!refreshToken) {
-          // No refresh token available, redirect to login
           isRefreshing = false;
-          clearAllTokens();
+          if (admin) clearAdminTokens(); else clearAllTokens();
           if (typeof window !== "undefined") {
             toast.error("Session expired. Please login again.");
-            window.location.href = "/login";
+            window.location.href = admin ? "/login" : "/";
           }
           return Promise.reject(error);
         }
 
         try {
-          // Call refresh token endpoint
           const response = await axios.post(
             `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/auth/refresh`,
             { refreshToken },
@@ -526,28 +533,26 @@ const createAxiosInstance = (requiresAuth = false): AxiosInstance => {
           const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
             response.data.data;
 
-          // Store new tokens
-          storeTokens(newAccessToken, newRefreshToken);
+          // Store refreshed tokens in the correct cookie set
+          if (admin) {
+            storeAdminTokens(newAccessToken, newRefreshToken);
+          } else {
+            storeTokens(newAccessToken, newRefreshToken);
+          }
 
-          // Update authorization header for original request
           if (originalRequest.headers) {
             originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
           }
 
-          // Process queued requests
           processQueue(null, newAccessToken);
-
           logger.success("Token refreshed successfully");
-
-          // Retry original request with new token
           return axiosInstance(originalRequest);
         } catch (refreshError) {
-          // Refresh failed, clear tokens and redirect to login
           processQueue(refreshError, null);
-          clearAllTokens();
+          if (admin) clearAdminTokens(); else clearAllTokens();
           if (typeof window !== "undefined") {
             toast.error("Session expired. Please login again.");
-            window.location.href = "/login";
+            window.location.href = admin ? "/login" : "/";
           }
           return Promise.reject(refreshError);
         } finally {
