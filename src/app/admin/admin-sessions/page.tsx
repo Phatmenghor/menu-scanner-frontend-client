@@ -183,15 +183,15 @@ export default function AdminSessionsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap gap-3 items-start justify-between mb-4 sm:mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">
               Session Management
             </h1>
-            <p className="text-muted-foreground mt-1">
-              View and manage all user sessions across the platform
+            <p className="text-sm text-muted-foreground mt-1">
+              View and manage all user sessions
             </p>
           </div>
           <Button
@@ -294,7 +294,7 @@ export default function AdminSessionsPage() {
 
         {/* Sessions Table */}
         <Card>
-          <CardContent className="p-0">
+          <CardContent className="p-0 overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -398,8 +398,8 @@ export default function AdminSessionsPage() {
 
         {/* Pagination */}
         {adminSessions && adminSessions.totalPages > 1 && (
-          <div className="flex items-center justify-between mt-4">
-            <p className="text-sm text-muted-foreground">
+          <div className="flex items-center justify-between mt-4 gap-2 flex-wrap">
+            <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
               Showing {(currentPage - 1) * filters.pageSize + 1} to{" "}
               {Math.min(currentPage * filters.pageSize, totalElements)} of{" "}
               {totalElements} sessions

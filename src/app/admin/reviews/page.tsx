@@ -99,17 +99,17 @@ export default function AdminReviewsPage() {
   const pendingCount = reviews.filter((r) => !r.isApproved).length;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Customer Reviews</h1>
-        <p className="text-gray-600 mt-1">
+      <div className="mb-4 sm:mb-8">
+        <h1 className="text-xl sm:text-3xl font-bold">Customer Reviews</h1>
+        <p className="text-sm text-gray-600 mt-1">
           Manage and respond to customer feedback
         </p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-8">
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
@@ -168,7 +168,7 @@ export default function AdminReviewsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3 mb-6">
+      <div className="flex flex-wrap gap-2 mb-4 sm:mb-6">
         <Button
           variant={filterStatus === "all" ? "default" : "outline"}
           onClick={() => setFilterStatus("all")}

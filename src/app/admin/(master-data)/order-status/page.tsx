@@ -247,7 +247,7 @@ export default function OrderStatusPage() {
           onSearchChange={handleSearchChange}
           openModal={handleCreateDeliveryOptions}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <CustomSelect
               options={ORDER_STATUS_FILTER}
               value={filters.status}

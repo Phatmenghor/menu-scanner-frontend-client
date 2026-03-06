@@ -293,7 +293,7 @@ export default function UserBusinessPage() {
           onSearchChange={handleSearchChange}
           openModal={handleCreateUser}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <CustomSelect
               options={ACCOUNT_STATUS_FILTER}
               value={filters.accountStatus}

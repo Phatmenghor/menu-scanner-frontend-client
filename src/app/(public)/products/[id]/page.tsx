@@ -299,8 +299,8 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <h2 className="text-2xl font-bold mb-4">Product Not Found</h2>
+      <div className="container mx-auto px-4 py-12 text-center">
+        <h2 className="text-xl sm:text-2xl font-bold mb-4">Product Not Found</h2>
         <Button onClick={() => router.back()}>Go Back</Button>
       </div>
     );
@@ -308,19 +308,20 @@ export default function ProductDetailPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-8 max-w-7xl">
         {/* Back Button */}
         <CustomButton
           variant="ghost"
+          size="sm"
           onClick={() => router.back()}
-          className="mb-6 hover:bg-accent"
+          className="mb-3 sm:mb-6 hover:bg-accent"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Products
+          <ArrowLeft className="h-4 w-4 mr-1.5" />
+          Back
         </CustomButton>
 
         {/* Main Product Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 lg:gap-12 mb-8 sm:mb-16">
           {/* Image Gallery */}
           <div className="space-y-4">
             {/* Main Image */}

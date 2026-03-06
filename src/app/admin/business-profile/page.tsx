@@ -72,23 +72,24 @@ export default function BusinessProfileEditorPage() {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Business Profile</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-xl sm:text-3xl font-bold">Business Profile</h1>
+          <p className="text-sm text-gray-600 mt-1">
             Customize your business portfolio and showcase your brand
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <Link href="/business-profile" target="_blank">
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" size="sm" className="gap-2">
               <Eye className="w-4 h-4" />
               Preview
             </Button>
           </Link>
           <Button
+            size="sm"
             onClick={handleSubmit(onSubmit)}
             disabled={!isDirty}
             className="gap-2"
@@ -374,7 +375,7 @@ export default function BusinessProfileEditorPage() {
               <CardContent>
                 <div className="space-y-3">
                   {profile.businessHours?.map((hours, index) => (
-                    <div key={hours.day} className="flex items-center gap-3">
+                    <div key={hours.day} className="flex flex-wrap items-center gap-2">
                       <div className="w-24 font-medium text-sm">
                         {hours.day.charAt(0) + hours.day.slice(1).toLowerCase()}
                       </div>

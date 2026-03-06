@@ -245,7 +245,7 @@ export default function ExchangeRatePage() {
           onSearchChange={handleSearchChange}
           openModal={handleCreateUser}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <CustomSelect
               options={EXCHAGE_RATE_FILTER}
               value={filters.isActive}

@@ -233,7 +233,7 @@ export default function BannerPage() {
           onSearchChange={handleSearchChange}
           openModal={handleCreateBanner}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <CustomSelect
               options={STATUS_FILTER}
               value={filters.status}

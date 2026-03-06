@@ -255,7 +255,7 @@ export default function ProductPromotionPage() {
           onSearchChange={handleSearchChange}
           openModal={handleCreateBrand}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <ComboboxSelectBrand
               dataSelect={selectedBrand}
               onChangeSelected={handleBrandChange}

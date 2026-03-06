@@ -72,7 +72,7 @@ export const CardHeaderSection: React.FC<CardHeaderSectionProps> = ({
   return (
     <div>
       <Card>
-        <CardContent className="py-6">
+        <CardContent className="py-3 sm:py-5">
           {/* Breadcrumb Section */}
           {breadcrumbs && breadcrumbs.length > 0 && (
             <Breadcrumb>
@@ -109,7 +109,7 @@ export const CardHeaderSection: React.FC<CardHeaderSectionProps> = ({
           )}
 
           {/* Title Section with Back Button */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-start mt-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-start mt-3">
             {(back || isMobile) && (
               <ActionButton
                 size="icon"
@@ -122,16 +122,16 @@ export const CardHeaderSection: React.FC<CardHeaderSectionProps> = ({
 
             {title && (
               <div className="flex flex-col">
-                <h1 className="font-bold mb-1">{title}</h1>
+                <h1 className="text-sm sm:text-base font-bold mb-1">{title}</h1>
               </div>
             )}
           </div>
 
           {/* Search and Actions Section */}
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-2 sm:gap-4">
             {/* Search input */}
             {onSearchChange && (
-              <div className="flex w-full lg:w-[400px] items-center gap-2">
+              <div className="flex w-full lg:w-[360px] items-center gap-2">
                 <div className="relative w-full group">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                   <Input
@@ -146,7 +146,7 @@ export const CardHeaderSection: React.FC<CardHeaderSectionProps> = ({
             )}
 
             {/* Right side actions */}
-            <div className="flex flex-col sm:flex-row sm:items-end gap-3 w-full lg:w-auto">
+            <div className="flex flex-wrap sm:items-end gap-2 w-full lg:w-auto">
               {customSelect && (
                 <div className="[&>*]:bg-gray-800 [&>*]:border-gray-700 [&>*]:text-gray-200">
                   {customSelect}
@@ -178,7 +178,7 @@ export const CardHeaderSection: React.FC<CardHeaderSectionProps> = ({
               )}
 
               {children && (
-                <div className="w-full [&>*]:text-gray-200">{children}</div>
+                <div className="w-full [&>div]:flex [&>div]:flex-wrap [&>div]:gap-2">{children}</div>
               )}
 
               {customAddNewButton && <div>{customAddNewButton}</div>}
