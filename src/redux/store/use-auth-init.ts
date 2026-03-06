@@ -46,7 +46,8 @@ export function useAuthInit() {
     };
 
     initAuth();
-  }, [dispatch, pathname]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch]); // pathname is only used on first mount — isInitialized.current prevents re-runs
 
   return { isAuthenticated, authReady };
 }

@@ -32,9 +32,9 @@ import {
   storeAdminUserInfo,
   clearAdminUserInfo,
 } from "@/utils/local-storage/userInfo";
+import { SocialSyncResponse } from "../models/response/social-auth-response";
 
 const isAdmin = (userType?: string) => userType === "BUSINESS_USER";
-import { SocialSyncResponse } from "../models/response/social-auth-response";
 
 /**
  * Extended auth state with social sync info
