@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Edit, Loader2, Trash2, Lock, User } from "lucide-react";
+import { Edit, Loader2, Trash2, Lock, User, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +32,7 @@ import { CustomAvatar } from "@/components/shared/avator/custom-avator";
 import { isBase64Image, uploadImage } from "@/utils/common/upload-image";
 import { clearUserInfo } from "@/utils/local-storage/userInfo";
 import { Loading } from "@/components/shared/common/loading";
+import { TelegramSyncCard } from "@/components/shared/telegram/telegram-sync-card";
 
 // Profile update schema
 const profileSchema = z.object({
@@ -53,6 +54,7 @@ export default function UserProfilePage() {
   const userProfile = useAppSelector(selectProfile);
   const isProfileLoading = useAppSelector(selectIsProfileLoading);
   const reduxError = useAppSelector(selectError);
+  const socialSync = useAppSelector((state) => state.auth.socialSync);
 
   const [isEditing, setIsEditing] = useState(false);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] =
@@ -377,6 +379,18 @@ export default function UserProfilePage() {
         {/* Security Section */}
         {activeSection === "security" && (
           <div className="space-y-4">
+            {/* Connected Accounts */}
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                <Link2 className="h-4 w-4" />
+                Connected Accounts
+              </h3>
+              <TelegramSyncCard
+                socialSync={socialSync}
+                userType={userProfile?.userType || "CUSTOMER"}
+              />
+            </div>
+
             {/* Change Password */}
             <Card>
               <CardContent className="p-4 sm:p-6">

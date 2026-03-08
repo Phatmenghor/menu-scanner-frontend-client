@@ -17,11 +17,8 @@ import { telegramAuthenticateService } from "@/redux/features/auth/store/thunks/
 import { ROUTES } from "@/constants/app-routes/routes";
 import { showToast } from "@/components/shared/common/show-toast";
 import { appImages } from "@/constants/app-resource/icons/app-images";
-import {
-  AppDefault,
-  SocialAuthConfig,
-} from "@/constants/app-resource/default/default";
-import { TelegramLoginButton } from "@/components/shared/telegram/telegram-login-widget";
+import { AppDefault } from "@/constants/app-resource/default/default";
+import { TelegramLoginModal } from "@/components/shared/telegram/telegram-login-modal";
 import { TelegramAuthData } from "@/redux/features/auth/store/models/request/social-auth-request";
 
 const formSchema = z.object({
@@ -167,9 +164,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <TelegramLoginButton
-              botName={SocialAuthConfig.TELEGRAM_BOT_NAME}
-              botId={SocialAuthConfig.TELEGRAM_BOT_ID}
+            <TelegramLoginModal
               onAuth={handleTelegramAuth}
               disabled={isAnyLoading}
               loading={isTelegramLoading}
