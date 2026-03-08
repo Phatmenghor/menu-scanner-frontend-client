@@ -15,6 +15,7 @@ import {
 import {
   telegramAuthenticateService,
   socialAuthenticateService,
+  getSocialSyncService,
   syncTelegramAccountService,
   unsyncSocialAccountService,
   logoutService,
@@ -308,6 +309,21 @@ const authSlice = createSlice({
       .addCase(socialAuthenticateService.rejected, (state, action) => {
         state.isSocialLoading = false;
         state.error = action.payload as string;
+      });
+
+    // Get social sync status thunk handlers
+    builder
+      .addCase(getSocialSyncService.pending, (state) => {
+        state.isSocialLoading = true;
+        state.error = null;
+      })
+      .addCase(getSocialSyncService.fulfilled, (state, action) => {
+        state.isSocialLoading = false;
+        state.socialSync = action.payload;
+      })
+      .addCase(getSocialSyncService.rejected, (state) => {
+        state.isSocialLoading = false;
+        // Don't set error — user may not have synced yet
       });
 
     // Sync Telegram account thunk handlers

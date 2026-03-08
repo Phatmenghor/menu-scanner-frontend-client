@@ -41,16 +41,13 @@ export const telegramAuthenticateService = createApiThunk<
     telegramData: TelegramAuthData;
     userType: string;
     businessId?: string;
-    deviceInfo?: string;
   }
->("auth/telegramAuthenticate", async ({ telegramData, userType, businessId, deviceInfo }) => {
+>("auth/telegramAuthenticate", async ({ telegramData, userType, businessId }) => {
   const request: SocialAuthRequest = {
     provider: "TELEGRAM",
     accessToken: JSON.stringify(telegramData),
     userType: userType as "CUSTOMER" | "BUSINESS_USER" | "PLATFORM_USER",
     businessId: businessId || null,
-    deviceInfo: deviceInfo || getDeviceInfo(),
-    ipAddress: null, // Will be detected by server
   };
 
   const response = await axiosClient.post(
@@ -76,6 +73,18 @@ export const syncSocialAccountService = createApiThunk<
 });
 
 /**
+ * Get current social sync status thunk
+ * Fetches connected social accounts for the current user
+ */
+export const getSocialSyncService = createApiThunk<SocialSyncResponse, void>(
+  "auth/getSocialSync",
+  async () => {
+    const response = await axiosClientWithAuth.get("/api/v1/auth/social/sync");
+    return response.data.data;
+  }
+);
+
+/**
  * Telegram sync helper
  * Converts Telegram widget data to sync request
  */
@@ -91,8 +100,6 @@ export const syncTelegramAccountService = createApiThunk<
     accessToken: JSON.stringify(telegramData),
     userType: userType as "CUSTOMER" | "BUSINESS_USER" | "PLATFORM_USER",
     businessId: null,
-    deviceInfo: null,
-    ipAddress: null,
   };
 
   const response = await axiosClientWithAuth.post(
@@ -139,30 +146,3 @@ export const logoutService = createApiThunk<void, void>(
   }
 );
 
-/**
- * Helper function to get device info
- */
-function getDeviceInfo(): string {
-  if (typeof window === "undefined") return "Unknown Device";
-
-  const userAgent = navigator.userAgent;
-  const platform = navigator.platform;
-
-  // Detect browser
-  let browser = "Unknown Browser";
-  if (userAgent.includes("Chrome")) browser = "Chrome";
-  else if (userAgent.includes("Firefox")) browser = "Firefox";
-  else if (userAgent.includes("Safari")) browser = "Safari";
-  else if (userAgent.includes("Edge")) browser = "Edge";
-  else if (userAgent.includes("Opera")) browser = "Opera";
-
-  // Detect OS
-  let os = "Unknown OS";
-  if (platform.includes("Win")) os = "Windows";
-  else if (platform.includes("Mac")) os = "macOS";
-  else if (platform.includes("Linux")) os = "Linux";
-  else if (/Android/i.test(userAgent)) os = "Android";
-  else if (/iPhone|iPad|iPod/i.test(userAgent)) os = "iOS";
-
-  return `${browser} on ${os}`;
-}

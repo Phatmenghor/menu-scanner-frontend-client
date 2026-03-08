@@ -23,12 +23,20 @@ import {
 import { showToast } from "@/components/shared/common/show-toast";
 import { SocialAuthConfig } from "@/constants/app-resource/default/default";
 import { formatDistanceToNow } from "date-fns";
+import { getAdminUserInfo, getUserInfo } from "@/utils/local-storage/userInfo";
 
 interface TelegramSyncCardProps {
   socialSync?: SocialSyncResponse | null;
-  userType?: string;
   onSyncSuccess?: (response: SocialSyncResponse) => void;
   onUnsyncSuccess?: (response: SocialSyncResponse) => void;
+}
+
+function getUserTypeFromCookie(): string {
+  return (
+    getAdminUserInfo()?.userType ||
+    getUserInfo()?.userType ||
+    "CUSTOMER"
+  );
 }
 
 /**
@@ -37,12 +45,12 @@ interface TelegramSyncCardProps {
  */
 export function TelegramSyncCard({
   socialSync,
-  userType = "CUSTOMER",
   onSyncSuccess,
   onUnsyncSuccess,
 }: TelegramSyncCardProps) {
   const dispatch = useAppDispatch();
   const isSocialLoading = useAppSelector((state) => state.auth.isSocialLoading);
+  const userType = getUserTypeFromCookie();
 
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
