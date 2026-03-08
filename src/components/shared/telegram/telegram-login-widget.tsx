@@ -122,9 +122,7 @@ export function TelegramLoginButton({
 
     const authUrl = `https://oauth.telegram.org/auth?bot_id=${telegramBotId}&origin=${encodeURIComponent(
       window.location.origin
-    )}&embed=1&request_access=write&return_to=${encodeURIComponent(
-      window.location.href
-    )}`;
+    )}&embed=1&request_access=write`;
 
     const popup = window.open(
       authUrl,
