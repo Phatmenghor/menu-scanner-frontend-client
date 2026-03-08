@@ -134,7 +134,7 @@ export const productPromotionTableColumns = ({
     },
 
     {
-      key: "displayPromotionValue",
+      key: "displayPromotionFromDate",
       label: "Promotion From Date",
       minWidth: "10px",
       maxWidth: "400px",
@@ -148,7 +148,7 @@ export const productPromotionTableColumns = ({
 
     {
       key: "displayPromotionToDate",
-      label: "Promotion From Date",
+      label: "Promotion To Date",
       minWidth: "10px",
       maxWidth: "400px",
       truncate: true,
