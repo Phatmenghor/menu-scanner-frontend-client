@@ -8,6 +8,7 @@ import {
   getToken,
   getAdminToken,
   getRefreshToken,
+  getAdminRefreshToken,
   storeTokens,
   storeAdminTokens,
   clearAllTokens,
@@ -511,7 +512,7 @@ const createAxiosInstance = (requiresAuth = false): AxiosInstance => {
 
         // Try to refresh the token — use the right pair based on route
         const admin = isAdminPath();
-        const refreshToken = getRefreshToken();
+        const refreshToken = admin ? getAdminRefreshToken() : getRefreshToken();
 
         if (!refreshToken) {
           isRefreshing = false;

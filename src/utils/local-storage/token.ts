@@ -132,6 +132,10 @@ export function getAdminToken(): string | undefined {
   return getCookie(COOKIE_KEYS.ADMIN_ACCESS_TOKEN) as string | undefined;
 }
 
+export function getAdminRefreshToken(): string | undefined {
+  return getCookie(COOKIE_KEYS.ADMIN_REFRESH_TOKEN) as string | undefined;
+}
+
 export function clearAdminTokens(): void {
   deleteCookie(COOKIE_KEYS.ADMIN_ACCESS_TOKEN);
   deleteCookie(COOKIE_KEYS.ADMIN_REFRESH_TOKEN);
