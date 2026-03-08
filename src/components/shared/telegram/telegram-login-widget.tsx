@@ -109,6 +109,7 @@ export function TelegramLoginButton({
   children,
 }: TelegramLoginButtonProps) {
   const handleClick = useCallback(() => {
+    console.log("[TelegramLogin] Button clicked", { disabled, loading });
     if (disabled || loading) return;
 
     // Open Telegram login popup
@@ -124,24 +125,38 @@ export function TelegramLoginButton({
       window.location.origin
     )}&embed=1&request_access=write`;
 
+    console.log("[TelegramLogin] Opening popup:", authUrl);
+
     const popup = window.open(
       authUrl,
       "TelegramAuth",
       `width=${width},height=${height},left=${left},top=${top},status=no,location=no,menubar=no,toolbar=no`
     );
 
+    console.log("[TelegramLogin] Popup opened:", popup ? "success" : "BLOCKED by browser");
+
     // Listen for message from popup
     const handleMessage = (event: MessageEvent) => {
+      console.log("[TelegramLogin] Message received:", {
+        origin: event.origin,
+        data: event.data,
+      });
       if (event.origin === "https://oauth.telegram.org") {
         try {
           const data = JSON.parse(event.data);
+          console.log("[TelegramLogin] Parsed data:", data);
           if (data.event === "auth_result" && data.result) {
+            console.log("[TelegramLogin] Auth result received:", data.result);
             onAuth(data.result as TelegramAuthData);
             popup?.close();
+          } else {
+            console.log("[TelegramLogin] Unexpected event type:", data.event);
           }
         } catch (e) {
-          console.error("Failed to parse Telegram auth response:", e);
+          console.error("[TelegramLogin] Failed to parse message:", e, event.data);
         }
+      } else {
+        console.log("[TelegramLogin] Ignoring message from origin:", event.origin);
       }
     };
 
@@ -150,6 +165,7 @@ export function TelegramLoginButton({
     // Check if popup was closed
     const checkPopup = setInterval(() => {
       if (popup?.closed) {
+        console.log("[TelegramLogin] Popup closed by user");
         clearInterval(checkPopup);
         window.removeEventListener("message", handleMessage);
       }
