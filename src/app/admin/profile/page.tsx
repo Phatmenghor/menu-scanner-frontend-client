@@ -41,7 +41,6 @@ import { CustomAvatar } from "@/components/shared/avator/custom-avator";
 import { isBase64Image, uploadImage } from "@/utils/common/upload-image";
 import { clearUserInfo } from "@/utils/local-storage/userInfo";
 import { TelegramSyncCard } from "@/components/shared/telegram/telegram-sync-card";
-import { getSocialSyncService } from "@/redux/features/auth/store/thunks/social-auth-thunks";
 import Link from "next/link";
 import { Loading } from "@/components/shared/common/loading";
 
@@ -92,10 +91,9 @@ export default function UserProfilePage() {
     mode: "onChange",
   });
 
-  // Load profile and social sync status on mount
+  // Load profile on mount
   useEffect(() => {
     dispatch(getProfileService());
-    dispatch(getSocialSyncService());
   }, [dispatch]);
 
   // Update form when profile loads

@@ -311,19 +311,13 @@ const authSlice = createSlice({
         state.error = action.payload as string;
       });
 
-    // Get social sync status thunk handlers
+    // Get social sync status thunk handlers (used when backend endpoint is available)
     builder
-      .addCase(getSocialSyncService.pending, (state) => {
-        state.isSocialLoading = true;
-        state.error = null;
-      })
       .addCase(getSocialSyncService.fulfilled, (state, action) => {
-        state.isSocialLoading = false;
         state.socialSync = action.payload;
       })
-      .addCase(getSocialSyncService.rejected, (state) => {
-        state.isSocialLoading = false;
-        // Don't set error — user may not have synced yet
+      .addCase(getSocialSyncService.rejected, () => {
+        // Silently ignore — endpoint may not be available yet
       });
 
     // Sync Telegram account thunk handlers

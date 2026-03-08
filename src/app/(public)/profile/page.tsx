@@ -33,7 +33,6 @@ import { isBase64Image, uploadImage } from "@/utils/common/upload-image";
 import { clearUserInfo } from "@/utils/local-storage/userInfo";
 import { Loading } from "@/components/shared/common/loading";
 import { TelegramSyncCard } from "@/components/shared/telegram/telegram-sync-card";
-import { getSocialSyncService } from "@/redux/features/auth/store/thunks/social-auth-thunks";
 
 // Profile update schema
 const profileSchema = z.object({
@@ -82,10 +81,9 @@ export default function UserProfilePage() {
     mode: "onChange",
   });
 
-  // Load profile and social sync status on mount
+  // Load profile on mount
   useEffect(() => {
     dispatch(getProfileService());
-    dispatch(getSocialSyncService());
   }, [dispatch]);
 
   // Update form when profile loads
