@@ -48,10 +48,6 @@ const nextConfig = {
             key: "Referrer-Policy",
             value: "origin-when-cross-origin",
           },
-          {
-            key: "ngrok-skip-browser-warning",
-            value: "true",
-          },
         ],
       },
     ];
