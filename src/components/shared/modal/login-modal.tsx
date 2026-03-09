@@ -60,7 +60,7 @@ function Divider({ label }: { label: string }) {
         <span className="w-full border-t border-border/60" />
       </div>
       <div className="relative flex justify-center">
-        <span className="bg-background px-3 text-[11px] uppercase tracking-wider text-muted-foreground/70 font-medium">
+        <span className="bg-background px-3 text-xs uppercase tracking-wider text-muted-foreground/70 font-medium">
           {label}
         </span>
       </div>
@@ -164,25 +164,25 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 gap-0 w-full sm:max-w-[460px] overflow-hidden rounded-2xl">
+      <DialogContent className="p-0 gap-0 w-full sm:max-w-md overflow-hidden rounded-2xl">
         <DialogTitle className="sr-only">
           {activeTab === "login" ? "Sign in" : "Create account"}
         </DialogTitle>
 
         {/* ── Brand header ── */}
-        <div className="bg-primary px-6 pt-7 pb-6 text-primary-foreground">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 rounded-xl bg-white/15 backdrop-blur-sm">
+        <div className="bg-primary px-6 pt-8 pb-6 text-primary-foreground">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2.5 rounded-xl bg-white/15 backdrop-blur-sm">
               <ShoppingBag className="h-5 w-5" />
             </div>
             <span className="text-base font-semibold tracking-wide opacity-90">
               eMenu
             </span>
           </div>
-          <h2 className="text-xl font-bold leading-tight">
+          <h2 className="text-2xl font-bold leading-tight">
             {activeTab === "login" ? "Welcome back!" : "Create your account"}
           </h2>
-          <p className="text-sm mt-1 opacity-75">
+          <p className="text-sm mt-1.5 opacity-75">
             {activeTab === "login"
               ? "Sign in to continue shopping"
               : "Join us and start exploring"}
@@ -197,7 +197,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
               type="button"
               onClick={() => switchTab(tab)}
               className={cn(
-                "flex-1 py-3 text-sm font-medium transition-all border-b-2 -mb-px",
+                "flex-1 py-3.5 text-sm font-medium transition-all border-b-2 -mb-px",
                 activeTab === tab
                   ? "border-primary text-primary"
                   : "border-transparent text-muted-foreground hover:text-foreground",
@@ -209,7 +209,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
         </div>
 
         {/* ── Form area ── */}
-        <div className="px-6 py-5 max-h-[65dvh] overflow-y-auto">
+        <div className="px-6 py-6 max-h-[60dvh] overflow-y-auto">
           {/* Login form */}
           {activeTab === "login" && (
             <div className="space-y-5">
@@ -239,7 +239,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 />
                 <Button
                   type="submit"
-                  className="w-full h-10 font-semibold mt-1"
+                  className="w-full h-10 font-semibold mt-2 rounded-xl"
                   disabled={isAnyLoading}
                 >
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -258,12 +258,12 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 className="w-full"
               />
 
-              <p className="text-center text-xs text-muted-foreground">
+              <p className="text-center text-sm text-muted-foreground">
                 Don't have an account?{" "}
                 <button
                   type="button"
                   onClick={() => switchTab("register")}
-                  className="text-primary font-medium hover:underline"
+                  className="text-primary font-semibold hover:underline"
                 >
                   Register now
                 </button>
@@ -278,24 +278,23 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 onSubmit={registerForm.handleSubmit(onRegisterSubmit)}
                 className="space-y-4"
               >
-                <div className="grid grid-cols-2 gap-3">
-                  <TextField
-                    name="firstName"
-                    label="First Name"
-                    placeholder="John"
-                    control={registerForm.control}
-                    error={registerForm.formState.errors.firstName}
-                    disabled={isAnyLoading}
-                  />
-                  <TextField
-                    name="lastName"
-                    label="Last Name"
-                    placeholder="Doe"
-                    control={registerForm.control}
-                    error={registerForm.formState.errors.lastName}
-                    disabled={isAnyLoading}
-                  />
-                </div>
+                <TextField
+                  name="firstName"
+                  label="First Name"
+                  placeholder="John"
+                  control={registerForm.control}
+                  error={registerForm.formState.errors.firstName}
+                  disabled={isAnyLoading}
+                />
+
+                <TextField
+                  name="lastName"
+                  label="Last Name"
+                  placeholder="Doe"
+                  control={registerForm.control}
+                  error={registerForm.formState.errors.lastName}
+                  disabled={isAnyLoading}
+                />
 
                 <TextField
                   name="userIdentifier"
@@ -344,7 +343,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
 
                 <Button
                   type="submit"
-                  className="w-full h-10 font-semibold mt-1"
+                  className="w-full h-10 font-semibold mt-2 rounded-xl"
                   disabled={isAnyLoading}
                 >
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -365,12 +364,12 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 Register with Telegram
               </TelegramLoginButton>
 
-              <p className="text-center text-xs text-muted-foreground">
+              <p className="text-center text-sm text-muted-foreground">
                 Already have an account?{" "}
                 <button
                   type="button"
                   onClick={() => switchTab("login")}
-                  className="text-primary font-medium hover:underline"
+                  className="text-primary font-semibold hover:underline"
                 >
                   Sign in
                 </button>
@@ -380,8 +379,8 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
         </div>
 
         {/* ── Footer ── */}
-        <div className="px-6 py-3 border-t border-border/50 bg-muted/20">
-          <p className="text-center text-[11px] text-muted-foreground">
+        <div className="px-6 py-3.5 border-t border-border/50 bg-muted/20">
+          <p className="text-center text-xs text-muted-foreground">
             By continuing you agree to our{" "}
             <a href="#" className="text-primary hover:underline font-medium">
               Terms

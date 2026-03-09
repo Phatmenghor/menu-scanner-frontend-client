@@ -2,12 +2,12 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Plus, Star } from "lucide-react";
+import { MapPin, Plus, Star, Navigation } from "lucide-react";
 import { Loading } from "@/components/shared/common/loading";
 import { DeleteConfirmationModal } from "@/components/shared/modal/delete-confirmation-modal";
 import { showToast } from "@/components/shared/common/show-toast";
+import { PageContainer } from "@/components/shared/common/page-container";
 
 import { useLocationState } from "@/redux/features/location/store/state/location-state";
 import { LocationResponseModel } from "@/redux/features/location/store/models/response/location-response";
@@ -38,7 +38,6 @@ export default function LocationPage() {
   const [deletingLocation, setDeletingLocation] =
     useState<LocationResponseModel | null>(null);
   const [settingPrimaryId, setSettingPrimaryId] = useState<string | null>(null);
-  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [currentCoords, setCurrentCoords] = useState<{
     lat: number;
     lng: number;
@@ -76,10 +75,6 @@ export default function LocationPage() {
   const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
     setEditingLocation(null);
-  }, []);
-
-  const handleCardClick = useCallback((location: LocationResponseModel) => {
-    setSelectedLocationId((prev) => (prev === location.id ? null : location.id));
   }, []);
 
   const handleDeleteLocation = async () => {
@@ -127,66 +122,72 @@ export default function LocationPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-6">
+        <PageContainer className="py-8">
           <Loading />
-        </div>
+        </PageContainer>
       </div>
     );
   }
 
   // ── Render ─────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-
-        {/* ── Page header ── */}
-        <div className="flex items-start justify-between mb-8">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <MapPin className="h-5 w-5 text-primary" />
+    <div className="min-h-screen bg-muted/20">
+      {/* ── Page Header Banner ── */}
+      <div className="bg-background border-b">
+        <PageContainer className="py-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-2xl bg-primary/10 shrink-0">
+                <Navigation className="h-6 w-6 text-primary" />
               </div>
-              <h1 className="text-2xl font-bold text-foreground">
-                My Locations
-              </h1>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground tracking-tight">
+                  My Locations
+                </h1>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Manage your saved delivery addresses
+                </p>
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground ml-11">
-              Manage your saved delivery addresses
-            </p>
+            <div className="flex items-center gap-3">
+              {locationCount > 0 && (
+                <div className="hidden sm:flex items-center gap-2">
+                  <Badge variant="secondary" className="text-xs py-1 px-3">
+                    {locationCount} address{locationCount !== 1 ? "es" : ""}
+                  </Badge>
+                  {primaryLocation && (
+                    <Badge
+                      variant="outline"
+                      className="text-xs py-1 px-3 border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-700"
+                    >
+                      <Star className="h-3 w-3 mr-1 fill-amber-500 text-amber-500" />
+                      Primary set
+                    </Badge>
+                  )}
+                </div>
+              )}
+              <Button onClick={handleAddLocation} size="default" className="shadow-sm gap-2 shrink-0">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Add Location</span>
+                <span className="sm:hidden">Add</span>
+              </Button>
+            </div>
           </div>
-          <Button onClick={handleAddLocation} className="shadow-sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Location
-          </Button>
-        </div>
+        </PageContainer>
+      </div>
 
+      {/* ── Main Content ── */}
+      <PageContainer className="py-6">
         {/* ── Primary location banner ── */}
         {primaryLocation && (
           <LocationPrimaryBanner location={primaryLocation} />
         )}
 
-        {/* ── Stats ── */}
-        {locationCount > 0 && (
-          <div className="flex items-center gap-2 mb-5">
-            <Badge variant="secondary" className="text-xs">
-              {locationCount} saved location{locationCount !== 1 ? "s" : ""}
-            </Badge>
-            {primaryLocation && (
-              <Badge variant="outline" className="text-xs">
-                <Star className="h-3 w-3 mr-1 text-amber-500" />
-                1 primary
-              </Badge>
-            )}
-          </div>
-        )}
-
         {/* ── Content ── */}
         {locations.length === 0 ? (
-          <Card>
-            <CardContent className="p-0">
-              <LocationEmptyState onAdd={handleAddLocation} />
-            </CardContent>
-          </Card>
+          <div className="bg-background rounded-2xl border shadow-sm overflow-hidden">
+            <LocationEmptyState onAdd={handleAddLocation} />
+          </div>
         ) : (
           <div className="flex flex-col gap-3">
             {locations.map((location) => (
@@ -194,16 +195,14 @@ export default function LocationPage() {
                 key={location.id}
                 location={location}
                 settingPrimaryId={settingPrimaryId}
-                isSelected={selectedLocationId === location.id}
                 onEdit={handleEditLocation}
                 onDelete={setDeletingLocation}
                 onSetPrimary={handleSetPrimary}
-                onClick={handleCardClick}
               />
             ))}
           </div>
         )}
-      </div>
+      </PageContainer>
 
       {/* ── Add / Edit modal ── */}
       <LocationModal
