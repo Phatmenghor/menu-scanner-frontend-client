@@ -93,16 +93,16 @@ export function LocationCard({
       {/* Card */}
       <div
         className={cn(
-          "group relative rounded-2xl border bg-background overflow-hidden transition-all duration-200 shadow-sm hover:shadow-md",
+          "group relative rounded-xl border bg-background overflow-hidden transition-all duration-200 shadow-sm hover:shadow-md",
           isPrimary
             ? "border-amber-300/70 dark:border-amber-700/50"
-            : "border-border hover:border-border"
+            : "border-border"
         )}
       >
         {/* Left accent strip */}
         <div
           className={cn(
-            "absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl",
+            "absolute left-0 top-0 bottom-0 w-1 rounded-l-xl",
             isPrimary
               ? "bg-gradient-to-b from-amber-400 to-amber-500"
               : theme
@@ -111,13 +111,13 @@ export function LocationCard({
           )}
         />
 
-        <div className="pl-5 pr-4 py-4">
-          {/* ── Header row ── */}
-          <div className="flex items-start gap-3">
+        <div className="pl-4 pr-3 py-3">
+          {/* ── Main row: icon + content + action buttons ── */}
+          <div className="flex items-start gap-2.5">
             {/* Icon bubble */}
             <div
               className={cn(
-                "p-2.5 rounded-xl shrink-0",
+                "p-2 rounded-lg shrink-0 mt-0.5",
                 isPrimary
                   ? "bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400"
                   : theme
@@ -125,16 +125,16 @@ export function LocationCard({
                   : "bg-primary/10 text-primary"
               )}
             >
-              <LabelIcon className="h-5 w-5" />
+              <LabelIcon className="h-4 w-4" />
             </div>
 
-            {/* Label + address */}
-            <div className="flex-1 min-w-0 pt-0.5">
+            {/* Content */}
+            <div className="flex-1 min-w-0">
               {/* Label + Primary badge */}
-              <div className="flex items-center gap-2 flex-wrap mb-1.5">
+              <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
                 <span
                   className={cn(
-                    "text-base font-semibold leading-none",
+                    "text-sm font-semibold leading-tight",
                     isPrimary
                       ? "text-amber-700 dark:text-amber-400"
                       : "text-foreground"
@@ -142,81 +142,80 @@ export function LocationCard({
                 >
                   {location.label || "Location"}
                 </span>
-
                 {isPrimary && (
-                  <Badge className="h-5 px-2 text-[10px] font-bold tracking-wide bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-700/50 shrink-0">
-                    <Crown className="h-3 w-3 mr-1" />
+                  <Badge className="h-4 px-1.5 text-[10px] font-bold tracking-wide bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-700/50 shrink-0">
+                    <Crown className="h-2.5 w-2.5 mr-0.5" />
                     Primary
                   </Badge>
                 )}
               </div>
 
               {/* Address */}
-              <p className="text-sm leading-relaxed text-muted-foreground line-clamp-2">
+              <p className="text-xs leading-relaxed text-muted-foreground line-clamp-2">
                 {formatLocationAddress(location)}
               </p>
+
+              {/* Coords + Note — inline */}
+              {(location.hasCoordinates || location.note) && (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1">
+                  {location.hasCoordinates && (
+                    <div className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3 text-red-400 shrink-0" />
+                      <span className="text-[11px] font-mono text-muted-foreground/70">
+                        {(location.latitude || 0).toFixed(4)},{" "}
+                        {(location.longitude || 0).toFixed(4)}
+                      </span>
+                    </div>
+                  )}
+                  {location.note && (
+                    <div className="flex items-center gap-1 max-w-[200px]">
+                      <StickyNote className="h-3 w-3 text-muted-foreground/60 shrink-0" />
+                      <span className="text-[11px] text-muted-foreground italic truncate">
+                        {location.note}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Top-right icon actions */}
-            <div className="flex items-center gap-1 shrink-0 -mt-0.5">
+            {/* Edit + Delete icon buttons */}
+            <div className="flex items-center gap-0.5 shrink-0">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-xl"
+                className="h-7 w-7 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg"
                 onClick={() => onEdit(location)}
                 title="Edit"
               >
-                <Edit2 className="h-4 w-4" />
+                <Edit2 className="h-3.5 w-3.5" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl"
+                className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
                 onClick={() => onDelete(location)}
                 title="Delete"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3.5 w-3.5" />
               </Button>
             </div>
           </div>
 
-          {/* ── Metadata row ── */}
-          {(location.hasCoordinates || location.note) && (
-            <div className="mt-2.5 ml-[52px] flex flex-wrap items-center gap-x-4 gap-y-1">
-              {location.hasCoordinates && (
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5 text-red-400 shrink-0" />
-                  <span className="text-xs font-mono text-muted-foreground/80">
-                    {(location.latitude || 0).toFixed(4)},{" "}
-                    {(location.longitude || 0).toFixed(4)}
-                  </span>
-                </div>
-              )}
-              {location.note && (
-                <div className="flex items-center gap-1.5 max-w-[240px]">
-                  <StickyNote className="h-3.5 w-3.5 text-muted-foreground/70 shrink-0" />
-                  <span className="text-xs text-muted-foreground italic truncate">
-                    {location.note}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* ── Image thumbnails ── */}
           {images.length > 0 && (
-            <div className="mt-3 ml-[52px] flex gap-2">
+            <div className="mt-2 ml-[38px] flex gap-1.5">
               {images.slice(0, 5).map((img, idx) => (
                 <div
                   key={idx}
-                  className="relative h-12 w-12 rounded-xl overflow-hidden border border-border/50 cursor-pointer hover:opacity-75 hover:scale-105 transition-all duration-150 shadow-sm"
+                  className="relative h-10 w-10 rounded-lg overflow-hidden border border-border/50 cursor-pointer hover:opacity-75 hover:scale-105 transition-all duration-150 shadow-sm"
                   onClick={() => setLightbox(img.imageUrl)}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={img.imageUrl} alt="" className="w-full h-full object-cover" />
                   {idx === 4 && images.length > 5 && (
                     <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">+{images.length - 5}</span>
+                      <span className="text-white text-[10px] font-bold">+{images.length - 5}</span>
                     </div>
                   )}
                 </div>
@@ -224,27 +223,28 @@ export function LocationCard({
             </div>
           )}
 
-          {/* ── Bottom action bar ── */}
-          <div className="mt-3 ml-[52px] flex items-center gap-2 pt-3 border-t border-border/40">
+          {/* ── Set as Primary button OR primary indicator ── */}
+          <div className="mt-2.5 ml-[38px]">
             {!isPrimary ? (
               <Button
-                variant="outline"
                 size="sm"
-                className="h-8 text-xs gap-1.5 text-amber-600 border-amber-300 hover:bg-amber-50 hover:border-amber-400 dark:text-amber-400 dark:border-amber-700 dark:hover:bg-amber-950/30"
+                className="h-7 text-xs gap-1.5 bg-amber-500 hover:bg-amber-600 text-white shadow-sm border-0 rounded-lg"
                 onClick={() => onSetPrimary(location)}
                 disabled={isSettingPrimary}
               >
                 {isSettingPrimary ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-3 w-3 animate-spin" />
                 ) : (
-                  <Star className="h-3.5 w-3.5" />
+                  <Star className="h-3 w-3" />
                 )}
                 {isSettingPrimary ? "Setting..." : "Set as Primary"}
               </Button>
             ) : (
-              <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
-                <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
-                <span className="font-medium">Default delivery address</span>
+              <div className="flex items-center gap-1.5">
+                <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                  Default delivery address
+                </span>
               </div>
             )}
           </div>
