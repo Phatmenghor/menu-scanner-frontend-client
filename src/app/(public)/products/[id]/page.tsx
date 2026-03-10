@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -23,10 +23,6 @@ import { showToast } from "@/components/shared/common/show-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
 import {
   ArrowLeft,
   Heart,
@@ -79,7 +75,6 @@ export default function ProductDetailPage() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [lightboxImageLoaded, setLightboxImageLoaded] = useState(false);
 
   // ── Favorite sync: prefer Redux store when loaded, else API field ──────
   const isFavoritedFromStore = favLoaded && product
@@ -109,42 +104,40 @@ export default function ProductDetailPage() {
     ? getCartQuantityForSize(null)
     : 0;
 
-  // Build deduped image list
+  // Build image list: main first, then all images from the array (no URL dedup — same URL can appear)
   const allImages = product
-    ? (() => {
-        const mainUrl = sanitizeImageUrl(product.mainImageUrl, appImages.NoImage);
-        const seen = new Set<string>([mainUrl]);
-        const extras = (product.images || [])
-          .map((img) => ({ ...img, imageUrl: sanitizeImageUrl(img.imageUrl, appImages.NoImage) }))
-          .filter((img) => {
-            if (seen.has(img.imageUrl)) return false;
-            seen.add(img.imageUrl);
-            return true;
-          });
-        return [{ id: "main", imageUrl: mainUrl }, ...extras];
-      })()
+    ? [
+        { id: "main", imageUrl: sanitizeImageUrl(product.mainImageUrl, appImages.NoImage) },
+        ...(product.images || []).map((img) => ({
+          id: img.id,
+          imageUrl: sanitizeImageUrl(img.imageUrl, appImages.NoImage),
+        })),
+      ]
     : [];
 
+  // Guard against double-fetch (React StrictMode / dependency changes)
+  const fetchedIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (productId) {
-      dispatch(clearSelectedProduct());
-      dispatch(fetchPublicProductById(productId));
-    }
+    if (!productId || fetchedIdRef.current === productId) return;
+    fetchedIdRef.current = productId;
+    dispatch(clearSelectedProduct());
+    dispatch(fetchPublicProductById(productId));
   }, [productId, dispatch]);
 
-  useEffect(() => {
-    if (product) {
-      setSelectedImage(sanitizeImageUrl(product.mainImageUrl, appImages.NoImage));
-      setCurrentImageIndex(0);
-      setImageLoaded(false);
-      setSelectedSize(
-        product.hasSizes && product.sizes?.length ? product.sizes[0] : null
-      );
-    }
-  }, [product]);
-
+  // Sync image + size selection when product loads
   useEffect(() => {
     if (!product) return;
+    setSelectedImage(sanitizeImageUrl(product.mainImageUrl, appImages.NoImage));
+    setCurrentImageIndex(0);
+    setImageLoaded(false);
+    setSelectedSize(product.hasSizes && product.sizes?.length ? product.sizes[0] : null);
+  }, [product?.id]); // only re-run when the product ID changes
+
+  // Fetch similar products once per product (keyed on product.id)
+  const fetchedSimilarRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!product?.id || fetchedSimilarRef.current === product.id) return;
+    fetchedSimilarRef.current = product.id;
     dispatch(
       fetchPublicProducts({ pageNo: 1, pageSize: 6, categoryId: product.categoryId || undefined, status: "ACTIVE" })
     )
@@ -155,7 +148,7 @@ export default function ProductDetailPage() {
         );
       })
       .catch(() => {});
-  }, [product, productId, dispatch]);
+  }, [product?.id, product?.categoryId, productId, dispatch]);
 
   const selectImage = (url: string, index: number) => {
     setSelectedImage(url);
@@ -175,7 +168,6 @@ export default function ProductDetailPage() {
 
   const openLightbox = (index: number) => {
     setLightboxIndex(index);
-    setLightboxImageLoaded(false);
     setLightboxOpen(true);
   };
 
@@ -294,7 +286,7 @@ export default function ProductDetailPage() {
         </CustomButton>
 
         {/* ── Main grid ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 mb-16">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-8 lg:gap-12 mb-16">
 
           {/* ──── LEFT: Image Gallery ──── */}
           <div className="space-y-3">
@@ -594,81 +586,82 @@ export default function ProductDetailPage() {
         )}
       </div>
 
-      {/* ── Image Lightbox ── */}
-      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
-        <DialogContent className="max-w-3xl w-full p-0 bg-black/95 border-0 [&>button]:hidden">
-          <div className="relative flex flex-col h-full">
-
-            {/* Close */}
+      {/* ── Image Lightbox (custom fixed overlay — no Dialog complications) ── */}
+      {lightboxOpen && (
+        <div
+          className="fixed inset-0 z-[200] bg-black/95 flex flex-col items-center justify-between"
+          onClick={() => setLightboxOpen(false)}
+        >
+          {/* Top bar */}
+          <div className="w-full flex items-center justify-between px-4 py-3 shrink-0" onClick={(e) => e.stopPropagation()}>
+            <span className="text-white/70 text-sm font-medium">
+              {lightboxIndex + 1} / {allImages.length}
+            </span>
             <button
               onClick={() => setLightboxOpen(false)}
-              className="absolute top-3 right-3 z-10 bg-white/10 hover:bg-white/20 text-white p-2 rounded-full transition-colors"
+              className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-full transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
+          </div>
 
-            {/* Counter */}
+          {/* Main image area */}
+          <div
+            className="relative flex-1 w-full flex items-center justify-center px-14"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={allImages[lightboxIndex]?.imageUrl || appImages.NoImage}
+              alt={product.name}
+              className="max-w-full max-h-[65vh] object-contain rounded-lg select-none"
+            />
+
             {allImages.length > 1 && (
-              <div className="absolute top-3 left-3 z-10 bg-white/10 text-white text-xs px-3 py-1 rounded-full">
-                {lightboxIndex + 1} / {allImages.length}
-              </div>
-            )}
-
-            {/* Main image */}
-            <div className="relative w-full aspect-square sm:aspect-[4/3]">
-              {!lightboxImageLoaded && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Loader2 className="h-8 w-8 text-white animate-spin" />
-                </div>
-              )}
-              <Image
-                src={allImages[lightboxIndex]?.imageUrl || appImages.NoImage}
-                alt={product.name}
-                fill
-                className={cn("object-contain transition-opacity duration-200", lightboxImageLoaded ? "opacity-100" : "opacity-0")}
-                onLoad={() => setLightboxImageLoaded(true)}
-              />
-
-              {allImages.length > 1 && (
-                <>
-                  <button
-                    onClick={prevLightbox}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/25 text-white p-3 rounded-full transition-colors"
-                  >
-                    <ChevronLeft className="h-6 w-6" />
-                  </button>
-                  <button
-                    onClick={nextLightbox}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/25 text-white p-3 rounded-full transition-colors"
-                  >
-                    <ChevronRight className="h-6 w-6" />
-                  </button>
-                </>
-              )}
-            </div>
-
-            {/* Thumbnail strip */}
-            {allImages.length > 1 && (
-              <div className="flex justify-center gap-2 p-3 overflow-x-auto">
-                {allImages.map((img, i) => (
-                  <button
-                    key={img.id}
-                    onClick={() => { setLightboxIndex(i); setLightboxImageLoaded(false); }}
-                    className={cn(
-                      "relative flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden transition-all",
-                      i === lightboxIndex
-                        ? "ring-2 ring-white"
-                        : "opacity-40 hover:opacity-80"
-                    )}
-                  >
-                    <Image src={img.imageUrl} alt={`${i + 1}`} fill className="object-cover" />
-                  </button>
-                ))}
-              </div>
+              <>
+                <button
+                  onClick={prevLightbox}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/25 text-white p-3 rounded-full transition-colors"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <button
+                  onClick={nextLightbox}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/25 text-white p-3 rounded-full transition-colors"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+              </>
             )}
           </div>
-        </DialogContent>
-      </Dialog>
+
+          {/* Thumbnail strip */}
+          <div
+            className="w-full flex justify-center gap-2 px-4 py-3 overflow-x-auto shrink-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {allImages.map((img, i) => (
+              <button
+                key={img.id}
+                onClick={() => setLightboxIndex(i)}
+                className={cn(
+                  "relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden transition-all",
+                  i === lightboxIndex
+                    ? "ring-2 ring-white scale-110"
+                    : "opacity-40 hover:opacity-80"
+                )}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={img.imageUrl}
+                  alt={`${i + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <LoginModal open={showLoginModal} onOpenChange={setShowLoginModal} />
     </div>
