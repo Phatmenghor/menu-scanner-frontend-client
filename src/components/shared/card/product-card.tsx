@@ -44,6 +44,15 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSizeModal, setShowSizeModal] = useState(false);
 
+  // Local favorite state — fixes the bug where product.isFavorited never updates
+  // after toggling because it reads from the immutable prop.
+  const [isFavorited, setIsFavorited] = useState(product?.isFavorited ?? false);
+
+  // Keep in sync when the product prop changes (e.g. after a re-fetch)
+  useEffect(() => {
+    setIsFavorited(product?.isFavorited ?? false);
+  }, [product?.isFavorited]);
+
   // Debounced cart API calls (aborts stale in-flight requests)
   const { debouncedUpdate } = useCartDebounce(cartDispatch);
 
@@ -53,18 +62,14 @@ export function ProductCard({ product, className }: ProductCardProps) {
   );
   const quantity = cartItem?.quantity || 0;
 
-  // Check if product has any items in cart (including sized items)
+  // Total in cart including sized items
   const totalInCart = cartItems
     .filter((item) => item.productId === product.id)
     .reduce((sum, item) => sum + item.quantity, 0);
 
-  // Image URL (sanitize known unreachable placeholder domains, then fallback)
   const imageUrl = sanitizeImageUrl(product.mainImageUrl, appImages.NoImage);
 
-  // Image load/error state
-  const [imageLoaded, setImageLoaded] = useState(
-    imageLoadedCache.has(imageUrl),
-  );
+  const [imageLoaded, setImageLoaded] = useState(imageLoadedCache.has(imageUrl));
   const [imageError, setImageError] = useState(false);
 
   const handleImageLoad = () => {
@@ -76,51 +81,37 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const handleImageError = () => {
     if (imageUrl !== appImages.NoImage) {
       setImageError(true);
-      setImageLoaded(true); // hide skeleton
+      setImageLoaded(true);
       imageLoadedCache.add(appImages.NoImage);
     }
   };
 
-  // Cart handlers with optimistic updates
+  // Add to cart (opens size modal if product has sizes)
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!isAuthenticated) {
-      setShowLoginModal(true);
-      return;
-    }
+    if (!isAuthenticated) { setShowLoginModal(true); return; }
 
-    // If product has sizes, show size selection modal
-    if (product.hasSizes) {
-      setShowSizeModal(true);
-      return;
-    }
+    if (product.hasSizes) { setShowSizeModal(true); return; }
 
     const timestamp = Date.now();
+    cartDispatch(addLocalCartItem({
+      productId: product.id,
+      productSizeId: null,
+      quantity: 1,
+      productName: product.name,
+      productImageUrl: product.mainImageUrl,
+      sizeName: null,
+      finalPrice: product.displayPrice,
+      currentPrice: product.displayOriginPrice || product.displayPrice,
+      hasPromotion: product.hasActivePromotion,
+      optimisticTimestamp: timestamp,
+    }));
 
-    // Optimistic update - immediately show in UI
-    cartDispatch(
-      addLocalCartItem({
-        productId: product.id,
-        productSizeId: null,
-        quantity: 1,
-        productName: product.name,
-        productImageUrl: product.mainImageUrl,
-        sizeName: null,
-        finalPrice: product.displayPrice,
-        currentPrice: product.displayOriginPrice || product.displayPrice,
-        hasPromotion: product.hasActivePromotion,
-        optimisticTimestamp: timestamp,
-      })
-    );
-
-    // API call in background
     setIsAddingToCart(true);
     try {
-      await cartDispatch(
-        addToCart({ productId: product.id, quantity: 1, optimisticTimestamp: timestamp }),
-      ).unwrap();
+      await cartDispatch(addToCart({ productId: product.id, quantity: 1, optimisticTimestamp: timestamp })).unwrap();
       showToast.success("Added to cart");
     } catch (error: any) {
       showToast.error(error?.message || "Failed to add to cart");
@@ -133,31 +124,13 @@ export function ProductCard({ product, className }: ProductCardProps) {
     (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-
-      // If product has sizes, show size selection modal
-      if (product.hasSizes) {
-        setShowSizeModal(true);
-        return;
-      }
-
+      if (product.hasSizes) { setShowSizeModal(true); return; }
       if (!cartItem) return;
-
-      const newQuantity = quantity + 1;
+      const newQty = quantity + 1;
       const key = cartItemKey(product.id, null);
-      const timestamp = Date.now();
-
-      // Optimistic update
-      cartDispatch(
-        updateLocalCartItem({
-          productId: product.id,
-          productSizeId: null,
-          quantity: newQuantity,
-          optimisticTimestamp: timestamp,
-        })
-      );
-
-      // Debounced API call (aborts previous in-flight request)
-      debouncedUpdate(key, product.id, null, newQuantity, timestamp);
+      const ts = Date.now();
+      cartDispatch(updateLocalCartItem({ productId: product.id, productSizeId: null, quantity: newQty, optimisticTimestamp: ts }));
+      debouncedUpdate(key, product.id, null, newQty, ts);
     },
     [product, cartItem, quantity, cartDispatch, debouncedUpdate],
   );
@@ -166,55 +139,31 @@ export function ProductCard({ product, className }: ProductCardProps) {
     (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-
-      // If product has sizes, show size selection modal for management
-      if (product.hasSizes) {
-        setShowSizeModal(true);
-        return;
-      }
-
+      if (product.hasSizes) { setShowSizeModal(true); return; }
       if (!cartItem) return;
-
-      const newQuantity = quantity - 1;
+      const newQty = quantity - 1;
       const key = cartItemKey(product.id, null);
-      const timestamp = Date.now();
-
-      // Optimistic update
-      cartDispatch(
-        updateLocalCartItem({
-          productId: product.id,
-          productSizeId: null,
-          quantity: newQuantity,
-          optimisticTimestamp: timestamp,
-        })
-      );
-
-      if (quantity === 1) {
-        showToast.success("Removed from cart");
-      }
-
-      // Debounced API call (aborts previous in-flight request)
-      debouncedUpdate(key, product.id, null, newQuantity, timestamp);
+      const ts = Date.now();
+      cartDispatch(updateLocalCartItem({ productId: product.id, productSizeId: null, quantity: newQty, optimisticTimestamp: ts }));
+      if (quantity === 1) showToast.success("Removed from cart");
+      debouncedUpdate(key, product.id, null, newQty, ts);
     },
     [product, cartItem, quantity, cartDispatch, debouncedUpdate],
   );
 
-  // Favorite handler - toggle only (auto add/remove)
+  // Favorite toggle with optimistic UI update (fixes the bug)
   const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!isAuthenticated) {
-      setShowLoginModal(true);
-      return;
-    }
+    if (!isAuthenticated) { setShowLoginModal(true); return; }
 
+    setIsFavorited((prev) => !prev); // optimistic
     setIsTogglingFavorite(true);
     try {
-      await favoriteDispatch(
-        toggleFavorite({ productId: product.id }),
-      ).unwrap();
+      await favoriteDispatch(toggleFavorite({ productId: product.id })).unwrap();
     } catch (error: any) {
+      setIsFavorited((prev) => !prev); // rollback
       showToast.error(error?.message || "Failed to update favorites");
     } finally {
       setIsTogglingFavorite(false);
@@ -230,16 +179,15 @@ export function ProductCard({ product, className }: ProductCardProps) {
       <Link href={`/products/${product.id}`}>
         <div
           className={cn(
-            "group relative bg-card rounded-lg border border-border hover:border-primary/30 overflow-hidden transition-colors duration-200 flex flex-col",
-            isOutOfStock && "opacity-75",
+            "group relative bg-card rounded-xl border border-border hover:border-primary/30 hover:shadow-md overflow-hidden transition-all duration-200 flex flex-col",
+            isOutOfStock && "opacity-70",
             product?.hasActivePromotion && "ring-1 ring-amber-500/20",
             className,
           )}
         >
+          {/* Image */}
           <div className="relative aspect-square overflow-hidden bg-muted/30">
-            {!imageLoaded && (
-              <Skeleton className="absolute inset-0 w-full h-full" />
-            )}
+            {!imageLoaded && <Skeleton className="absolute inset-0 w-full h-full" />}
 
             <Image
               src={imageError ? appImages.NoImage : imageUrl}
@@ -248,21 +196,18 @@ export function ProductCard({ product, className }: ProductCardProps) {
               priority={imageLoadedCache.has(imageUrl)}
               loading={imageLoadedCache.has(imageUrl) ? undefined : "lazy"}
               className={cn(
-                "object-cover transition-opacity duration-200",
+                "object-cover transition-all duration-300 group-hover:scale-105",
                 imageLoaded ? "opacity-100" : "opacity-0",
               )}
               onLoad={handleImageLoad}
               onError={handleImageError}
-              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
+              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
             />
 
-            {/* Top badges */}
+            {/* Promo badge */}
             {product?.hasActivePromotion && (
-              <div className="absolute top-2 left-2 right-2 flex justify-between items-start z-10 pointer-events-none gap-2">
-                <Badge
-                  variant="destructive"
-                  className="text-xs font-bold px-2 py-0.5 shadow-md pointer-events-auto"
-                >
+              <div className="absolute top-2 left-2 z-10 pointer-events-none">
+                <Badge variant="destructive" className="text-xs font-bold px-2 py-0.5 shadow-md">
                   {product.displayPromotionType === "PERCENTAGE"
                     ? `-${product.displayPromotionValue}%`
                     : `-${formatCurrency(product.displayPromotionValue)}`}
@@ -270,14 +215,10 @@ export function ProductCard({ product, className }: ProductCardProps) {
               </div>
             )}
 
+            {/* Out of stock overlay */}
             {isOutOfStock && (
               <div className="absolute inset-0 bg-black/50 z-10 flex items-center justify-center pointer-events-none">
-                <Badge
-                  variant="secondary"
-                  className="text-xs font-semibold px-3 py-1"
-                >
-                  Out of Stock
-                </Badge>
+                <Badge variant="secondary" className="text-xs font-semibold px-3 py-1">Out of Stock</Badge>
               </div>
             )}
 
@@ -287,30 +228,22 @@ export function ProductCard({ product, className }: ProductCardProps) {
                 size="icon"
                 variant="secondary"
                 className={cn(
-                  "h-8 w-8 rounded-full shadow-md",
-                  product?.isFavorited
+                  "h-8 w-8 rounded-full shadow-md transition-all duration-200",
+                  isFavorited
                     ? "bg-red-500 text-white hover:bg-red-600"
-                    : "bg-white hover:bg-red-50 hover:text-red-500",
+                    : "bg-white/90 hover:bg-red-50 hover:text-red-500",
                 )}
                 onClick={handleToggleFavorite}
                 disabled={isTogglingFavorite}
               >
-                <Heart
-                  className={cn(
-                    "h-4 w-4",
-                    product?.isFavorited && "fill-current",
-                  )}
-                />
+                <Heart className={cn("h-4 w-4 transition-transform duration-200", isFavorited && "fill-current scale-110")} />
               </CustomButton>
             </div>
 
-            {/* Size indicator */}
+            {/* Sizes badge */}
             {product.hasSizes && (
               <div className="absolute bottom-2 left-2 z-10 pointer-events-none">
-                <Badge
-                  variant="secondary"
-                  className="text-xs font-medium px-1.5 py-0.5 shadow-sm bg-background/90 backdrop-blur-sm gap-1"
-                >
+                <Badge variant="secondary" className="text-xs font-medium px-1.5 py-0.5 shadow-sm bg-background/90 backdrop-blur-sm gap-1">
                   <Ruler className="h-3 w-3" />
                   Sizes
                 </Badge>
@@ -318,31 +251,20 @@ export function ProductCard({ product, className }: ProductCardProps) {
             )}
           </div>
 
-          {/* Product info */}
+          {/* Info */}
           <div className="p-3 flex flex-col flex-1">
-            <h3 className="font-medium text-sm line-clamp-2 mb-2 min-h-[40px]">
-              {product.name}
-            </h3>
+            <h3 className="font-medium text-sm line-clamp-2 mb-2 leading-snug min-h-[40px]">{product.name}</h3>
 
             <div className="mt-auto">
-              <div className="flex flex-col mb-2">
-                <span
-                  className={`text-xs text-muted-foreground line-through ${product.hasActivePromotion ? "visible" : "invisible"
-                    }`}
-                >
+              <div className="flex flex-col mb-2.5">
+                <span className={cn("text-xs text-muted-foreground line-through", !product.hasActivePromotion && "invisible")}>
                   {formatCurrency(product.displayOriginPrice)}
                 </span>
-
-                <span className="text-lg font-bold text-primary">
-                  {formatCurrency(product.displayPrice)}
-                </span>
+                <span className="text-base font-bold text-primary">{formatCurrency(product.displayPrice)}</span>
               </div>
 
               {isInCart ? (
-                <div
-                  className="flex items-center gap-2 w-full"
-                  onClick={(e) => e.preventDefault()}
-                >
+                <div className="flex items-center gap-1.5 w-full" onClick={(e) => e.preventDefault()}>
                   <CustomButton
                     size="icon"
                     variant="outline"
@@ -351,11 +273,9 @@ export function ProductCard({ product, className }: ProductCardProps) {
                   >
                     <Minus className="h-3 w-3" />
                   </CustomButton>
-
-                  <div className="flex-1 text-center h-8 px-2 bg-primary/10 text-primary font-semibold text-sm rounded border border-primary/20 flex items-center justify-center">
+                  <div className="flex-1 text-center h-8 bg-primary/10 text-primary font-semibold text-sm rounded-lg border border-primary/20 flex items-center justify-center">
                     {displayQuantity}
                   </div>
-
                   <CustomButton
                     size="icon"
                     variant="outline"
@@ -367,20 +287,20 @@ export function ProductCard({ product, className }: ProductCardProps) {
                 </div>
               ) : (
                 <CustomButton
-                  className="w-full gap-2"
+                  className="w-full gap-1.5 h-8 text-xs font-semibold"
                   onClick={handleAddToCart}
                   disabled={isAddingToCart || isOutOfStock}
                   size="sm"
                 >
                   {isAddingToCart ? (
                     <>
-                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span className="text-xs">Adding...</span>
+                      <div className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Adding...
                     </>
                   ) : (
                     <>
-                      <ShoppingCart className="h-4 w-4" />
-                      <span className="text-xs font-semibold">Add to Cart</span>
+                      <ShoppingCart className="h-3.5 w-3.5" />
+                      Add to Cart
                     </>
                   )}
                 </CustomButton>
@@ -391,11 +311,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
       </Link>
 
       <LoginModal open={showLoginModal} onOpenChange={setShowLoginModal} />
-      <SizeSelectionModal
-        open={showSizeModal}
-        onOpenChange={setShowSizeModal}
-        product={product}
-      />
+      <SizeSelectionModal open={showSizeModal} onOpenChange={setShowSizeModal} product={product} />
     </>
   );
 }

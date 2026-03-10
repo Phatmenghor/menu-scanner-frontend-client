@@ -19,7 +19,7 @@ import {
 import { toggleFavorite } from "@/redux/features/main/store/thunks/favorite-thunks";
 import { ProductCard } from "@/components/shared/card/product-card";
 import { LoginModal } from "@/components/shared/modal/login-modal";
-import { QuantitySelector } from "@/components/shared/input/quantity-selector";
+import { SizeSelectionModal } from "@/components/shared/modal/size-selection-modal";
 import { showToast } from "@/components/shared/common/show-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,8 +31,13 @@ import {
   Share2,
   ChevronLeft,
   ChevronRight,
-  Check,
   Loader2,
+  Minus,
+  Plus,
+  Store,
+  Tag,
+  Eye,
+  Bookmark,
 } from "lucide-react";
 import { formatCurrency } from "@/utils/common/currency-format";
 import { sanitizeImageUrl } from "@/utils/common/common";
@@ -59,29 +64,28 @@ export default function ProductDetailPage() {
   const product = selectedProduct;
   const isLoading = loading.detail;
 
-  // Scroll to top on mount (detail page should always start at top)
   useScrollToTop();
 
-  const [similarProducts, setSimilarProducts] = useState<
-    ProductDetailResponseModel[]
-  >([]);
+  const [similarProducts, setSimilarProducts] = useState<ProductDetailResponseModel[]>([]);
   const [selectedImage, setSelectedImage] = useState<string>("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [selectedSize, setSelectedSize] = useState<ProductSize | null>(null);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSizeModal, setShowSizeModal] = useState(false);
 
-  // Debounced cart API calls (aborts stale in-flight requests)
+  // Local favorite state — fixes the bug where product.isFavorited never updates
+  const [isFavorited, setIsFavorited] = useState(false);
+  useEffect(() => { setIsFavorited(product?.isFavorited ?? false); }, [product?.isFavorited]);
+
   const { debouncedUpdate } = useCartDebounce(cartDispatch);
 
-  // Get cart quantity for selected size or product
   const getCartQuantityForSize = useCallback(
     (sizeId: string | null) => {
       if (!product) return 0;
       const cartItem = cartItems.find(
-        (item) =>
-          item.productId === product.id && item.productSizeId === sizeId
+        (item) => item.productId === product.id && item.productSizeId === sizeId
       );
       return cartItem?.quantity || 0;
     },
@@ -94,7 +98,12 @@ export default function ProductDetailPage() {
     ? getCartQuantityForSize(null)
     : 0;
 
-  // Get all images (main + additional), sanitizing placeholder URLs
+  // Total in cart across all sizes (for sized products)
+  const totalSizesInCart = product?.hasSizes
+    ? cartItems.filter((item) => item.productId === product.id).reduce((sum, item) => sum + item.quantity, 0)
+    : 0;
+
+  // Build image list
   const allImages = product
     ? [
         { id: "main", imageUrl: sanitizeImageUrl(product.mainImageUrl, appImages.NoImage), displayOrder: 0 },
@@ -106,7 +115,6 @@ export default function ProductDetailPage() {
       ]
     : [];
 
-  // Initialize product and selected size
   useEffect(() => {
     if (productId) {
       dispatch(clearSelectedProduct());
@@ -114,14 +122,11 @@ export default function ProductDetailPage() {
     }
   }, [productId, dispatch]);
 
-  // Set initial image and size
   useEffect(() => {
     if (product) {
       setSelectedImage(sanitizeImageUrl(product.mainImageUrl, appImages.NoImage));
       setCurrentImageIndex(0);
       setImageLoaded(false);
-
-      // If product has sizes, select the first one by default
       if (product.hasSizes && product.sizes && product.sizes.length > 0) {
         setSelectedSize(product.sizes[0]);
       } else {
@@ -130,46 +135,32 @@ export default function ProductDetailPage() {
     }
   }, [product]);
 
-  // Load similar products
   useEffect(() => {
     if (product) {
-      const loadSimilarProducts = async () => {
+      const load = async () => {
         try {
-          const response = await dispatch(
-            fetchPublicProducts({
-              pageNo: 1,
-              pageSize: 5,
-              categoryId: product.categoryId || undefined,
-              status: "ACTIVE",
-            })
+          const res = await dispatch(
+            fetchPublicProducts({ pageNo: 1, pageSize: 5, categoryId: product.categoryId || undefined, status: "ACTIVE" })
           ).unwrap();
-
-          const similar =
-            response.content?.filter((p: any) => p.id !== productId) || [];
+          const similar = res.content?.filter((p: any) => p.id !== productId) || [];
           setSimilarProducts(similar.slice(0, 4));
-        } catch (error) {
-          console.error("Error loading similar products:", error);
-        }
+        } catch { /* silently ignore */ }
       };
-
-      loadSimilarProducts();
+      load();
     }
   }, [product, productId, dispatch]);
 
-  // Image navigation
   const handlePrevImage = () => {
-    const newIndex =
-      currentImageIndex === 0 ? allImages.length - 1 : currentImageIndex - 1;
-    setCurrentImageIndex(newIndex);
-    setSelectedImage(allImages[newIndex].imageUrl);
+    const idx = currentImageIndex === 0 ? allImages.length - 1 : currentImageIndex - 1;
+    setCurrentImageIndex(idx);
+    setSelectedImage(allImages[idx].imageUrl);
     setImageLoaded(false);
   };
 
   const handleNextImage = () => {
-    const newIndex =
-      currentImageIndex === allImages.length - 1 ? 0 : currentImageIndex + 1;
-    setCurrentImageIndex(newIndex);
-    setSelectedImage(allImages[newIndex].imageUrl);
+    const idx = currentImageIndex === allImages.length - 1 ? 0 : currentImageIndex + 1;
+    setCurrentImageIndex(idx);
+    setSelectedImage(allImages[idx].imageUrl);
     setImageLoaded(false);
   };
 
@@ -179,325 +170,253 @@ export default function ProductDetailPage() {
     setImageLoaded(false);
   };
 
-  // Get display price based on selected size or product
-  const getDisplayPrice = () => {
-    if (selectedSize) {
-      return selectedSize.finalPrice;
-    }
-    return product?.displayPrice || 0;
-  };
+  const getDisplayPrice = () => selectedSize?.finalPrice ?? product?.displayPrice ?? 0;
 
   const getOriginalPrice = () => {
-    if (selectedSize && selectedSize.hasPromotion) {
-      return selectedSize.price;
-    }
-    if (product?.hasPromotion && product.displayOriginPrice) {
-      return product.displayOriginPrice;
-    }
+    if (selectedSize?.hasPromotion) return selectedSize.price;
+    if (product?.hasPromotion && product.displayOriginPrice) return product.displayOriginPrice;
     return null;
   };
 
-  const hasDiscount = selectedSize
-    ? selectedSize.hasPromotion
-    : product?.hasPromotion;
+  const hasDiscount = selectedSize ? selectedSize.hasPromotion : product?.hasPromotion;
 
-  // Handle quantity change with optimistic update + debounced API
+  // Cart handler for non-sized products (card-like: optimistic + debounced)
   const handleQuantityChange = useCallback(
     (newQuantity: number) => {
       if (!product) return;
-
-      if (!isAuthenticated) {
-        setShowLoginModal(true);
-        return;
-      }
+      if (!isAuthenticated) { setShowLoginModal(true); return; }
 
       const sizeId = selectedSize?.id || null;
       const key = cartItemKey(product.id, sizeId);
       const currentQty = getCartQuantityForSize(sizeId);
       const price = selectedSize?.finalPrice || product.displayPrice || 0;
-      const origPrice =
-        (selectedSize?.hasPromotion
-          ? selectedSize.price
-          : product.displayOriginPrice) || price;
-      const isDiscounted = selectedSize
-        ? selectedSize.hasPromotion
-        : product.hasActivePromotion;
+      const origPrice = (selectedSize?.hasPromotion ? selectedSize.price : product.displayOriginPrice) || price;
+      const isDiscounted = selectedSize ? selectedSize.hasPromotion : product.hasActivePromotion;
 
-      // Optimistic update
       if (currentQty === 0 && newQuantity > 0) {
-        cartDispatch(
-          addLocalCartItem({
-            productId: product.id,
-            productSizeId: sizeId,
-            quantity: newQuantity,
-            productName: product.name,
-            productImageUrl: product.mainImageUrl,
-            sizeName: selectedSize?.name || null,
-            finalPrice: price,
-            currentPrice: origPrice,
-            hasPromotion: isDiscounted,
-          })
-        );
+        cartDispatch(addLocalCartItem({
+          productId: product.id,
+          productSizeId: sizeId,
+          quantity: newQuantity,
+          productName: product.name,
+          productImageUrl: product.mainImageUrl,
+          sizeName: selectedSize?.name || null,
+          finalPrice: price,
+          currentPrice: origPrice,
+          hasPromotion: isDiscounted,
+        }));
       } else {
-        cartDispatch(
-          updateLocalCartItem({
-            productId: product.id,
-            productSizeId: sizeId,
-            quantity: newQuantity,
-          })
-        );
+        cartDispatch(updateLocalCartItem({
+          productId: product.id,
+          productSizeId: sizeId,
+          quantity: newQuantity,
+        }));
       }
 
-      // Debounced API call (aborts previous in-flight request for this key)
       debouncedUpdate(key, product.id, sizeId, newQuantity);
     },
     [product, selectedSize, isAuthenticated, cartDispatch, getCartQuantityForSize, debouncedUpdate]
   );
 
-  // Favorite toggle handler
   const handleToggleFavorite = async () => {
     if (!product) return;
+    if (!isAuthenticated) { setShowLoginModal(true); return; }
 
-    if (!isAuthenticated) {
-      setShowLoginModal(true);
-      return;
-    }
-
+    setIsFavorited((prev) => !prev); // optimistic
     setIsTogglingFavorite(true);
     try {
-      await favoriteDispatch(
-        toggleFavorite({ productId: product.id })
-      ).unwrap();
+      await favoriteDispatch(toggleFavorite({ productId: product.id })).unwrap();
     } catch (error: any) {
+      setIsFavorited((prev) => !prev); // rollback
       showToast.error(error?.message || "Failed to update favorites");
     } finally {
       setIsTogglingFavorite(false);
     }
   };
 
-  // Share handler
   const handleShare = async () => {
     if (navigator.share) {
-      try {
-        await navigator.share({
-          title: product?.name || "Product",
-          url: window.location.href,
-        });
-      } catch {
-        // User cancelled or error
-      }
+      try { await navigator.share({ title: product?.name || "Product", url: window.location.href }); } catch { /* cancelled */ }
     } else {
-      // Fallback: copy to clipboard
       navigator.clipboard.writeText(window.location.href);
       showToast.success("Link copied to clipboard");
     }
   };
 
-  if (isLoading) {
-    return <ProductDetailSkeleton />;
-  }
+  if (isLoading) return <ProductDetailSkeleton />;
 
   if (!product) {
     return (
-      <div className="container mx-auto px-4 py-12 text-center">
-        <h2 className="text-xl sm:text-2xl font-bold mb-4">Product Not Found</h2>
+      <div className="container mx-auto px-4 py-16 text-center">
+        <h2 className="text-xl font-bold mb-4">Product Not Found</h2>
         <Button onClick={() => router.back()}>Go Back</Button>
       </div>
     );
   }
 
+  const discountPercent = getOriginalPrice()
+    ? Math.round(((getOriginalPrice()! - getDisplayPrice()) / getOriginalPrice()!) * 100)
+    : 0;
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-8 max-w-7xl">
-        {/* Back Button */}
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
+
+        {/* Back button */}
         <CustomButton
           variant="ghost"
           size="sm"
           onClick={() => router.back()}
-          className="mb-3 sm:mb-6 hover:bg-accent"
+          className="mb-4 sm:mb-6 -ml-1 hover:bg-accent gap-1"
         >
-          <ArrowLeft className="h-4 w-4 mr-1.5" />
+          <ArrowLeft className="h-4 w-4" />
           Back
         </CustomButton>
 
-        {/* Main Product Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 lg:gap-12 mb-8 sm:mb-16">
-          {/* Image Gallery */}
-          <div className="space-y-4">
-            {/* Main Image */}
-            <div className="relative aspect-square rounded-xl overflow-hidden border bg-muted/30 group">
-              {!imageLoaded && (
-                <Skeleton className="absolute inset-0 w-full h-full" />
-              )}
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-10 lg:gap-16 mb-12 sm:mb-20">
+
+          {/* ── Left: Image Gallery ── */}
+          <div className="space-y-3">
+            {/* Main image */}
+            <div className="relative aspect-square rounded-2xl overflow-hidden border bg-muted/20 group shadow-sm">
+              {!imageLoaded && <Skeleton className="absolute inset-0 w-full h-full" />}
               <Image
                 src={selectedImage || appImages.NoImage}
                 alt={product.name}
                 fill
-                className={cn(
-                  "object-cover transition-opacity duration-500",
-                  imageLoaded ? "opacity-100" : "opacity-0"
-                )}
+                className={cn("object-cover transition-opacity duration-300", imageLoaded ? "opacity-100" : "opacity-0")}
                 onLoad={() => setImageLoaded(true)}
                 priority
               />
 
-              {/* Discount Badge */}
-              {hasDiscount && (
-                <Badge
-                  variant="destructive"
-                  className="absolute top-4 right-4 text-base font-bold px-3 py-1.5 shadow-lg"
-                >
-                  {selectedSize && selectedSize.hasPromotion
-                    ? `-${Math.round(
-                        ((selectedSize.price - selectedSize.finalPrice) /
-                          selectedSize.price) *
-                          100
-                      )}%`
-                    : product.displayPromotionType === "PERCENTAGE"
-                    ? `-${product.displayPromotionValue}%`
-                    : `-${formatCurrency(product.displayPromotionValue || 0)}`}
+              {/* Discount badge */}
+              {hasDiscount && discountPercent > 0 && (
+                <Badge variant="destructive" className="absolute top-3 left-3 text-sm font-bold px-3 py-1.5 shadow-lg">
+                  -{discountPercent}%
                 </Badge>
               )}
 
-              {/* Navigation Arrows */}
+              {/* Nav arrows */}
               {allImages.length > 1 && (
                 <>
                   <button
                     onClick={handlePrevImage}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:shadow-xl"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
                   <button
                     onClick={handleNextImage}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:shadow-xl"
                   >
                     <ChevronRight className="h-5 w-5" />
                   </button>
                 </>
               )}
 
-              {/* Image Counter */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium">
-                {currentImageIndex + 1} / {allImages.length}
-              </div>
+              {/* Counter pill */}
+              {allImages.length > 1 && (
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium">
+                  {currentImageIndex + 1} / {allImages.length}
+                </div>
+              )}
             </div>
 
-            {/* Thumbnail Row - Max 90% height */}
+            {/* Thumbnails — only border, no check icon overlay */}
             {allImages.length > 1 && (
-              <div className="relative">
-                <div
-                  className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
-                  style={{ maxHeight: "90%" }}
-                >
-                  {allImages.map((img, index) => (
-                    <button
-                      key={img.id}
-                      onClick={() => handleSelectImage(img.imageUrl, index)}
-                      className={cn(
-                        "relative flex-shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden transition-all cursor-pointer hover:scale-105",
-                        selectedImage === img.imageUrl
-                          ? "border-primary ring-2 ring-primary/20"
-                          : "border-border hover:border-primary/50"
-                      )}
-                    >
-                      <Image
-                        src={img.imageUrl}
-                        alt={`Image ${index + 1}`}
-                        fill
-                        className="object-cover"
-                      />
-                      {selectedImage === img.imageUrl && (
-                        <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
-                          <Check className="h-5 w-5 text-primary" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {allImages.map((img, index) => (
+                  <button
+                    key={img.id}
+                    onClick={() => handleSelectImage(img.imageUrl, index)}
+                    className={cn(
+                      "relative flex-shrink-0 w-16 h-16 rounded-xl border-2 overflow-hidden transition-all duration-150 cursor-pointer hover:scale-105",
+                      currentImageIndex === index
+                        ? "border-primary shadow-sm shadow-primary/30 scale-105"
+                        : "border-border hover:border-primary/50 opacity-70 hover:opacity-100"
+                    )}
+                  >
+                    <Image src={img.imageUrl} alt={`Image ${index + 1}`} fill className="object-cover" />
+                  </button>
+                ))}
               </div>
             )}
           </div>
 
-          {/* Product Info */}
-          <div className="space-y-6">
+          {/* ── Right: Product Info ── */}
+          <div className="space-y-5">
+
             {/* Title & Badges */}
             <div>
-              <h1 className="text-3xl lg:text-4xl font-bold mb-3">
-                {product.name}
-              </h1>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap gap-1.5 mb-2">
                 {product.brandName && (
-                  <Badge variant="secondary">{product.brandName}</Badge>
-                )}
-                <Badge variant="outline">{product.categoryName}</Badge>
-                {product.status === "OUT_OF_STOCK" ? (
-                  <Badge variant="destructive">Out of Stock</Badge>
-                ) : (
-                  <Badge className="bg-green-500 hover:bg-green-600">
-                    In Stock
+                  <Badge variant="secondary" className="text-xs gap-1">
+                    <Store className="h-3 w-3" />{product.brandName}
                   </Badge>
                 )}
+                {product.categoryName && (
+                  <Badge variant="outline" className="text-xs gap-1">
+                    <Tag className="h-3 w-3" />{product.categoryName}
+                  </Badge>
+                )}
+                {product.status === "OUT_OF_STOCK" ? (
+                  <Badge variant="destructive" className="text-xs">Out of Stock</Badge>
+                ) : (
+                  <Badge className="text-xs bg-green-500 hover:bg-green-600">In Stock</Badge>
+                )}
               </div>
+              <h1 className="text-2xl sm:text-3xl font-bold leading-tight">{product.name}</h1>
             </div>
 
-            {/* Price Display */}
-            <div className="bg-accent/50 rounded-lg p-4 border">
+            {/* Price */}
+            <div className="bg-muted/40 rounded-2xl p-4 border">
               <div className="flex items-baseline gap-3">
-                <span className="text-4xl font-bold text-primary">
+                <span className="text-3xl sm:text-4xl font-bold text-primary">
                   {formatCurrency(getDisplayPrice())}
                 </span>
                 {getOriginalPrice() && (
-                  <span className="text-xl text-muted-foreground line-through">
+                  <span className="text-lg text-muted-foreground line-through">
                     {formatCurrency(getOriginalPrice()!)}
                   </span>
                 )}
               </div>
-              {hasDiscount && (
-                <p className="text-sm text-green-600 font-medium mt-1">
-                  You save{" "}
-                  {formatCurrency(
-                    (getOriginalPrice() || 0) - getDisplayPrice()
-                  )}
+              {hasDiscount && discountPercent > 0 && (
+                <p className="text-sm text-green-600 dark:text-green-400 font-medium mt-1">
+                  You save {formatCurrency((getOriginalPrice() || 0) - getDisplayPrice())}
                 </p>
               )}
             </div>
 
-            {/* Available Sizes - Only show if product has sizes */}
+            {/* Sizes — informational; cart managed via size modal */}
             {product.hasSizes && product.sizes && product.sizes.length > 0 && (
               <div>
-                <h3 className="font-semibold mb-3 text-lg">Choose Size</h3>
+                <h3 className="font-semibold mb-2.5 text-sm text-muted-foreground uppercase tracking-wide">Choose Size</h3>
                 <div className="flex flex-wrap gap-2">
                   {product.sizes.map((size) => {
                     const sizeCartQty = getCartQuantityForSize(size.id);
+                    const isSelected = selectedSize?.id === size.id;
                     return (
                       <button
                         key={size.id}
                         onClick={() => setSelectedSize(size)}
                         className={cn(
-                          "relative border-2 rounded-lg px-4 py-3 transition-all cursor-pointer hover:border-primary hover:shadow-md",
-                          selectedSize?.id === size.id
-                            ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                            : "border-border"
+                          "relative border-2 rounded-xl px-4 py-2.5 transition-all cursor-pointer text-left min-w-[80px]",
+                          isSelected
+                            ? "border-primary bg-primary/5 shadow-sm shadow-primary/10"
+                            : "border-border hover:border-primary/40 hover:bg-muted/40"
                         )}
                       >
                         <div className="font-semibold text-sm">{size.name}</div>
-                        <div className="text-primary font-bold text-base">
+                        <div className="text-primary font-bold text-base leading-tight">
                           {formatCurrency(size.finalPrice)}
                         </div>
                         {size.hasPromotion && (
-                          <div className="text-xs text-muted-foreground line-through">
-                            {formatCurrency(size.price)}
-                          </div>
+                          <div className="text-xs text-muted-foreground line-through">{formatCurrency(size.price)}</div>
                         )}
-                        {selectedSize?.id === size.id && (
-                          <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-1">
-                            <Check className="h-3 w-3" />
-                          </div>
-                        )}
-                        {/* Show cart quantity badge */}
+                        {/* Cart quantity badge */}
                         {sizeCartQty > 0 && (
-                          <div className="absolute -top-2 -left-2 bg-green-500 text-white rounded-full min-w-[20px] h-[20px] flex items-center justify-center text-xs font-bold">
+                          <div className="absolute -top-2 -left-2 bg-green-500 text-white rounded-full min-w-[20px] h-5 flex items-center justify-center text-xs font-bold px-1">
                             {sizeCartQty}
                           </div>
                         )}
@@ -509,107 +428,126 @@ export default function ProductDetailPage() {
             )}
 
             {/* Description */}
-            <div>
-              <h3 className="font-semibold mb-2 text-lg">Description</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                {product.description ||
-                  "No description available for this product."}
-              </p>
-            </div>
+            {product.description && (
+              <div>
+                <h3 className="font-semibold mb-1.5 text-sm text-muted-foreground uppercase tracking-wide">Description</h3>
+                <p className="text-sm text-foreground/80 leading-relaxed">{product.description}</p>
+              </div>
+            )}
 
-            {/* Quantity Selector - shows current cart quantity, editable */}
-            <div>
-              <h3 className="font-semibold mb-3 text-lg">Quantity</h3>
-              <QuantitySelector
-                value={currentCartQuantity}
-                onChange={handleQuantityChange}
-                min={0}
-              />
-              {currentCartQuantity > 0 && (
-                <p className="text-sm text-green-600 dark:text-green-400 font-medium mt-2">
-                  {selectedSize
-                    ? `${currentCartQuantity} "${selectedSize.name}" in cart`
-                    : `${currentCartQuantity} in cart`}
-                  {" "}
-                  ({formatCurrency(getDisplayPrice() * currentCartQuantity)})
-                </p>
-              )}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="space-y-3 pt-4">
-              {currentCartQuantity === 0 ? (
-                <CustomButton
-                  size="lg"
-                  className="w-full h-12 text-base font-semibold gap-2"
-                  disabled={product.status === "OUT_OF_STOCK"}
-                  onClick={() => handleQuantityChange(1)}
-                >
-                  <ShoppingCart className="h-5 w-5" />
-                  Add to Cart
-                </CustomButton>
+            {/* ── Action Buttons ── */}
+            <div className="space-y-3 pt-1">
+              {product.hasSizes ? (
+                /* Sized: show cart summary + open size modal */
+                <>
+                  {totalSizesInCart > 0 && (
+                    <div className="flex items-center gap-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl px-4 py-3">
+                      <ShoppingCart className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0" />
+                      <span className="text-sm text-green-700 dark:text-green-400 font-medium flex-1">
+                        {totalSizesInCart} item{totalSizesInCart !== 1 ? "s" : ""} in cart
+                      </span>
+                    </div>
+                  )}
+                  <CustomButton
+                    size="lg"
+                    className="w-full h-12 text-base font-semibold gap-2 rounded-xl"
+                    variant={totalSizesInCart > 0 ? "outline" : "default"}
+                    disabled={product.status === "OUT_OF_STOCK"}
+                    onClick={() => setShowSizeModal(true)}
+                  >
+                    <ShoppingCart className="h-5 w-5" />
+                    {totalSizesInCart > 0 ? "Manage Cart (Sizes)" : "Choose Size & Add to Cart"}
+                  </CustomButton>
+                </>
               ) : (
-                <div className="w-full h-12 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 flex items-center justify-center gap-2 text-green-700 dark:text-green-400 font-semibold">
-                  <ShoppingCart className="h-5 w-5" />
-                  In Cart &bull; {formatCurrency(getDisplayPrice() * currentCartQuantity)}
-                </div>
+                /* Non-sized: card-like pattern — Add button → qty controls */
+                currentCartQuantity === 0 ? (
+                  <CustomButton
+                    size="lg"
+                    className="w-full h-12 text-base font-semibold gap-2 rounded-xl"
+                    disabled={product.status === "OUT_OF_STOCK"}
+                    onClick={() => handleQuantityChange(1)}
+                  >
+                    <ShoppingCart className="h-5 w-5" />
+                    Add to Cart
+                  </CustomButton>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <CustomButton
+                        variant="outline"
+                        size="icon"
+                        className="h-12 w-12 shrink-0 rounded-xl hover:bg-destructive hover:text-white hover:border-destructive transition-all"
+                        onClick={() => handleQuantityChange(currentCartQuantity - 1)}
+                      >
+                        <Minus className="h-5 w-5" />
+                      </CustomButton>
+                      <div className="flex-1 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-xl">
+                        {currentCartQuantity}
+                      </div>
+                      <CustomButton
+                        variant="outline"
+                        size="icon"
+                        className="h-12 w-12 shrink-0 rounded-xl hover:bg-primary hover:text-white hover:border-primary transition-all"
+                        onClick={() => handleQuantityChange(currentCartQuantity + 1)}
+                      >
+                        <Plus className="h-5 w-5" />
+                      </CustomButton>
+                    </div>
+                    <div className="h-10 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 flex items-center justify-center gap-2 text-green-700 dark:text-green-400 text-sm font-medium">
+                      <ShoppingCart className="h-4 w-4" />
+                      In Cart — {formatCurrency(getDisplayPrice() * currentCartQuantity)}
+                    </div>
+                  </div>
+                )
               )}
 
+              {/* Wishlist + Share row */}
               <div className="grid grid-cols-2 gap-3">
                 <CustomButton
                   size="lg"
                   variant="outline"
                   className={cn(
-                    "h-12",
-                    product.isFavorited &&
-                      "bg-red-50 border-red-200 text-red-600 hover:bg-red-100 dark:bg-red-950/30 dark:border-red-800 dark:text-red-400"
+                    "h-12 rounded-xl gap-2 transition-all",
+                    isFavorited && "bg-red-50 border-red-200 text-red-600 hover:bg-red-100 dark:bg-red-950/30 dark:border-red-800 dark:text-red-400"
                   )}
                   onClick={handleToggleFavorite}
                   disabled={isTogglingFavorite}
                 >
-                  {isTogglingFavorite ? (
-                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                  ) : (
-                    <Heart
-                      className={cn(
-                        "h-5 w-5 mr-2",
-                        product.isFavorited && "fill-current"
-                      )}
-                    />
-                  )}
-                  {product.isFavorited ? "Saved" : "Wishlist"}
+                  {isTogglingFavorite
+                    ? <Loader2 className="h-5 w-5 animate-spin" />
+                    : <Heart className={cn("h-5 w-5", isFavorited && "fill-current")} />}
+                  {isFavorited ? "Saved" : "Wishlist"}
                 </CustomButton>
-                <CustomButton
-                  size="lg"
-                  variant="outline"
-                  className="h-12"
-                  onClick={handleShare}
-                >
-                  <Share2 className="h-5 w-5 mr-2" />
+                <CustomButton size="lg" variant="outline" className="h-12 rounded-xl gap-2" onClick={handleShare}>
+                  <Share2 className="h-5 w-5" />
                   Share
                 </CustomButton>
               </div>
             </div>
 
-            {/* Additional Info */}
-            <div className="border-t pt-4 space-y-2 text-sm text-muted-foreground">
-              <div className="flex justify-between">
-                <span>SKU:</span>
-                <span className="font-medium">
-                  {product.id.slice(0, 8).toUpperCase()}
-                </span>
+            {/* Meta info */}
+            <div className="border-t pt-4 grid grid-cols-3 gap-4 text-center">
+              <div className="space-y-0.5">
+                <div className="flex items-center justify-center gap-1 text-muted-foreground">
+                  <Eye className="h-3.5 w-3.5" />
+                  <span className="text-xs">Views</span>
+                </div>
+                <p className="text-sm font-semibold">{product.viewCount.toLocaleString()}</p>
               </div>
-              <div className="flex justify-between">
-                <span>Views:</span>
-                <span className="font-medium">
-                  {product.viewCount.toLocaleString()}
-                </span>
+              <div className="space-y-0.5">
+                <div className="flex items-center justify-center gap-1 text-muted-foreground">
+                  <Heart className="h-3.5 w-3.5" />
+                  <span className="text-xs">Favorites</span>
+                </div>
+                <p className="text-sm font-semibold">{product.favoriteCount.toLocaleString()}</p>
               </div>
-              <div className="flex justify-between">
-                <span>Favorites:</span>
-                <span className="font-medium">
-                  {product.favoriteCount.toLocaleString()}
-                </span>
+              <div className="space-y-0.5">
+                <div className="flex items-center justify-center gap-1 text-muted-foreground">
+                  <Bookmark className="h-3.5 w-3.5" />
+                  <span className="text-xs">SKU</span>
+                </div>
+                <p className="text-sm font-semibold font-mono">{product.id.slice(0, 6).toUpperCase()}</p>
               </div>
             </div>
           </div>
@@ -618,8 +556,8 @@ export default function ProductDetailPage() {
         {/* Similar Products */}
         {similarProducts.length > 0 && (
           <div>
-            <h2 className="text-2xl font-bold mb-6">You May Also Like</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+            <h2 className="text-xl sm:text-2xl font-bold mb-5">You May Also Like</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
               {similarProducts.map((similar) => (
                 <ProductCard key={similar.id} product={similar} />
               ))}
@@ -629,6 +567,11 @@ export default function ProductDetailPage() {
       </div>
 
       <LoginModal open={showLoginModal} onOpenChange={setShowLoginModal} />
+      <SizeSelectionModal
+        open={showSizeModal}
+        onOpenChange={setShowSizeModal}
+        product={product}
+      />
     </div>
   );
 }
@@ -636,39 +579,29 @@ export default function ProductDetailPage() {
 function ProductDetailSkeleton() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <Skeleton className="h-10 w-32 mb-6" />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-        {/* Image Skeleton */}
-        <div className="space-y-4">
-          <Skeleton className="aspect-square w-full rounded-xl" />
+      <Skeleton className="h-9 w-24 mb-6 rounded-xl" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div className="space-y-3">
+          <Skeleton className="aspect-square w-full rounded-2xl" />
           <div className="flex gap-2">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Skeleton
-                key={i}
-                className="w-20 h-20 rounded-lg flex-shrink-0"
-              />
-            ))}
+            {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="w-16 h-16 rounded-xl flex-shrink-0" />)}
           </div>
         </div>
-
-        {/* Info Skeleton */}
-        <div className="space-y-6">
-          <div>
-            <Skeleton className="h-10 w-3/4 mb-3" />
-            <div className="flex gap-2">
-              <Skeleton className="h-6 w-20" />
-              <Skeleton className="h-6 w-24" />
-            </div>
-          </div>
-          <Skeleton className="h-20 w-full rounded-lg" />
-          <Skeleton className="h-32 w-full" />
+        <div className="space-y-5">
           <div className="flex gap-2">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-20 w-24 rounded-lg" />
-            ))}
+            <Skeleton className="h-6 w-20 rounded-full" />
+            <Skeleton className="h-6 w-24 rounded-full" />
           </div>
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-9 w-3/4" />
+          <Skeleton className="h-24 w-full rounded-2xl" />
+          <div className="flex gap-2">
+            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-24 rounded-xl" />)}
+          </div>
+          <Skeleton className="h-12 w-full rounded-xl" />
+          <div className="grid grid-cols-2 gap-3">
+            <Skeleton className="h-12 rounded-xl" />
+            <Skeleton className="h-12 rounded-xl" />
+          </div>
         </div>
       </div>
     </div>
