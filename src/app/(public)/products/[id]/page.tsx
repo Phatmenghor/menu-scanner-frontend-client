@@ -19,6 +19,7 @@ import {
 import { toggleFavorite } from "@/redux/features/main/store/thunks/favorite-thunks";
 import { ProductCard } from "@/components/shared/card/product-card";
 import { LoginModal } from "@/components/shared/modal/login-modal";
+import { SizeSelectionModal } from "@/components/shared/modal/size-selection-modal";
 import { showToast } from "@/components/shared/common/show-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -76,6 +77,7 @@ export default function ProductDetailPage() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [showSizeModal, setShowSizeModal] = useState(false);
 
   // ── Favorite sync: prefer Redux store when loaded, else API field ──────
   const isFavoritedFromStore = favLoaded && product
@@ -103,6 +105,11 @@ export default function ProductDetailPage() {
     ? getCartQuantityForSize(selectedSize.id)
     : product
     ? getCartQuantityForSize(null)
+    : 0;
+
+  // Total qty across all sizes (used for sized-product cart indicator)
+  const totalInCart = product
+    ? cartItems.filter((item) => item.productId === product.id).reduce((sum, item) => sum + item.quantity, 0)
     : 0;
 
   // Build image list: main first, then all images from the array (no URL dedup — same URL can appear)
@@ -173,15 +180,11 @@ export default function ProductDetailPage() {
   };
 
   const prevLightbox = () => {
-    const idx = lightboxIndex === 0 ? allImages.length - 1 : lightboxIndex - 1;
-    setLightboxIndex(idx);
-    setLightboxImageLoaded(false);
+    setLightboxIndex((idx) => (idx === 0 ? allImages.length - 1 : idx - 1));
   };
 
   const nextLightbox = () => {
-    const idx = lightboxIndex === allImages.length - 1 ? 0 : lightboxIndex + 1;
-    setLightboxIndex(idx);
-    setLightboxImageLoaded(false);
+    setLightboxIndex((idx) => (idx === allImages.length - 1 ? 0 : idx + 1));
   };
 
   const getDisplayPrice = () => selectedSize?.finalPrice ?? product?.displayPrice ?? 0;
@@ -293,10 +296,7 @@ export default function ProductDetailPage() {
           <div className="space-y-3">
 
             {/* Main image */}
-            <div
-              className="relative aspect-square rounded-2xl overflow-hidden bg-muted cursor-zoom-in group shadow-sm"
-              onClick={() => openLightbox(currentImageIndex)}
-            >
+            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-muted group shadow-sm">
               {!imageLoaded && <Skeleton className="absolute inset-0 rounded-2xl" />}
               <Image
                 src={selectedImage || appImages.NoImage}
@@ -317,10 +317,13 @@ export default function ProductDetailPage() {
                 </Badge>
               )}
 
-              {/* Zoom hint */}
-              <div className="absolute bottom-3 right-3 bg-background/75 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow">
+              {/* Zoom icon — only this opens lightbox */}
+              <button
+                onClick={() => openLightbox(currentImageIndex)}
+                className="absolute bottom-3 right-3 bg-background/75 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow cursor-zoom-in hover:bg-background"
+              >
                 <ZoomIn className="h-4 w-4 text-foreground/70" />
-              </div>
+              </button>
 
               {/* Prev / Next */}
               {allImages.length > 1 && (
@@ -353,7 +356,7 @@ export default function ProductDetailPage() {
               <div className="flex gap-2.5 overflow-x-auto pb-1">
                 {allImages.map((img, i) => (
                   <button
-                    key={img.id}
+                    key={`thumb-${i}`}
                     onClick={() => selectImage(img.imageUrl, i)}
                     className={cn(
                       "relative flex-shrink-0 w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-xl overflow-hidden transition-all duration-150",
@@ -425,13 +428,13 @@ export default function ProductDetailPage() {
               </p>
             )}
 
-            {/* Sizes (inline – no modal) */}
+            {/* Sizes — preview only; cart managed via modal */}
             {product.hasSizes && product.sizes && product.sizes.length > 0 && (
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">
                   Choose Size
                 </p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 mb-3">
                   {product.sizes.map((size) => {
                     const sizeQty = getCartQuantityForSize(size.id);
                     const isActive = selectedSize?.id === size.id;
@@ -442,12 +445,12 @@ export default function ProductDetailPage() {
                         className={cn(
                           "relative border-2 rounded-xl px-4 py-2.5 text-left min-w-[76px] transition-all",
                           isActive
-                            ? "border-primary bg-primary/5 shadow-sm"
-                            : "border-border hover:border-primary/50 hover:bg-muted/40"
+                            ? "border-secondary bg-secondary/10 shadow-sm"
+                            : "border-border hover:border-secondary/50 hover:bg-muted/40"
                         )}
                       >
                         <div className="font-semibold text-sm">{size.name}</div>
-                        <div className="text-primary font-bold text-sm">
+                        <div className="text-secondary-foreground font-bold text-sm">
                           {formatCurrency(size.finalPrice)}
                         </div>
                         {size.hasPromotion && (
@@ -465,16 +468,39 @@ export default function ProductDetailPage() {
                   })}
                 </div>
 
-                {/* Per-size qty controls */}
-                {selectedSize && (
-                  <div className="mt-3">
-                    <SizeQtyRow
-                      qty={getCartQuantityForSize(selectedSize.id)}
-                      disabled={product.status === "OUT_OF_STOCK"}
-                      price={selectedSize.finalPrice}
-                      onDecrease={() => handleQuantityChange(selectedSize!.id, getCartQuantityForSize(selectedSize!.id) - 1)}
-                      onIncrease={() => handleQuantityChange(selectedSize!.id, getCartQuantityForSize(selectedSize!.id) + 1)}
-                    />
+                {/* Add to Cart via modal — no immediate API call */}
+                {totalInCart === 0 ? (
+                  <CustomButton
+                    size="lg"
+                    variant="secondary"
+                    className="w-full h-12 text-base font-semibold gap-2 rounded-xl"
+                    disabled={product.status === "OUT_OF_STOCK"}
+                    onClick={() => setShowSizeModal(true)}
+                  >
+                    <ShoppingCart className="h-5 w-5" />
+                    Add to Cart
+                  </CustomButton>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      className="h-11 w-11 shrink-0 rounded-xl border-2 border-border hover:bg-rose-50 hover:border-rose-300 hover:text-rose-500 dark:hover:bg-rose-950/30 flex items-center justify-center transition-all"
+                      onClick={() => setShowSizeModal(true)}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </button>
+                    <div className="w-14 h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-xl shrink-0">
+                      {totalInCart}
+                    </div>
+                    <button
+                      className="h-11 w-11 shrink-0 rounded-xl border-2 border-border hover:bg-primary hover:border-primary hover:text-white flex items-center justify-center transition-all"
+                      onClick={() => setShowSizeModal(true)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                    <div className="flex-1 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center gap-1.5 text-emerald-700 dark:text-emerald-400 text-xs font-semibold px-3 min-w-0">
+                      <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">In Cart ({totalInCart})</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -613,9 +639,10 @@ export default function ProductDetailPage() {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
+              key={`lightbox-${lightboxIndex}`}
               src={allImages[lightboxIndex]?.imageUrl || appImages.NoImage}
               alt={product.name}
-              className="max-w-full max-h-[65vh] object-contain rounded-lg select-none"
+              className="max-w-[90vw] max-h-[80vh] object-contain rounded-lg select-none"
             />
 
             {allImages.length > 1 && (
@@ -643,7 +670,7 @@ export default function ProductDetailPage() {
           >
             {allImages.map((img, i) => (
               <button
-                key={img.id}
+                key={`lb-thumb-${i}`}
                 onClick={() => setLightboxIndex(i)}
                 className={cn(
                   "relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden transition-all",
@@ -665,59 +692,7 @@ export default function ProductDetailPage() {
       )}
 
       <LoginModal open={showLoginModal} onOpenChange={setShowLoginModal} />
-    </div>
-  );
-}
-
-// ── Helper: size qty row ───────────────────────────────────────────────────
-function SizeQtyRow({
-  qty,
-  price,
-  disabled,
-  onDecrease,
-  onIncrease,
-}: {
-  qty: number;
-  price: number;
-  disabled: boolean;
-  onDecrease: () => void;
-  onIncrease: () => void;
-}) {
-  if (qty === 0) {
-    return (
-      <CustomButton
-        size="default"
-        className="w-full h-11 gap-2 rounded-xl font-semibold"
-        disabled={disabled}
-        onClick={onIncrease}
-      >
-        <ShoppingCart className="h-4 w-4" />
-        Add to Cart
-      </CustomButton>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-2">
-      <button
-        className="h-10 w-10 shrink-0 rounded-xl border-2 border-border hover:bg-rose-50 hover:border-rose-300 hover:text-rose-500 dark:hover:bg-rose-950/30 flex items-center justify-center transition-all"
-        onClick={onDecrease}
-      >
-        <Minus className="h-4 w-4" />
-      </button>
-      <div className="w-12 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-lg shrink-0">
-        {qty}
-      </div>
-      <button
-        className="h-10 w-10 shrink-0 rounded-xl border-2 border-border hover:bg-primary hover:border-primary hover:text-white flex items-center justify-center transition-all"
-        onClick={onIncrease}
-      >
-        <Plus className="h-4 w-4" />
-      </button>
-      <div className="flex-1 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center gap-1.5 text-emerald-700 dark:text-emerald-400 text-xs font-semibold px-2 min-w-0">
-        <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
-        <span className="truncate">In Cart — {formatCurrency(price * qty)}</span>
-      </div>
+      <SizeSelectionModal open={showSizeModal} onOpenChange={setShowSizeModal} product={product} />
     </div>
   );
 }
