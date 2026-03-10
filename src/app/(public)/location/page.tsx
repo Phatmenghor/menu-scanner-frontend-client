@@ -3,7 +3,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Plus, Star, Navigation } from "lucide-react";
+import { MapPin, Plus, Star } from "lucide-react";
+import { PageHeader } from "@/components/shared/common/page-header";
 import { Loading } from "@/components/shared/common/loading";
 import { DeleteConfirmationModal } from "@/components/shared/modal/delete-confirmation-modal";
 import { showToast } from "@/components/shared/common/show-toast";
@@ -131,53 +132,32 @@ export default function LocationPage() {
 
   // ── Render ─────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-muted/20">
-      {/* ── Page Header Banner ── */}
-      <div className="bg-background border-b">
-        <PageContainer className="py-6">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-2xl bg-primary/10 shrink-0">
-                <Navigation className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground tracking-tight">
-                  My Locations
-                </h1>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  Manage your saved delivery addresses
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {locationCount > 0 && (
-                <div className="hidden sm:flex items-center gap-2">
-                  <Badge variant="secondary" className="text-xs py-1 px-3">
-                    {locationCount} address{locationCount !== 1 ? "es" : ""}
-                  </Badge>
-                  {primaryLocation && (
-                    <Badge
-                      variant="outline"
-                      className="text-xs py-1 px-3 border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-700"
-                    >
-                      <Star className="h-3 w-3 mr-1 fill-amber-500 text-amber-500" />
-                      Primary set
-                    </Badge>
-                  )}
-                </div>
+    <div className="min-h-screen bg-background">
+      <PageContainer className="py-4 sm:py-6">
+        <PageHeader
+          title="My Locations"
+          icon={MapPin}
+          count={locationCount}
+          subtitle="Manage your saved delivery addresses"
+          actions={
+            <div className="flex items-center gap-2">
+              {primaryLocation && (
+                <Badge
+                  variant="outline"
+                  className="hidden sm:flex items-center gap-1 text-xs py-1 px-2.5 border-amber-300 text-amber-700 bg-amber-50 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-700"
+                >
+                  <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                  Primary set
+                </Badge>
               )}
-              <Button onClick={handleAddLocation} size="default" className="shadow-sm gap-2 shrink-0">
+              <Button onClick={handleAddLocation} size="sm" className="shadow-sm gap-1.5 shrink-0 rounded-xl">
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Add Location</span>
                 <span className="sm:hidden">Add</span>
               </Button>
             </div>
-          </div>
-        </PageContainer>
-      </div>
-
-      {/* ── Main Content ── */}
-      <PageContainer className="py-6">
+          }
+        />
         {/* ── Primary location banner ── */}
         {primaryLocation && (
           <LocationPrimaryBanner location={primaryLocation} />

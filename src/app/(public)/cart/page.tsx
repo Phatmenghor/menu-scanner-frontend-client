@@ -26,6 +26,7 @@ import { updateLocalCartItem } from "@/redux/features/main/store/slice/cart-slic
 import { useCartDebounce, cartItemKey } from "@/hooks/use-cart-debounce";
 import { LoginModal } from "@/components/shared/modal/login-modal";
 import { PageContainer } from "@/components/shared/common/page-container";
+import { PageHeader } from "@/components/shared/common/page-header";
 import { cn } from "@/lib/utils";
 
 function CartSkeleton() {
@@ -173,28 +174,24 @@ export default function CartPage() {
     <>
       <PageContainer className="py-4 sm:py-8 pb-40 sm:pb-8">
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-5 sm:mb-7">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5 text-primary" />
-              Shopping Cart
-            </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-              {totalItems} {totalItems === 1 ? "item" : "items"}
-            </p>
-          </div>
-          <CustomButton
-            variant="ghost"
-            size="sm"
-            onClick={handleClearCart}
-            disabled={loading.clear}
-            className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10 text-xs rounded-xl"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Clear All
-          </CustomButton>
-        </div>
+        <PageHeader
+          title="Shopping Cart"
+          icon={ShoppingCart}
+          count={totalItems}
+          subtitle={`${totalItems} ${totalItems === 1 ? "item" : "items"}`}
+          actions={
+            <CustomButton
+              variant="ghost"
+              size="sm"
+              onClick={handleClearCart}
+              disabled={loading.clear}
+              className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10 text-xs rounded-xl"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Clear All
+            </CustomButton>
+          }
+        />
 
         <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
 

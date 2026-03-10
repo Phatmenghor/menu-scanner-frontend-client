@@ -476,31 +476,29 @@ export default function ProductDetailPage() {
                     Add to Cart
                   </CustomButton>
                 ) : (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <CustomButton
-                        variant="outline"
-                        size="icon"
-                        className="h-12 w-12 shrink-0 rounded-xl hover:bg-destructive hover:text-white hover:border-destructive transition-all"
-                        onClick={() => handleQuantityChange(currentCartQuantity - 1)}
-                      >
-                        <Minus className="h-5 w-5" />
-                      </CustomButton>
-                      <div className="flex-1 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-xl">
-                        {currentCartQuantity}
-                      </div>
-                      <CustomButton
-                        variant="outline"
-                        size="icon"
-                        className="h-12 w-12 shrink-0 rounded-xl hover:bg-primary hover:text-white hover:border-primary transition-all"
-                        onClick={() => handleQuantityChange(currentCartQuantity + 1)}
-                      >
-                        <Plus className="h-5 w-5" />
-                      </CustomButton>
+                  <div className="flex items-center gap-2">
+                    <CustomButton
+                      variant="outline"
+                      size="icon"
+                      className="h-10 w-10 shrink-0 rounded-xl hover:bg-destructive hover:text-white hover:border-destructive transition-all"
+                      onClick={() => handleQuantityChange(currentCartQuantity - 1)}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </CustomButton>
+                    <div className="w-12 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-lg shrink-0">
+                      {currentCartQuantity}
                     </div>
-                    <div className="h-10 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 flex items-center justify-center gap-2 text-green-700 dark:text-green-400 text-sm font-medium">
-                      <ShoppingCart className="h-4 w-4" />
-                      In Cart — {formatCurrency(getDisplayPrice() * currentCartQuantity)}
+                    <CustomButton
+                      variant="outline"
+                      size="icon"
+                      className="h-10 w-10 shrink-0 rounded-xl hover:bg-primary hover:text-white hover:border-primary transition-all"
+                      onClick={() => handleQuantityChange(currentCartQuantity + 1)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </CustomButton>
+                    <div className="flex-1 h-10 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 flex items-center justify-center gap-1.5 text-green-700 dark:text-green-400 text-xs font-medium px-2 min-w-0">
+                      <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">In Cart — {formatCurrency(getDisplayPrice() * currentCartQuantity)}</span>
                     </div>
                   </div>
                 )
@@ -560,7 +558,12 @@ export default function ProductDetailPage() {
         {/* Similar Products */}
         {similarProducts.length > 0 && (
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold mb-5">You May Also Like</h2>
+            <div className="flex items-center gap-2 mb-5">
+              <h2 className="text-xl sm:text-2xl font-bold">You May Also Like</h2>
+              <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
+                {similarProducts.length}
+              </span>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
               {similarProducts.map((similar) => (
                 <ProductCard key={similar.id} product={similar} />

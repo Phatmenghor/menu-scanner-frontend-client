@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Heart, ShoppingCart, Trash2, LogIn } from "lucide-react";
+import { PageHeader } from "@/components/shared/common/page-header";
 import { useFavoriteState } from "@/redux/features/main/store/state/favorite-state";
 import { useCartState } from "@/redux/features/main/store/state/cart-state";
 import { useAuthState } from "@/redux/features/auth/store/state/auth-state";
@@ -139,32 +140,29 @@ export default function FavoritesPage() {
 
   return (
     <PageContainer className="py-4 sm:py-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 sm:mb-6">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-            <Heart className="h-5 w-5 text-red-500 fill-red-500" />
-            My Favorites
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-            {totalItems} {totalItems === 1 ? "item" : "items"} saved
-          </p>
-        </div>
-        <CustomButton
-          variant="ghost"
-          size="sm"
-          onClick={handleClearAll}
-          disabled={loading.clearAll}
-          className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10 text-xs"
-        >
-          {loading.clearAll ? (
-            <div className="h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <Trash2 className="h-3.5 w-3.5" />
-          )}
-          Clear All
-        </CustomButton>
-      </div>
+      <PageHeader
+        title="My Favorites"
+        icon={Heart}
+        count={totalItems}
+        countLabel={totalItems === 1 ? "item" : "items"}
+        subtitle={`${totalItems} ${totalItems === 1 ? "item" : "items"} saved`}
+        actions={
+          <CustomButton
+            variant="ghost"
+            size="sm"
+            onClick={handleClearAll}
+            disabled={loading.clearAll}
+            className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10 text-xs"
+          >
+            {loading.clearAll ? (
+              <div className="h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Trash2 className="h-3.5 w-3.5" />
+            )}
+            Clear All
+          </CustomButton>
+        }
+      />
 
       {/* Favorites Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useCallback, useRef, useState } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { usePublicCategoriesState } from "@/redux/features/main/store/state/public-categories-state";
-import { LayoutGrid, Loader2, Search } from "lucide-react";
+import { LayoutGrid, Loader2 } from "lucide-react";
 import { CategoryCard } from "@/components/shared/card/category-card";
 import { CategoryCardSkeleton } from "@/components/shared/skeletons/category-card-skeleton";
 import { useInfiniteScroll } from "@/components/shared/common/use-infinite-scroll";
@@ -11,13 +11,10 @@ import { useSkeletonCount, SkeletonPresets } from "@/hooks/use-skeleton-count";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageContainer } from "@/components/shared/common/page-container";
 import { useScrollAnchor } from "@/hooks/use-scroll-anchor";
-import { Input } from "@/components/ui/input";
-import { useDebounce } from "@/utils/debounce/debounce";
+import { PageHeader } from "@/components/shared/common/page-header";
 
 export default function CategoriesPage() {
   const isLoadingRef = useRef(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const debouncedSearch = useDebounce(searchQuery, 500);
 
   const {
     categories,
@@ -43,15 +40,10 @@ export default function CategoriesPage() {
   // Maintain scroll position during load more (YouTube-like)
   const { containerRef } = useScrollAnchor(isLoadingMore);
 
-  // Initial load & Search effect
+  // Initial load
   useEffect(() => {
-    fetchCategories({
-      pageNo: 1,
-      pageSize,
-      status: "ACTIVE",
-      search: debouncedSearch || undefined,
-    });
-  }, [debouncedSearch, pageSize, fetchCategories]);
+    fetchCategories({ pageNo: 1, pageSize, status: "ACTIVE" });
+  }, [pageSize, fetchCategories]);
 
   // Load more handler
   const handleLoadMore = useCallback(() => {
@@ -61,20 +53,12 @@ export default function CategoriesPage() {
         pageNo: pagination.currentPage + 1,
         pageSize,
         status: "ACTIVE",
-        search: debouncedSearch || undefined,
         append: true,
       }).finally(() => {
         isLoadingRef.current = false;
       });
     }
-  }, [
-    isLoadingMore,
-    hasMore,
-    pagination.currentPage,
-    pageSize,
-    fetchCategories,
-    debouncedSearch,
-  ]);
+  }, [isLoadingMore, hasMore, pagination.currentPage, pageSize, fetchCategories]);
 
   const { observerTarget } = useInfiniteScroll({
     onLoadMore: handleLoadMore,
@@ -85,29 +69,12 @@ export default function CategoriesPage() {
   return (
     <div className="min-h-screen bg-background">
       <PageContainer className="py-4 sm:py-8">
-        {/* Header & Search */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-8 sticky top-16 z-10 bg-background/95 backdrop-blur-sm py-3 sm:py-4 border-b">
-          <div>
-            <h1 className="text-xl sm:text-3xl font-bold">Categories</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              {totalCategories > 0
-                ? `Explore ${totalCategories} categories`
-                : "Browse all categories"}
-            </p>
-          </div>
-
-          <div className="relative w-full md:w-72">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search categories..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 bg-muted/50 focus:bg-background transition-colors"
-              />
-            </div>
-          </div>
-        </div>
+        <PageHeader
+          title="Categories"
+          icon={LayoutGrid}
+          count={totalCategories}
+          subtitle={totalCategories > 0 ? `Explore ${totalCategories} categories` : "Browse all categories"}
+        />
 
         {/* Initial Loading */}
         {isInitialLoading && (
@@ -122,24 +89,9 @@ export default function CategoriesPage() {
         {!isInitialLoading && categories.length === 0 && (
           <EmptyState
             icon={LayoutGrid}
-            title={
-              debouncedSearch ? "No categories found" : "No categories found"
-            }
-            description={
-              debouncedSearch
-                ? `We couldn't find any categories matching "${debouncedSearch}"`
-                : "There are no categories available at this time"
-            }
+            title="No categories found"
+            description="There are no categories available at this time"
             size="lg"
-            action={
-              debouncedSearch
-                ? {
-                    label: "Clear Search",
-                    onClick: () => setSearchQuery(""),
-                    variant: "outline",
-                  }
-                : undefined
-            }
           />
         )}
 
@@ -166,6 +118,13 @@ export default function CategoriesPage() {
                   <span className="text-sm">Loading more categories...</span>
                 </div>
               </div>
+            )}
+
+            {/* Showing X of Y */}
+            {!hasMore && !isLoadingMore && categories.length > 0 && (
+              <p className="text-center text-xs text-muted-foreground py-4">
+                Showing {categories.length} of {totalCategories} categories
+              </p>
             )}
 
             {/* Infinite Scroll Trigger */}
