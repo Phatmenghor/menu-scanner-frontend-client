@@ -55,7 +55,7 @@ export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
 
-  const { dispatch, selectedProduct, loading } = usePublicProductState();
+  const { dispatch, selectedProduct, loading, error } = usePublicProductState();
   const { dispatch: cartDispatch, items: cartItems } = useCartState();
   const { dispatch: favoriteDispatch } = useFavoriteState();
   const { isAuthenticated } = useAuthState();
@@ -103,16 +103,20 @@ export default function ProductDetailPage() {
     ? cartItems.filter((item) => item.productId === product.id).reduce((sum, item) => sum + item.quantity, 0)
     : 0;
 
-  // Build image list
+  // Build image list — deduplicate by sanitized URL so thumbnails are always distinct
   const allImages = product
-    ? [
-        { id: "main", imageUrl: sanitizeImageUrl(product.mainImageUrl, appImages.NoImage), displayOrder: 0 },
-        ...(product.images || []).map((img, idx) => ({
-          ...img,
-          imageUrl: sanitizeImageUrl(img.imageUrl, appImages.NoImage),
-          displayOrder: idx + 1,
-        })),
-      ]
+    ? (() => {
+        const mainUrl = sanitizeImageUrl(product.mainImageUrl, appImages.NoImage);
+        const seen = new Set<string>([mainUrl]);
+        const extras = (product.images || [])
+          .map((img) => ({ ...img, imageUrl: sanitizeImageUrl(img.imageUrl, appImages.NoImage) }))
+          .filter((img) => {
+            if (seen.has(img.imageUrl)) return false;
+            seen.add(img.imageUrl);
+            return true;
+          });
+        return [{ id: "main", imageUrl: mainUrl, displayOrder: 0 }, ...extras];
+      })()
     : [];
 
   useEffect(() => {
@@ -243,7 +247,7 @@ export default function ProductDetailPage() {
     }
   };
 
-  if (isLoading) return <ProductDetailSkeleton />;
+  if (isLoading || (!product && !error.detail)) return <ProductDetailSkeleton />;
 
   if (!product) {
     return (
