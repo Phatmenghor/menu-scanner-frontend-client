@@ -19,11 +19,14 @@ import {
 import { toggleFavorite } from "@/redux/features/main/store/thunks/favorite-thunks";
 import { ProductCard } from "@/components/shared/card/product-card";
 import { LoginModal } from "@/components/shared/modal/login-modal";
-import { SizeSelectionModal } from "@/components/shared/modal/size-selection-modal";
 import { showToast } from "@/components/shared/common/show-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
 import {
   ArrowLeft,
   Heart,
@@ -37,7 +40,8 @@ import {
   Store,
   Tag,
   Eye,
-  Bookmark,
+  ZoomIn,
+  X,
 } from "lucide-react";
 import { formatCurrency } from "@/utils/common/currency-format";
 import { sanitizeImageUrl } from "@/utils/common/common";
@@ -57,7 +61,7 @@ export default function ProductDetailPage() {
 
   const { dispatch, selectedProduct, loading, error } = usePublicProductState();
   const { dispatch: cartDispatch, items: cartItems } = useCartState();
-  const { dispatch: favoriteDispatch } = useFavoriteState();
+  const { dispatch: favoriteDispatch, items: favoriteItems, loaded: favLoaded } = useFavoriteState();
   const { isAuthenticated } = useAuthState();
 
   const productId = params.id as string;
@@ -73,11 +77,18 @@ export default function ProductDetailPage() {
   const [selectedSize, setSelectedSize] = useState<ProductSize | null>(null);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showSizeModal, setShowSizeModal] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [lightboxImageLoaded, setLightboxImageLoaded] = useState(false);
 
-  // Local favorite state — fixes the bug where product.isFavorited never updates
+  // ── Favorite sync: prefer Redux store when loaded, else API field ──────
+  const isFavoritedFromStore = favLoaded && product
+    ? favoriteItems.some((item) => item.id === product.id)
+    : product?.isFavorited ?? false;
   const [isFavorited, setIsFavorited] = useState(false);
-  useEffect(() => { setIsFavorited(product?.isFavorited ?? false); }, [product?.isFavorited]);
+  useEffect(() => {
+    setIsFavorited(isFavoritedFromStore);
+  }, [isFavoritedFromStore]);
 
   const { debouncedUpdate } = useCartDebounce(cartDispatch);
 
@@ -98,12 +109,7 @@ export default function ProductDetailPage() {
     ? getCartQuantityForSize(null)
     : 0;
 
-  // Total in cart across all sizes (for sized products)
-  const totalSizesInCart = product?.hasSizes
-    ? cartItems.filter((item) => item.productId === product.id).reduce((sum, item) => sum + item.quantity, 0)
-    : 0;
-
-  // Build image list — deduplicate by sanitized URL so thumbnails are always distinct
+  // Build deduped image list
   const allImages = product
     ? (() => {
         const mainUrl = sanitizeImageUrl(product.mainImageUrl, appImages.NoImage);
@@ -115,7 +121,7 @@ export default function ProductDetailPage() {
             seen.add(img.imageUrl);
             return true;
           });
-        return [{ id: "main", imageUrl: mainUrl, displayOrder: 0 }, ...extras];
+        return [{ id: "main", imageUrl: mainUrl }, ...extras];
       })()
     : [];
 
@@ -131,108 +137,122 @@ export default function ProductDetailPage() {
       setSelectedImage(sanitizeImageUrl(product.mainImageUrl, appImages.NoImage));
       setCurrentImageIndex(0);
       setImageLoaded(false);
-      if (product.hasSizes && product.sizes && product.sizes.length > 0) {
-        setSelectedSize(product.sizes[0]);
-      } else {
-        setSelectedSize(null);
-      }
+      setSelectedSize(
+        product.hasSizes && product.sizes?.length ? product.sizes[0] : null
+      );
     }
   }, [product]);
 
   useEffect(() => {
-    if (product) {
-      const load = async () => {
-        try {
-          const res = await dispatch(
-            fetchPublicProducts({ pageNo: 1, pageSize: 5, categoryId: product.categoryId || undefined, status: "ACTIVE" })
-          ).unwrap();
-          const similar = res.content?.filter((p: any) => p.id !== productId) || [];
-          setSimilarProducts(similar.slice(0, 4));
-        } catch { /* silently ignore */ }
-      };
-      load();
-    }
+    if (!product) return;
+    dispatch(
+      fetchPublicProducts({ pageNo: 1, pageSize: 6, categoryId: product.categoryId || undefined, status: "ACTIVE" })
+    )
+      .unwrap()
+      .then((res) => {
+        setSimilarProducts(
+          (res.content || []).filter((p: any) => p.id !== productId).slice(0, 4)
+        );
+      })
+      .catch(() => {});
   }, [product, productId, dispatch]);
 
-  const handlePrevImage = () => {
-    const idx = currentImageIndex === 0 ? allImages.length - 1 : currentImageIndex - 1;
-    setCurrentImageIndex(idx);
-    setSelectedImage(allImages[idx].imageUrl);
-    setImageLoaded(false);
-  };
-
-  const handleNextImage = () => {
-    const idx = currentImageIndex === allImages.length - 1 ? 0 : currentImageIndex + 1;
-    setCurrentImageIndex(idx);
-    setSelectedImage(allImages[idx].imageUrl);
-    setImageLoaded(false);
-  };
-
-  const handleSelectImage = (imageUrl: string, index: number) => {
-    setSelectedImage(imageUrl);
+  const selectImage = (url: string, index: number) => {
+    setSelectedImage(url);
     setCurrentImageIndex(index);
     setImageLoaded(false);
   };
 
-  const getDisplayPrice = () => selectedSize?.finalPrice ?? product?.displayPrice ?? 0;
+  const prevImage = () => {
+    const idx = currentImageIndex === 0 ? allImages.length - 1 : currentImageIndex - 1;
+    selectImage(allImages[idx].imageUrl, idx);
+  };
 
+  const nextImage = () => {
+    const idx = currentImageIndex === allImages.length - 1 ? 0 : currentImageIndex + 1;
+    selectImage(allImages[idx].imageUrl, idx);
+  };
+
+  const openLightbox = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxImageLoaded(false);
+    setLightboxOpen(true);
+  };
+
+  const prevLightbox = () => {
+    const idx = lightboxIndex === 0 ? allImages.length - 1 : lightboxIndex - 1;
+    setLightboxIndex(idx);
+    setLightboxImageLoaded(false);
+  };
+
+  const nextLightbox = () => {
+    const idx = lightboxIndex === allImages.length - 1 ? 0 : lightboxIndex + 1;
+    setLightboxIndex(idx);
+    setLightboxImageLoaded(false);
+  };
+
+  const getDisplayPrice = () => selectedSize?.finalPrice ?? product?.displayPrice ?? 0;
   const getOriginalPrice = () => {
     if (selectedSize?.hasPromotion) return selectedSize.price;
     if (product?.hasPromotion && product.displayOriginPrice) return product.displayOriginPrice;
     return null;
   };
-
   const hasDiscount = selectedSize ? selectedSize.hasPromotion : product?.hasPromotion;
+  const discountPercent = (() => {
+    const orig = getOriginalPrice();
+    if (!orig) return 0;
+    return Math.round(((orig - getDisplayPrice()) / orig) * 100);
+  })();
 
-  // Cart handler for non-sized products (card-like: optimistic + debounced)
+  // Cart handler — inline, no modal
   const handleQuantityChange = useCallback(
-    (newQuantity: number) => {
+    (sizeId: string | null, newQty: number) => {
       if (!product) return;
       if (!isAuthenticated) { setShowLoginModal(true); return; }
 
-      const sizeId = selectedSize?.id || null;
       const key = cartItemKey(product.id, sizeId);
+      const sz = product.sizes?.find((s) => s.id === sizeId) ?? null;
+      const price = sz?.finalPrice ?? product.displayPrice ?? 0;
+      const origPrice =
+        (sz?.hasPromotion ? sz.price : product.displayOriginPrice) ?? price;
+      const isDiscounted = sz ? sz.hasPromotion : product.hasPromotion;
+      const sizeName = sz?.name ?? null;
       const currentQty = getCartQuantityForSize(sizeId);
-      const price = selectedSize?.finalPrice || product.displayPrice || 0;
-      const origPrice = (selectedSize?.hasPromotion ? selectedSize.price : product.displayOriginPrice) || price;
-      const isDiscounted = selectedSize ? selectedSize.hasPromotion : product.hasActivePromotion;
 
-      if (currentQty === 0 && newQuantity > 0) {
-        cartDispatch(addLocalCartItem({
-          productId: product.id,
-          productSizeId: sizeId,
-          quantity: newQuantity,
-          productName: product.name,
-          productImageUrl: product.mainImageUrl,
-          sizeName: selectedSize?.name || null,
-          finalPrice: price,
-          currentPrice: origPrice,
-          hasPromotion: isDiscounted,
-        }));
+      if (currentQty === 0 && newQty > 0) {
+        cartDispatch(
+          addLocalCartItem({
+            productId: product.id,
+            productSizeId: sizeId,
+            quantity: newQty,
+            productName: product.name,
+            productImageUrl: product.mainImageUrl,
+            sizeName,
+            finalPrice: price,
+            currentPrice: origPrice,
+            hasPromotion: isDiscounted ?? false,
+          })
+        );
       } else {
-        cartDispatch(updateLocalCartItem({
-          productId: product.id,
-          productSizeId: sizeId,
-          quantity: newQuantity,
-        }));
+        cartDispatch(
+          updateLocalCartItem({ productId: product.id, productSizeId: sizeId, quantity: newQty })
+        );
       }
-
-      debouncedUpdate(key, product.id, sizeId, newQuantity);
+      debouncedUpdate(key, product.id, sizeId, newQty);
     },
-    [product, selectedSize, isAuthenticated, cartDispatch, getCartQuantityForSize, debouncedUpdate]
+    [product, isAuthenticated, cartDispatch, getCartQuantityForSize, debouncedUpdate]
   );
 
   const handleToggleFavorite = async () => {
     if (!product) return;
     if (!isAuthenticated) { setShowLoginModal(true); return; }
-
-    setIsFavorited((prev) => !prev); // optimistic
+    setIsFavorited((prev) => !prev);
     setIsTogglingFavorite(true);
     try {
       await favoriteDispatch(toggleFavorite({ productId: product.id })).unwrap();
-    } catch (error: any) {
-      setIsFavorited((prev) => !prev); // rollback
-      showToast.error(error?.message || "Failed to update favorites");
+    } catch (err: any) {
+      setIsFavorited((prev) => !prev);
+      showToast.error(err?.message || "Failed to update favorites");
     } finally {
       setIsTogglingFavorite(false);
     }
@@ -258,33 +278,33 @@ export default function ProductDetailPage() {
     );
   }
 
-  const discountPercent = getOriginalPrice()
-    ? Math.round(((getOriginalPrice()! - getDisplayPrice()) / getOriginalPrice()!) * 100)
-    : 0;
-
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
+      <div className="container mx-auto px-4 py-4 sm:py-6 max-w-6xl">
 
-        {/* Back button */}
+        {/* Back */}
         <CustomButton
           variant="ghost"
           size="sm"
           onClick={() => router.back()}
-          className="mb-4 sm:mb-6 -ml-1 hover:bg-accent gap-1"
+          className="mb-5 -ml-1 gap-1.5 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
         </CustomButton>
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-10 lg:gap-16 mb-12 sm:mb-20">
+        {/* ── Main grid ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 mb-16">
 
-          {/* ── Left: Image Gallery ── */}
+          {/* ──── LEFT: Image Gallery ──── */}
           <div className="space-y-3">
+
             {/* Main image */}
-            <div className="relative aspect-square rounded-2xl overflow-hidden border bg-muted/20 group shadow-sm">
-              {!imageLoaded && <Skeleton className="absolute inset-0 w-full h-full" />}
+            <div
+              className="relative aspect-square rounded-2xl overflow-hidden bg-muted cursor-zoom-in group shadow-sm"
+              onClick={() => openLightbox(currentImageIndex)}
+            >
+              {!imageLoaded && <Skeleton className="absolute inset-0 rounded-2xl" />}
               <Image
                 src={selectedImage || appImages.NoImage}
                 alt={product.name}
@@ -296,266 +316,267 @@ export default function ProductDetailPage() {
 
               {/* Discount badge */}
               {hasDiscount && discountPercent > 0 && (
-                <Badge variant="destructive" className="absolute top-3 left-3 text-sm font-bold px-3 py-1.5 shadow-lg">
+                <Badge
+                  variant="destructive"
+                  className="absolute top-3 left-3 text-sm font-bold px-3 py-1.5 shadow"
+                >
                   -{discountPercent}%
                 </Badge>
               )}
 
-              {/* Nav arrows */}
+              {/* Zoom hint */}
+              <div className="absolute bottom-3 right-3 bg-background/75 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow">
+                <ZoomIn className="h-4 w-4 text-foreground/70" />
+              </div>
+
+              {/* Prev / Next */}
               {allImages.length > 1 && (
                 <>
                   <button
-                    onClick={handlePrevImage}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:shadow-xl"
+                    onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
                   <button
-                    onClick={handleNextImage}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:shadow-xl"
+                    onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all shadow-md"
                   >
                     <ChevronRight className="h-5 w-5" />
                   </button>
                 </>
               )}
 
-              {/* Counter pill */}
+              {/* Counter */}
               {allImages.length > 1 && (
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium">
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium shadow">
                   {currentImageIndex + 1} / {allImages.length}
                 </div>
               )}
             </div>
 
-            {/* Thumbnails — only border, no check icon overlay */}
+            {/* Thumbnails */}
             {allImages.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {allImages.map((img, index) => (
+              <div className="flex gap-2.5 overflow-x-auto pb-1">
+                {allImages.map((img, i) => (
                   <button
                     key={img.id}
-                    onClick={() => handleSelectImage(img.imageUrl, index)}
+                    onClick={() => selectImage(img.imageUrl, i)}
                     className={cn(
-                      "relative flex-shrink-0 w-16 h-16 rounded-xl border-2 overflow-hidden transition-all duration-150 cursor-pointer hover:scale-105",
-                      currentImageIndex === index
-                        ? "border-primary shadow-sm shadow-primary/30 scale-105"
-                        : "border-border hover:border-primary/50 opacity-70 hover:opacity-100"
+                      "relative flex-shrink-0 w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-xl overflow-hidden transition-all duration-150",
+                      i === currentImageIndex
+                        ? "ring-2 ring-primary ring-offset-2 shadow-sm"
+                        : "opacity-55 hover:opacity-100 hover:ring-2 hover:ring-primary/40 hover:ring-offset-1"
                     )}
                   >
-                    <Image src={img.imageUrl} alt={`Image ${index + 1}`} fill className="object-cover" />
+                    <Image src={img.imageUrl} alt={`View ${i + 1}`} fill className="object-cover" />
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* ── Right: Product Info ── */}
-          <div className="space-y-5">
+          {/* ──── RIGHT: Product Info ──── */}
+          <div className="flex flex-col gap-5">
 
-            {/* Title & Badges */}
-            <div>
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {product.brandName && (
-                  <Badge variant="secondary" className="text-xs gap-1">
-                    <Store className="h-3 w-3" />{product.brandName}
-                  </Badge>
+            {/* Badges */}
+            <div className="flex flex-wrap items-center gap-2">
+              {product.categoryName && (
+                <Badge variant="secondary" className="gap-1 text-xs">
+                  <Tag className="h-3 w-3" />{product.categoryName}
+                </Badge>
+              )}
+              {product.brandName && (
+                <Badge variant="outline" className="gap-1 text-xs">
+                  <Store className="h-3 w-3" />{product.brandName}
+                </Badge>
+              )}
+              <Badge
+                className={cn(
+                  "text-xs",
+                  product.status === "OUT_OF_STOCK"
+                    ? "bg-rose-500 hover:bg-rose-600"
+                    : "bg-emerald-500 hover:bg-emerald-600"
                 )}
-                {product.categoryName && (
-                  <Badge variant="outline" className="text-xs gap-1">
-                    <Tag className="h-3 w-3" />{product.categoryName}
-                  </Badge>
-                )}
-                {product.status === "OUT_OF_STOCK" ? (
-                  <Badge variant="destructive" className="text-xs">Out of Stock</Badge>
-                ) : (
-                  <Badge className="text-xs bg-green-500 hover:bg-green-600">In Stock</Badge>
-                )}
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-bold leading-tight">{product.name}</h1>
+              >
+                {product.status === "OUT_OF_STOCK" ? "Out of Stock" : "In Stock"}
+              </Badge>
             </div>
 
+            {/* Title */}
+            <h1 className="text-2xl sm:text-3xl font-bold leading-snug tracking-tight">
+              {product.name}
+            </h1>
+
             {/* Price */}
-            <div className="bg-muted/40 rounded-2xl p-4 border">
-              <div className="flex items-baseline gap-3">
-                <span className="text-3xl sm:text-4xl font-bold text-primary">
-                  {formatCurrency(getDisplayPrice())}
-                </span>
-                {getOriginalPrice() && (
-                  <span className="text-lg text-muted-foreground line-through">
+            <div className="flex flex-wrap items-end gap-3">
+              <span className="text-3xl sm:text-4xl font-bold text-primary leading-none">
+                {formatCurrency(getDisplayPrice())}
+              </span>
+              {getOriginalPrice() && (
+                <>
+                  <span className="text-lg text-muted-foreground line-through leading-none mb-0.5">
                     {formatCurrency(getOriginalPrice()!)}
                   </span>
-                )}
-              </div>
-              {hasDiscount && discountPercent > 0 && (
-                <p className="text-sm text-green-600 dark:text-green-400 font-medium mt-1">
-                  You save {formatCurrency((getOriginalPrice() || 0) - getDisplayPrice())}
-                </p>
+                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full mb-0.5">
+                    Save {formatCurrency(getOriginalPrice()! - getDisplayPrice())}
+                  </span>
+                </>
               )}
             </div>
 
-            {/* Sizes — informational; cart managed via size modal */}
+            {/* Description */}
+            {product.description && (
+              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                {product.description}
+              </p>
+            )}
+
+            {/* Sizes (inline – no modal) */}
             {product.hasSizes && product.sizes && product.sizes.length > 0 && (
               <div>
-                <h3 className="font-semibold mb-2.5 text-sm text-muted-foreground uppercase tracking-wide">Choose Size</h3>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">
+                  Choose Size
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {product.sizes.map((size) => {
-                    const sizeCartQty = getCartQuantityForSize(size.id);
-                    const isSelected = selectedSize?.id === size.id;
+                    const sizeQty = getCartQuantityForSize(size.id);
+                    const isActive = selectedSize?.id === size.id;
                     return (
                       <button
                         key={size.id}
                         onClick={() => setSelectedSize(size)}
                         className={cn(
-                          "relative border-2 rounded-xl px-4 py-2.5 transition-all cursor-pointer text-left min-w-[80px]",
-                          isSelected
-                            ? "border-primary bg-primary/5 shadow-sm shadow-primary/10"
-                            : "border-border hover:border-primary/40 hover:bg-muted/40"
+                          "relative border-2 rounded-xl px-4 py-2.5 text-left min-w-[76px] transition-all",
+                          isActive
+                            ? "border-primary bg-primary/5 shadow-sm"
+                            : "border-border hover:border-primary/50 hover:bg-muted/40"
                         )}
                       >
                         <div className="font-semibold text-sm">{size.name}</div>
-                        <div className="text-primary font-bold text-base leading-tight">
+                        <div className="text-primary font-bold text-sm">
                           {formatCurrency(size.finalPrice)}
                         </div>
                         {size.hasPromotion && (
-                          <div className="text-xs text-muted-foreground line-through">{formatCurrency(size.price)}</div>
+                          <div className="text-[10px] text-muted-foreground line-through">
+                            {formatCurrency(size.price)}
+                          </div>
                         )}
-                        {/* Cart quantity badge */}
-                        {sizeCartQty > 0 && (
-                          <div className="absolute -top-2 -left-2 bg-green-500 text-white rounded-full min-w-[20px] h-5 flex items-center justify-center text-xs font-bold px-1">
-                            {sizeCartQty}
+                        {sizeQty > 0 && (
+                          <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold px-1">
+                            {sizeQty}
                           </div>
                         )}
                       </button>
                     );
                   })}
                 </div>
+
+                {/* Per-size qty controls */}
+                {selectedSize && (
+                  <div className="mt-3">
+                    <SizeQtyRow
+                      qty={getCartQuantityForSize(selectedSize.id)}
+                      disabled={product.status === "OUT_OF_STOCK"}
+                      price={selectedSize.finalPrice}
+                      onDecrease={() => handleQuantityChange(selectedSize!.id, getCartQuantityForSize(selectedSize!.id) - 1)}
+                      onIncrease={() => handleQuantityChange(selectedSize!.id, getCartQuantityForSize(selectedSize!.id) + 1)}
+                    />
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Description */}
-            {product.description && (
+            {/* ── Cart actions (non-sized) ── */}
+            {!product.hasSizes && (
               <div>
-                <h3 className="font-semibold mb-1.5 text-sm text-muted-foreground uppercase tracking-wide">Description</h3>
-                <p className="text-sm text-foreground/80 leading-relaxed">{product.description}</p>
-              </div>
-            )}
-
-            {/* ── Action Buttons ── */}
-            <div className="space-y-3 pt-1">
-              {product.hasSizes ? (
-                /* Sized: show cart summary + open size modal */
-                <>
-                  {totalSizesInCart > 0 && (
-                    <div className="flex items-center gap-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl px-4 py-3">
-                      <ShoppingCart className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0" />
-                      <span className="text-sm text-green-700 dark:text-green-400 font-medium flex-1">
-                        {totalSizesInCart} item{totalSizesInCart !== 1 ? "s" : ""} in cart
-                      </span>
-                    </div>
-                  )}
-                  <CustomButton
-                    size="lg"
-                    className="w-full h-12 text-base font-semibold gap-2 rounded-xl"
-                    variant={totalSizesInCart > 0 ? "outline" : "default"}
-                    disabled={product.status === "OUT_OF_STOCK"}
-                    onClick={() => setShowSizeModal(true)}
-                  >
-                    <ShoppingCart className="h-5 w-5" />
-                    {totalSizesInCart > 0 ? "Manage Cart (Sizes)" : "Choose Size & Add to Cart"}
-                  </CustomButton>
-                </>
-              ) : (
-                /* Non-sized: card-like pattern — Add button → qty controls */
-                currentCartQuantity === 0 ? (
+                {currentCartQuantity === 0 ? (
                   <CustomButton
                     size="lg"
                     className="w-full h-12 text-base font-semibold gap-2 rounded-xl"
                     disabled={product.status === "OUT_OF_STOCK"}
-                    onClick={() => handleQuantityChange(1)}
+                    onClick={() => handleQuantityChange(null, 1)}
                   >
                     <ShoppingCart className="h-5 w-5" />
                     Add to Cart
                   </CustomButton>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <CustomButton
-                      variant="outline"
-                      size="icon"
-                      className="h-10 w-10 shrink-0 rounded-xl hover:bg-destructive hover:text-white hover:border-destructive transition-all"
-                      onClick={() => handleQuantityChange(currentCartQuantity - 1)}
+                    <button
+                      className="h-11 w-11 shrink-0 rounded-xl border-2 border-border hover:bg-rose-50 hover:border-rose-300 hover:text-rose-500 dark:hover:bg-rose-950/30 flex items-center justify-center transition-all"
+                      onClick={() => handleQuantityChange(null, currentCartQuantity - 1)}
                     >
                       <Minus className="h-4 w-4" />
-                    </CustomButton>
-                    <div className="w-12 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-lg shrink-0">
+                    </button>
+                    <div className="w-14 h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-xl shrink-0">
                       {currentCartQuantity}
                     </div>
-                    <CustomButton
-                      variant="outline"
-                      size="icon"
-                      className="h-10 w-10 shrink-0 rounded-xl hover:bg-primary hover:text-white hover:border-primary transition-all"
-                      onClick={() => handleQuantityChange(currentCartQuantity + 1)}
+                    <button
+                      className="h-11 w-11 shrink-0 rounded-xl border-2 border-border hover:bg-primary hover:border-primary hover:text-white flex items-center justify-center transition-all"
+                      onClick={() => handleQuantityChange(null, currentCartQuantity + 1)}
                     >
                       <Plus className="h-4 w-4" />
-                    </CustomButton>
-                    <div className="flex-1 h-10 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 flex items-center justify-center gap-1.5 text-green-700 dark:text-green-400 text-xs font-medium px-2 min-w-0">
+                    </button>
+                    <div className="flex-1 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center gap-1.5 text-emerald-700 dark:text-emerald-400 text-xs font-semibold px-3 min-w-0">
                       <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">In Cart — {formatCurrency(getDisplayPrice() * currentCartQuantity)}</span>
                     </div>
                   </div>
-                )
-              )}
+                )}
+              </div>
+            )}
 
-              {/* Wishlist + Share row */}
-              <div className="grid grid-cols-2 gap-3">
-                <CustomButton
-                  size="lg"
-                  variant="outline"
-                  className={cn(
-                    "h-12 rounded-xl gap-2 transition-all",
-                    isFavorited && "bg-red-50 border-red-200 text-red-600 hover:bg-red-100 dark:bg-red-950/30 dark:border-red-800 dark:text-red-400"
-                  )}
-                  onClick={handleToggleFavorite}
-                  disabled={isTogglingFavorite}
-                >
-                  {isTogglingFavorite
-                    ? <Loader2 className="h-5 w-5 animate-spin" />
-                    : <Heart className={cn("h-5 w-5", isFavorited && "fill-current")} />}
-                  {isFavorited ? "Saved" : "Wishlist"}
-                </CustomButton>
-                <CustomButton size="lg" variant="outline" className="h-12 rounded-xl gap-2" onClick={handleShare}>
-                  <Share2 className="h-5 w-5" />
-                  Share
-                </CustomButton>
+            {/* Wishlist + Share */}
+            <div className="grid grid-cols-2 gap-3">
+              <CustomButton
+                size="lg"
+                variant="outline"
+                className={cn(
+                  "h-11 rounded-xl gap-2 transition-all font-medium",
+                  isFavorited
+                    ? "bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/30 dark:border-rose-800 dark:text-rose-400"
+                    : ""
+                )}
+                onClick={handleToggleFavorite}
+                disabled={isTogglingFavorite}
+              >
+                {isTogglingFavorite
+                  ? <Loader2 className="h-5 w-5 animate-spin" />
+                  : <Heart className={cn("h-5 w-5", isFavorited && "fill-current")} />}
+                {isFavorited ? "Saved" : "Wishlist"}
+              </CustomButton>
+              <CustomButton
+                size="lg"
+                variant="outline"
+                className="h-11 rounded-xl gap-2 font-medium"
+                onClick={handleShare}
+              >
+                <Share2 className="h-5 w-5" />
+                Share
+              </CustomButton>
+            </div>
+
+            {/* Stats */}
+            <div className="flex items-center gap-6 pt-4 border-t text-muted-foreground">
+              <div className="flex items-center gap-1.5 text-sm">
+                <Eye className="h-4 w-4" />
+                <span>{product.viewCount.toLocaleString()}</span>
+                <span className="text-xs">views</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-sm">
+                <Heart className="h-4 w-4" />
+                <span>{product.favoriteCount.toLocaleString()}</span>
+                <span className="text-xs">saves</span>
+              </div>
+              <div className="ml-auto text-xs font-mono text-muted-foreground/70">
+                SKU: {product.id.slice(0, 8).toUpperCase()}
               </div>
             </div>
 
-            {/* Meta info */}
-            <div className="border-t pt-4 grid grid-cols-3 gap-4 text-center">
-              <div className="space-y-0.5">
-                <div className="flex items-center justify-center gap-1 text-muted-foreground">
-                  <Eye className="h-3.5 w-3.5" />
-                  <span className="text-xs">Views</span>
-                </div>
-                <p className="text-sm font-semibold">{product.viewCount.toLocaleString()}</p>
-              </div>
-              <div className="space-y-0.5">
-                <div className="flex items-center justify-center gap-1 text-muted-foreground">
-                  <Heart className="h-3.5 w-3.5" />
-                  <span className="text-xs">Favorites</span>
-                </div>
-                <p className="text-sm font-semibold">{product.favoriteCount.toLocaleString()}</p>
-              </div>
-              <div className="space-y-0.5">
-                <div className="flex items-center justify-center gap-1 text-muted-foreground">
-                  <Bookmark className="h-3.5 w-3.5" />
-                  <span className="text-xs">SKU</span>
-                </div>
-                <p className="text-sm font-semibold font-mono">{product.id.slice(0, 6).toUpperCase()}</p>
-              </div>
-            </div>
           </div>
         </div>
 
-        {/* Similar Products */}
+        {/* ── You May Also Like ── */}
         {similarProducts.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-5">
@@ -565,49 +586,174 @@ export default function ProductDetailPage() {
               </span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-              {similarProducts.map((similar) => (
-                <ProductCard key={similar.id} product={similar} />
+              {similarProducts.map((p) => (
+                <ProductCard key={p.id} product={p} />
               ))}
             </div>
           </div>
         )}
       </div>
 
+      {/* ── Image Lightbox ── */}
+      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
+        <DialogContent className="max-w-3xl w-full p-0 bg-black/95 border-0 [&>button]:hidden">
+          <div className="relative flex flex-col h-full">
+
+            {/* Close */}
+            <button
+              onClick={() => setLightboxOpen(false)}
+              className="absolute top-3 right-3 z-10 bg-white/10 hover:bg-white/20 text-white p-2 rounded-full transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Counter */}
+            {allImages.length > 1 && (
+              <div className="absolute top-3 left-3 z-10 bg-white/10 text-white text-xs px-3 py-1 rounded-full">
+                {lightboxIndex + 1} / {allImages.length}
+              </div>
+            )}
+
+            {/* Main image */}
+            <div className="relative w-full aspect-square sm:aspect-[4/3]">
+              {!lightboxImageLoaded && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 text-white animate-spin" />
+                </div>
+              )}
+              <Image
+                src={allImages[lightboxIndex]?.imageUrl || appImages.NoImage}
+                alt={product.name}
+                fill
+                className={cn("object-contain transition-opacity duration-200", lightboxImageLoaded ? "opacity-100" : "opacity-0")}
+                onLoad={() => setLightboxImageLoaded(true)}
+              />
+
+              {allImages.length > 1 && (
+                <>
+                  <button
+                    onClick={prevLightbox}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/25 text-white p-3 rounded-full transition-colors"
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </button>
+                  <button
+                    onClick={nextLightbox}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/25 text-white p-3 rounded-full transition-colors"
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Thumbnail strip */}
+            {allImages.length > 1 && (
+              <div className="flex justify-center gap-2 p-3 overflow-x-auto">
+                {allImages.map((img, i) => (
+                  <button
+                    key={img.id}
+                    onClick={() => { setLightboxIndex(i); setLightboxImageLoaded(false); }}
+                    className={cn(
+                      "relative flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden transition-all",
+                      i === lightboxIndex
+                        ? "ring-2 ring-white"
+                        : "opacity-40 hover:opacity-80"
+                    )}
+                  >
+                    <Image src={img.imageUrl} alt={`${i + 1}`} fill className="object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <LoginModal open={showLoginModal} onOpenChange={setShowLoginModal} />
-      <SizeSelectionModal
-        open={showSizeModal}
-        onOpenChange={setShowSizeModal}
-        product={product}
-      />
     </div>
   );
 }
 
+// ── Helper: size qty row ───────────────────────────────────────────────────
+function SizeQtyRow({
+  qty,
+  price,
+  disabled,
+  onDecrease,
+  onIncrease,
+}: {
+  qty: number;
+  price: number;
+  disabled: boolean;
+  onDecrease: () => void;
+  onIncrease: () => void;
+}) {
+  if (qty === 0) {
+    return (
+      <CustomButton
+        size="default"
+        className="w-full h-11 gap-2 rounded-xl font-semibold"
+        disabled={disabled}
+        onClick={onIncrease}
+      >
+        <ShoppingCart className="h-4 w-4" />
+        Add to Cart
+      </CustomButton>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        className="h-10 w-10 shrink-0 rounded-xl border-2 border-border hover:bg-rose-50 hover:border-rose-300 hover:text-rose-500 dark:hover:bg-rose-950/30 flex items-center justify-center transition-all"
+        onClick={onDecrease}
+      >
+        <Minus className="h-4 w-4" />
+      </button>
+      <div className="w-12 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-lg shrink-0">
+        {qty}
+      </div>
+      <button
+        className="h-10 w-10 shrink-0 rounded-xl border-2 border-border hover:bg-primary hover:border-primary hover:text-white flex items-center justify-center transition-all"
+        onClick={onIncrease}
+      >
+        <Plus className="h-4 w-4" />
+      </button>
+      <div className="flex-1 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center gap-1.5 text-emerald-700 dark:text-emerald-400 text-xs font-semibold px-2 min-w-0">
+        <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
+        <span className="truncate">In Cart — {formatCurrency(price * qty)}</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Skeleton ──────────────────────────────────────────────────────────────
 function ProductDetailSkeleton() {
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <Skeleton className="h-9 w-24 mb-6 rounded-xl" />
+    <div className="container mx-auto px-4 py-6 max-w-6xl">
+      <Skeleton className="h-9 w-20 mb-5 rounded-xl" />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         <div className="space-y-3">
           <Skeleton className="aspect-square w-full rounded-2xl" />
-          <div className="flex gap-2">
-            {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="w-16 h-16 rounded-xl flex-shrink-0" />)}
+          <div className="flex gap-2.5">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-xl flex-shrink-0" />
+            ))}
           </div>
         </div>
-        <div className="space-y-5">
+        <div className="space-y-5 pt-2">
           <div className="flex gap-2">
-            <Skeleton className="h-6 w-20 rounded-full" />
             <Skeleton className="h-6 w-24 rounded-full" />
+            <Skeleton className="h-6 w-16 rounded-full" />
           </div>
-          <Skeleton className="h-9 w-3/4" />
-          <Skeleton className="h-24 w-full rounded-2xl" />
-          <div className="flex gap-2">
-            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-24 rounded-xl" />)}
-          </div>
-          <Skeleton className="h-12 w-full rounded-xl" />
+          <Skeleton className="h-9 w-4/5 rounded-lg" />
+          <Skeleton className="h-12 w-40 rounded-lg" />
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <Skeleton className="h-11 w-full rounded-xl" />
           <div className="grid grid-cols-2 gap-3">
-            <Skeleton className="h-12 rounded-xl" />
-            <Skeleton className="h-12 rounded-xl" />
+            <Skeleton className="h-11 rounded-xl" />
+            <Skeleton className="h-11 rounded-xl" />
           </div>
         </div>
       </div>
