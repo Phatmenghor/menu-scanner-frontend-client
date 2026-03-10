@@ -47,6 +47,7 @@ import {
   ProductSize,
 } from "@/redux/features/business/store/models/response/product-response";
 import { CustomButton } from "@/components/shared/button/custom-button";
+import { PageContainer } from "@/components/shared/common/page-container";
 import { cn } from "@/lib/utils";
 import { useScrollToTop } from "@/hooks/use-scroll-restoration";
 import { useCartDebounce, cartItemKey } from "@/hooks/use-cart-debounce";
@@ -263,16 +264,16 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
+      <PageContainer className="py-16 text-center">
         <h2 className="text-xl font-bold mb-4">Product Not Found</h2>
         <Button onClick={() => router.back()}>Go Back</Button>
-      </div>
+      </PageContainer>
     );
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-4 sm:py-6 max-w-6xl">
+      <PageContainer className="py-4 sm:py-6">
 
         {/* Back */}
         <CustomButton
@@ -577,14 +578,14 @@ export default function ProductDetailPage() {
                 {similarProducts.length}
               </span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
               {similarProducts.map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}
             </div>
           </div>
         )}
-      </div>
+      </PageContainer>
 
       {/* ── Image Lightbox (custom fixed overlay — no Dialog complications) ── */}
       {lightboxOpen && (
@@ -724,9 +725,9 @@ function SizeQtyRow({
 // ── Skeleton ──────────────────────────────────────────────────────────────
 function ProductDetailSkeleton() {
   return (
-    <div className="container mx-auto px-4 py-6 max-w-6xl">
+    <PageContainer className="py-6">
       <Skeleton className="h-9 w-20 mb-5 rounded-xl" />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-10">
         <div className="space-y-3">
           <Skeleton className="aspect-square w-full rounded-2xl" />
           <div className="flex gap-2.5">
@@ -750,6 +751,6 @@ function ProductDetailSkeleton() {
           </div>
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

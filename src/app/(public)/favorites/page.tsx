@@ -68,7 +68,7 @@ export default function FavoritesPage() {
     return (
       <PageContainer className="py-4 sm:py-8">
         <div className="h-7 w-40 bg-muted rounded mb-4 animate-pulse" />
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <ProductCardSkeleton key={i} />
           ))}
@@ -165,7 +165,7 @@ export default function FavoritesPage() {
       />
 
       {/* Favorites Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
         {items.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
