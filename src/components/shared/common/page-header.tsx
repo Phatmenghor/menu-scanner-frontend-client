@@ -32,7 +32,6 @@ export function PageHeader({
     <div
       className={cn(
         "flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3",
-        "sticky top-16 z-10 bg-background/95 backdrop-blur-sm",
         "py-3 sm:py-4 mb-4 sm:mb-6 border-b",
         className
       )}

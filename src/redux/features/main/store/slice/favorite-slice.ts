@@ -72,8 +72,13 @@ const favoriteSlice = createSlice({
           state.totalItems += 1;
         }
       })
-      .addCase(toggleFavorite.fulfilled, (state) => {
+      .addCase(toggleFavorite.fulfilled, (state, action) => {
         state.error = null;
+        // When adding a new favorite, mark stale so favorites page refetches
+        // to get full product data (optimistic only increments count)
+        if (!action.meta.arg.isFavorited) {
+          state.loaded = false;
+        }
       })
       .addCase(toggleFavorite.rejected, (state, action) => {
         // Rollback based on what we tried to do

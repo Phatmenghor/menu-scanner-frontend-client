@@ -552,22 +552,25 @@ export default function ProductDetailPage() {
                           </CustomButton>
                         )}
                         <div className="flex-1" />
-                        <CustomButton
-                          size="sm"
-                          className="h-8 shrink-0 gap-1.5"
-                          variant={modifiedSizes.size > 0 ? "default" : cartQty > 0 ? "default" : "secondary"}
-                          disabled={isSaving || (modifiedSizes.size === 0 && cartQty === 0) || product.status === "OUT_OF_STOCK"}
-                          onClick={handleSave}
-                        >
-                          {isSaving
-                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            : <ShoppingCart className="h-3.5 w-3.5" />}
-                          {modifiedSizes.size > 0
-                            ? "Add to Cart"
-                            : cartQty > 0
-                            ? `In Cart · ${formatCurrency(unitPrice * cartQty)}`
-                            : "Add to Cart"}
-                        </CustomButton>
+                        {modifiedSizes.size === 0 && cartQty > 0 ? (
+                          <div className="h-8 shrink-0 flex items-center gap-1.5 px-3 text-sm font-medium rounded-md border border-border text-muted-foreground">
+                            <ShoppingCart className="h-3.5 w-3.5" />
+                            {`In Cart · ${formatCurrency(unitPrice * cartQty)}`}
+                          </div>
+                        ) : (
+                          <CustomButton
+                            size="sm"
+                            className="h-8 shrink-0 gap-1.5"
+                            variant={modifiedSizes.size > 0 ? "default" : "secondary"}
+                            disabled={isSaving || modifiedSizes.size === 0 || product.status === "OUT_OF_STOCK"}
+                            onClick={handleSave}
+                          >
+                            {isSaving
+                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              : <ShoppingCart className="h-3.5 w-3.5" />}
+                            Add to Cart
+                          </CustomButton>
+                        )}
                       </div>
 
                       {/* Total — updates live as qty changes, shows discount if applicable */}
