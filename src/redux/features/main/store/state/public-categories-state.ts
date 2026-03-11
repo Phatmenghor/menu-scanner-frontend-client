@@ -2,6 +2,7 @@
  * Public Categories State Hook
  */
 
+import { useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import {
   selectCategories,
@@ -14,7 +15,10 @@ import {
   clearCategories,
   resetCategoriesState,
 } from "../slice/public-categories-slice";
-import { fetchPublicCategories } from "../thunks/public-categories-thunks";
+import {
+  fetchPublicCategories,
+  FetchPublicCategoriesParams,
+} from "../thunks/public-categories-thunks";
 
 export const usePublicCategoriesState = () => {
   const dispatch = useAppDispatch();
@@ -25,6 +29,21 @@ export const usePublicCategoriesState = () => {
   const error = useAppSelector(selectCategoriesError);
   const loaded = useAppSelector(selectCategoriesLoaded);
 
+  const fetchCategories = useCallback(
+    (params: FetchPublicCategoriesParams) => dispatch(fetchPublicCategories(params)),
+    [dispatch]
+  );
+
+  const handleClearCategories = useCallback(
+    () => dispatch(clearCategories()),
+    [dispatch]
+  );
+
+  const resetState = useCallback(
+    () => dispatch(resetCategoriesState()),
+    [dispatch]
+  );
+
   return {
     // State
     categories,
@@ -34,10 +53,9 @@ export const usePublicCategoriesState = () => {
     loaded,
 
     // Actions
-    fetchCategories: (params: Parameters<typeof fetchPublicCategories>[0]) =>
-      dispatch(fetchPublicCategories(params)),
-    clearCategories: () => dispatch(clearCategories()),
-    resetState: () => dispatch(resetCategoriesState()),
+    fetchCategories,
+    clearCategories: handleClearCategories,
+    resetState,
 
     // Computed
     isInitialLoading: loading.initial,
