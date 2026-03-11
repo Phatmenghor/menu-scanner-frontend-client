@@ -18,6 +18,7 @@ import { ProductCardSkeleton } from "@/components/shared/skeletons/product-card-
 import { CustomButton } from "@/components/shared/button/custom-button";
 import { showToast } from "@/components/shared/common/show-toast";
 import { LoginModal } from "@/components/shared/modal/login-modal";
+import { DeleteConfirmationModal } from "@/components/shared/modal/delete-confirmation-modal";
 import { PageContainer } from "@/components/shared/common/page-container";
 
 export default function FavoritesPage() {
@@ -26,6 +27,7 @@ export default function FavoritesPage() {
   const { dispatch, items, totalItems, loading, loaded } = useFavoriteState();
   const { dispatch: cartDispatch } = useCartState();
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
@@ -47,13 +49,8 @@ export default function FavoritesPage() {
   };
 
   const handleClearAll = async () => {
-    if (items.length === 0) return;
-    try {
-      await dispatch(clearAllFavorites()).unwrap();
-      showToast.success("All favorites cleared");
-    } catch (error: any) {
-      showToast.error(error?.message || "Failed to clear favorites");
-    }
+    await dispatch(clearAllFavorites()).unwrap();
+    showToast.success("All favorites cleared");
   };
 
   const handleMoveToCart = async (productId: string) => {
@@ -153,15 +150,11 @@ export default function FavoritesPage() {
           <CustomButton
             variant="ghost"
             size="sm"
-            onClick={handleClearAll}
+            onClick={() => setClearAllModalOpen(true)}
             disabled={loading.clearAll}
             className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10 text-xs"
           >
-            {loading.clearAll ? (
-              <div className="h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Trash2 className="h-3.5 w-3.5" />
-            )}
+            <Trash2 className="h-3.5 w-3.5" />
             Clear All
           </CustomButton>
         }
@@ -185,6 +178,15 @@ export default function FavoritesPage() {
           Continue Shopping
         </CustomButton>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={clearAllModalOpen}
+        onClose={() => setClearAllModalOpen(false)}
+        onDelete={handleClearAll}
+        title="Clear All Favorites"
+        description="Are you sure you want to remove all items from your favorites? This action cannot be undone."
+        variant="critical"
+      />
     </PageContainer>
   );
 }

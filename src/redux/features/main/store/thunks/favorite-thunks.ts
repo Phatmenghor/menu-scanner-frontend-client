@@ -2,6 +2,7 @@ import { axiosClientWithAuth } from "@/utils/axios";
 import { createApiThunk } from "@/utils/axios/api-wrapper";
 import { ToggleFavoriteRequest } from "../models/request/favorite-request";
 import { AllFavoriteResponseModel } from "../models/response/favorite-response";
+import { AppDefault } from "@/constants/app-resource/default/default";
 
 // Service 1: Fetch all favorites list
 export const fetchFavoriteList = createApiThunk<AllFavoriteResponseModel, void>(
@@ -29,6 +30,8 @@ export const toggleFavorite = createApiThunk<void, ToggleFavoriteRequest>(
 export const clearAllFavorites = createApiThunk<void, void>(
   "product-favorites/clearAllFavorites",
   async () => {
-    await axiosClientWithAuth.delete("/api/v1/product-favorites/all");
+    await axiosClientWithAuth.delete("/api/v1/product-favorites/all", {
+      params: { businessId: AppDefault.BUSINESS_ID },
+    });
   },
 );
