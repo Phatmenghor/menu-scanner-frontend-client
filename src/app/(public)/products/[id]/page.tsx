@@ -36,8 +36,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  Minus,
-  Plus,
   Store,
   Tag,
   Eye,
@@ -57,7 +55,6 @@ import { CustomButton } from "@/components/shared/button/custom-button";
 import { PageContainer } from "@/components/shared/common/page-container";
 import { cn } from "@/lib/utils";
 import { useScrollToTop } from "@/hooks/use-scroll-restoration";
-import { useCartDebounce, cartItemKey } from "@/hooks/use-cart-debounce";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -97,8 +94,6 @@ export default function ProductDetailPage() {
   const [isFavorited, setIsFavorited] = useState(false);
   useEffect(() => { setIsFavorited(isFavoritedFromStore); }, [isFavoritedFromStore]);
 
-  const { debouncedUpdate } = useCartDebounce(cartDispatch);
-
   const getCartQuantityForSize = useCallback(
     (sizeId: string | null) => {
       if (!product) return 0;
@@ -119,10 +114,6 @@ export default function ProductDetailPage() {
     },
     [pendingQuantities, getCartQuantityForSize]
   );
-
-  const currentCartQuantity = selectedSize
-    ? getCartQuantityForSize(selectedSize.id)
-    : product ? getCartQuantityForSize(null) : 0;
 
   // Reset pending state when product changes
   useEffect(() => {
@@ -291,32 +282,6 @@ export default function ProductDetailPage() {
       setIsSaving(false);
     }
   }, [product, isAuthenticated, modifiedSizes, pendingQuantities, cartDispatch, getCartQuantityForSize]);
-
-  // ── Non-sized cart handler (immediate, debounced) ──────────────────────
-  const handleQuantityChange = useCallback(
-    (sizeId: string | null, newQty: number) => {
-      if (!product) return;
-      if (!isAuthenticated) { setShowLoginModal(true); return; }
-      const key = cartItemKey(product.id, sizeId);
-      const sz = product.sizes?.find((s) => s.id === sizeId) ?? null;
-      const price = sz?.finalPrice ?? product.displayPrice ?? 0;
-      const origPrice = (sz?.hasPromotion ? sz.price : product.displayOriginPrice) ?? price;
-      const isDiscounted = sz ? sz.hasPromotion : product.hasPromotion;
-      const sizeName = sz?.name ?? null;
-      const currentQty = getCartQuantityForSize(sizeId);
-      if (currentQty === 0 && newQty > 0) {
-        cartDispatch(addLocalCartItem({
-          productId: product.id, productSizeId: sizeId, quantity: newQty,
-          productName: product.name, productImageUrl: product.mainImageUrl,
-          sizeName, finalPrice: price, currentPrice: origPrice, hasPromotion: isDiscounted ?? false,
-        }));
-      } else {
-        cartDispatch(updateLocalCartItem({ productId: product.id, productSizeId: sizeId, quantity: newQty }));
-      }
-      debouncedUpdate(key, product.id, sizeId, newQty);
-    },
-    [product, isAuthenticated, cartDispatch, getCartQuantityForSize, debouncedUpdate]
-  );
 
   const handleToggleFavorite = async () => {
     if (!product) return;
@@ -498,144 +463,115 @@ export default function ProductDetailPage() {
               </p>
             )}
 
-            {/* ── SIZED product — modal-like inline flow ── */}
-            {product.hasSizes && product.sizes && product.sizes.length > 0 && (
-              <div className="space-y-3">
-                {/* Choose Size */}
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Choose Size
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {product.sizes.map((size) => {
-                    const displayQty = getDisplayQuantity(size.id);
-                    const cartQty = getCartQuantityForSize(size.id);
-                    const isModified = modifiedSizes.has(size.id) && displayQty !== cartQty;
-                    const isActive = selectedSize?.id === size.id;
-                    return (
-                      <button
-                        key={size.id}
-                        onClick={() => setSelectedSize(size)}
-                        className={cn(
-                          "relative border-2 rounded-xl px-4 py-2.5 text-left min-w-[76px] transition-all",
-                          isActive
-                            ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-sm"
-                            : "border-border hover:border-primary/50 hover:bg-muted/40"
-                        )}
-                      >
-                        {isActive && (
-                          <div className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground rounded-full p-0.5">
-                            <Check className="h-2.5 w-2.5" />
-                          </div>
-                        )}
-                        <div className="font-semibold text-sm">{size.name}</div>
-                        <div className="text-primary font-bold text-sm">{formatCurrency(size.finalPrice)}</div>
-                        {size.hasPromotion && (
-                          <div className="text-[10px] text-muted-foreground line-through">{formatCurrency(size.price)}</div>
-                        )}
-                        {displayQty > 0 && (
-                          <div className={cn(
-                            "absolute -top-2 -left-2 text-white rounded-full min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold",
-                            isModified ? "bg-amber-500" : "bg-primary"
-                          )}>
-                            {displayQty}
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+            {/* ── Cart section — unified style for sized and non-sized ── */}
+            {(() => {
+              const sizeId: string | null = product.hasSizes ? (selectedSize?.id ?? null) : null;
+              const displayQty = getDisplayQuantity(sizeId);
+              const cartQty = getCartQuantityForSize(sizeId);
+              const unitPrice = (product.hasSizes ? selectedSize?.finalPrice : null) ?? product.displayPrice ?? 0;
+              const clearKey = sizeId || "no_size";
+              const showQtySection = !product.hasSizes || !!selectedSize;
 
-                {/* Quantity + Clear + Add to Cart — single row */}
-                {selectedSize && (
-                  <div className="space-y-3 pt-1">
-                    <h4 className="font-semibold text-sm">Quantity</h4>
+              return (
+                <div className="space-y-3">
 
-                    {/* [-] [qty] [+] [Clear] [Add to Cart] */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <QuantitySelector
-                        value={getDisplayQuantity(selectedSize.id)}
-                        onChange={(qty) => handlePendingQtyChange(selectedSize.id, qty)}
-                        min={0}
-                        size="sm"
-                      />
+                  {/* Size buttons — sized products only */}
+                  {product.hasSizes && product.sizes && product.sizes.length > 0 && (
+                    <>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Choose Size
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {product.sizes.map((size) => {
+                          const szQty = getDisplayQuantity(size.id);
+                          const isModified = modifiedSizes.has(size.id) && szQty !== getCartQuantityForSize(size.id);
+                          const isActive = selectedSize?.id === size.id;
+                          return (
+                            <button
+                              key={size.id}
+                              onClick={() => setSelectedSize(size)}
+                              className={cn(
+                                "relative border-2 rounded-xl px-4 py-2.5 text-left min-w-[76px] transition-all",
+                                isActive
+                                  ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-sm"
+                                  : "border-border hover:border-primary/50 hover:bg-muted/40"
+                              )}
+                            >
+                              {isActive && (
+                                <div className="absolute -top-1.5 -right-1.5 bg-primary text-primary-foreground rounded-full p-0.5">
+                                  <Check className="h-2.5 w-2.5" />
+                                </div>
+                              )}
+                              <div className="font-semibold text-sm">{size.name}</div>
+                              <div className="text-primary font-bold text-sm">{formatCurrency(size.finalPrice)}</div>
+                              {size.hasPromotion && (
+                                <div className="text-[10px] text-muted-foreground line-through">{formatCurrency(size.price)}</div>
+                              )}
+                              {szQty > 0 && (
+                                <div className={cn(
+                                  "absolute -top-2 -left-2 text-white rounded-full min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold",
+                                  isModified ? "bg-amber-500" : "bg-primary"
+                                )}>
+                                  {szQty}
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
 
-                      {(getDisplayQuantity(selectedSize.id) > 0 || getCartQuantityForSize(selectedSize.id) > 0) && (
-                        <CustomButton
-                          variant="outline"
+                  {/* Qty + Clear + Add to Cart — same for all products */}
+                  {showQtySection && (
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-sm">Quantity</h4>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <QuantitySelector
+                          value={displayQty}
+                          onChange={(qty) => handlePendingQtyChange(sizeId, qty)}
+                          min={0}
                           size="sm"
-                          className="h-8 px-2 text-destructive border-destructive/30 hover:bg-destructive hover:text-destructive-foreground"
-                          disabled={clearingSize === (selectedSize.id || "no_size")}
-                          onClick={() => handleClearSize(selectedSize.id)}
+                        />
+                        {(displayQty > 0 || cartQty > 0) && (
+                          <CustomButton
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-2 shrink-0 text-destructive border-destructive/30 hover:bg-destructive hover:text-destructive-foreground"
+                            disabled={clearingSize === clearKey}
+                            onClick={() => handleClearSize(sizeId)}
+                          >
+                            {clearingSize === clearKey
+                              ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                              : <Trash2 className="h-3.5 w-3.5 mr-1" />}
+                            Clear
+                          </CustomButton>
+                        )}
+                        <CustomButton
+                          className="shrink-0 gap-2"
+                          disabled={isSaving || modifiedSizes.size === 0 || product.status === "OUT_OF_STOCK"}
+                          onClick={handleSave}
                         >
-                          {clearingSize === (selectedSize.id || "no_size")
-                            ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-                            : <Trash2 className="h-3.5 w-3.5 mr-1" />}
-                          Clear
+                          {isSaving
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : <ShoppingCart className="h-4 w-4" />}
+                          Add to Cart
                         </CustomButton>
-                      )}
+                      </div>
 
-                      <CustomButton
-                        className="flex-1 min-w-[120px]"
-                        onClick={handleSave}
-                        disabled={isSaving || modifiedSizes.size === 0}
-                      >
-                        {isSaving
-                          ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                          : <ShoppingCart className="h-4 w-4 mr-1.5" />}
-                        Add to Cart
-                      </CustomButton>
+                      {/* Total — updates live as qty changes */}
+                      <div className="flex justify-between items-center py-3 border-t">
+                        <span className="text-sm text-muted-foreground">Total</span>
+                        <span className="text-xl font-bold text-primary">
+                          {formatCurrency(unitPrice * displayQty)}
+                        </span>
+                      </div>
                     </div>
+                  )}
 
-                    {/* Total */}
-                    <div className="flex justify-between items-center py-3 border-t">
-                      <span className="text-sm text-muted-foreground">Total</span>
-                      <span className="text-xl font-bold text-primary">
-                        {formatCurrency(selectedSize.finalPrice * getDisplayQuantity(selectedSize.id))}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ── Non-sized cart actions (immediate) ── */}
-            {!product.hasSizes && (
-              <div>
-                {currentCartQuantity === 0 ? (
-                  <CustomButton
-                    size="lg"
-                    className="w-full h-12 text-base font-semibold gap-2 rounded-xl"
-                    disabled={product.status === "OUT_OF_STOCK"}
-                    onClick={() => handleQuantityChange(null, 1)}
-                  >
-                    <ShoppingCart className="h-5 w-5" />
-                    Add to Cart
-                  </CustomButton>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <button
-                      className="h-11 w-11 shrink-0 rounded-xl border-2 border-border hover:bg-rose-50 hover:border-rose-300 hover:text-rose-500 dark:hover:bg-rose-950/30 flex items-center justify-center transition-all"
-                      onClick={() => handleQuantityChange(null, currentCartQuantity - 1)}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </button>
-                    <div className="w-14 h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-xl shrink-0">
-                      {currentCartQuantity}
-                    </div>
-                    <button
-                      className="h-11 w-11 shrink-0 rounded-xl border-2 border-border hover:bg-primary hover:border-primary hover:text-white flex items-center justify-center transition-all"
-                      onClick={() => handleQuantityChange(null, currentCartQuantity + 1)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                    <div className="flex-1 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center gap-1.5 text-emerald-700 dark:text-emerald-400 text-xs font-semibold px-3 min-w-0">
-                      <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">In Cart — {formatCurrency(getDisplayPrice() * currentCartQuantity)}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+                </div>
+              );
+            })()}
 
             {/* Wishlist + Share */}
             <div className="grid grid-cols-2 gap-3">
