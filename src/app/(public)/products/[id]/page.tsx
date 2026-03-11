@@ -472,6 +472,23 @@ export default function ProductDetailPage() {
               const clearKey = sizeId || "no_size";
               const showQtySection = !product.hasSizes || !!selectedSize;
 
+              // Totals across ALL sizes (or just the single non-sized item)
+              const totalCartQtyAllSizes = product.hasSizes
+                ? (product.sizes?.reduce((sum, s) => sum + getCartQuantityForSize(s.id), 0) ?? 0)
+                : getCartQuantityForSize(null);
+              const totalCartValueAllSizes = product.hasSizes
+                ? (product.sizes?.reduce((sum, s) => sum + s.finalPrice * getCartQuantityForSize(s.id), 0) ?? 0)
+                : unitPrice * getCartQuantityForSize(null);
+              const totalDisplayValueAllSizes = product.hasSizes
+                ? (product.sizes?.reduce((sum, s) => sum + s.finalPrice * getDisplayQuantity(s.id), 0) ?? 0)
+                : unitPrice * displayQty;
+              const totalOrigValueAllSizes = product.hasSizes
+                ? (product.sizes?.reduce((sum, s) => sum + (s.hasPromotion ? s.price : s.finalPrice) * getDisplayQuantity(s.id), 0) ?? 0)
+                : (getOriginalPrice() ?? unitPrice) * displayQty;
+              const hasAnyPromotion = product.hasSizes
+                ? (product.sizes?.some(s => s.hasPromotion && getDisplayQuantity(s.id) > 0) ?? false)
+                : !!(getOriginalPrice() && displayQty > 0);
+
               return (
                 <div className="space-y-3">
 
@@ -552,12 +569,14 @@ export default function ProductDetailPage() {
                           </CustomButton>
                         )}
                         <div className="flex-1" />
-                        {modifiedSizes.size === 0 && cartQty > 0 ? (
-                          <div className="h-8 shrink-0 flex items-center gap-1.5 px-3 text-sm font-medium rounded-md border border-border text-muted-foreground">
-                            <ShoppingCart className="h-3.5 w-3.5" />
-                            {`In Cart · ${formatCurrency(unitPrice * cartQty)}`}
+                        {/* "In Cart" status — always visible when anything is in cart, no icon */}
+                        {totalCartQtyAllSizes > 0 && (
+                          <div className="h-8 shrink-0 flex items-center px-3 text-sm font-medium rounded-md border border-border text-muted-foreground">
+                            {`In Cart · ${formatCurrency(totalCartValueAllSizes)}`}
                           </div>
-                        ) : (
+                        )}
+                        {/* Action button — shown when there are pending changes OR nothing in cart */}
+                        {(modifiedSizes.size > 0 || totalCartQtyAllSizes === 0) && (
                           <CustomButton
                             size="sm"
                             className="h-8 shrink-0 gap-1.5"
@@ -565,25 +584,23 @@ export default function ProductDetailPage() {
                             disabled={isSaving || modifiedSizes.size === 0 || product.status === "OUT_OF_STOCK"}
                             onClick={handleSave}
                           >
-                            {isSaving
-                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              : <ShoppingCart className="h-3.5 w-3.5" />}
-                            Add to Cart
+                            {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                            {modifiedSizes.size > 0 && totalCartQtyAllSizes > 0 ? "Update Cart" : "Add to Cart"}
                           </CustomButton>
                         )}
                       </div>
 
-                      {/* Total — updates live as qty changes, shows discount if applicable */}
+                      {/* Total — sum of ALL sizes × their pending/cart quantities */}
                       <div className="flex justify-between items-center py-3 border-t">
                         <span className="text-sm text-muted-foreground">Total</span>
                         <div className="flex items-center gap-2">
-                          {getOriginalPrice() && displayQty > 0 && (
+                          {hasAnyPromotion && (
                             <span className="text-sm text-red-500 line-through">
-                              {formatCurrency(getOriginalPrice()! * displayQty)}
+                              {formatCurrency(totalOrigValueAllSizes)}
                             </span>
                           )}
                           <span className="text-xl font-bold text-primary">
-                            {formatCurrency(unitPrice * displayQty)}
+                            {formatCurrency(totalDisplayValueAllSizes)}
                           </span>
                         </div>
                       </div>

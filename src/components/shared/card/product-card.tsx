@@ -36,7 +36,7 @@ const imageLoadedCache = new Set<string>();
 
 export function ProductCard({ product, className }: ProductCardProps) {
   const { dispatch: cartDispatch, items: cartItems } = useCartState();
-  const { dispatch: favoriteDispatch } = useFavoriteState();
+  const { dispatch: favoriteDispatch, items: favoriteItems, loaded: favLoaded } = useFavoriteState();
   const { isAuthenticated } = useAuthState();
 
   const [isAddingToCart, setIsAddingToCart] = useState(false);
@@ -44,14 +44,15 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSizeModal, setShowSizeModal] = useState(false);
 
-  // Local favorite state — fixes the bug where product.isFavorited never updates
-  // after toggling because it reads from the immutable prop.
-  const [isFavorited, setIsFavorited] = useState(product?.isFavorited ?? false);
-
-  // Keep in sync when the product prop changes (e.g. after a re-fetch)
+  // Derive from the favorites store (authoritative) — falls back to prop when not yet loaded.
+  // This fixes the bug where navigating away and back shows stale isFavorited from listing data.
+  const isFavoritedFromStore = favLoaded
+    ? favoriteItems.some((item) => item.id === product.id)
+    : (product?.isFavorited ?? false);
+  const [isFavorited, setIsFavorited] = useState(isFavoritedFromStore);
   useEffect(() => {
-    setIsFavorited(product?.isFavorited ?? false);
-  }, [product?.isFavorited]);
+    setIsFavorited(isFavoritedFromStore);
+  }, [isFavoritedFromStore]);
 
   // Debounced cart API calls (aborts stale in-flight requests)
   const { debouncedUpdate } = useCartDebounce(cartDispatch);
