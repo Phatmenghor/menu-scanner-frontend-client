@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback, useRef } from "react";
 import { usePublicBrandsState } from "@/redux/features/main/store/state/public-brands-state";
-import { PackageOpen, Loader2 } from "lucide-react";
+import { Store, Loader2 } from "lucide-react";
 import { BrandCard } from "@/components/shared/card/brand-card";
 import { BrandCardSkeleton } from "@/components/shared/skeletons/brand-card-skeleton";
 import { useInfiniteScroll } from "@/components/shared/common/use-infinite-scroll";
@@ -29,22 +29,13 @@ export default function BrandsPage() {
   const pageSize = 12;
   const skeletonCount = useSkeletonCount(SkeletonPresets.categoryGrid);
 
-  // Smart scroll: Keep position on navigation, reset on browser refresh
-  useScrollRestoration({
-    enabled: true,
-    restoreOnMount: true,
-    customKey: "brands",
-  });
-
-  // Maintain scroll position during load more (YouTube-like)
+  useScrollRestoration({ enabled: true, restoreOnMount: true, customKey: "brands" });
   const { containerRef } = useScrollAnchor(isLoadingMore);
 
-  // Initial load
   useEffect(() => {
     fetchBrands({ pageNo: 1, pageSize, status: "ACTIVE" });
   }, [pageSize, fetchBrands]);
 
-  // Load more handler
   const handleLoadMore = useCallback(() => {
     if (!isLoadingMore && hasMore && !isLoadingRef.current) {
       isLoadingRef.current = true;
@@ -69,10 +60,16 @@ export default function BrandsPage() {
     <div className="min-h-screen bg-background">
       <PageContainer className="py-4 sm:py-8">
         <PageHeader
-          title="All Brands"
-          icon={PackageOpen}
+          title="Brands"
+          icon={Store}
           count={totalBrands}
-          subtitle={totalBrands > 0 ? `Browse all ${totalBrands} brands` : "Discover our brands"}
+          subtitle={
+            isInitialLoading
+              ? "Loading brands..."
+              : totalBrands > 0
+              ? `${totalBrands} brands available`
+              : "Discover our brands"
+          }
         />
 
         {/* Initial Loading */}
@@ -87,7 +84,7 @@ export default function BrandsPage() {
         {/* Empty State */}
         {!isInitialLoading && brands.length === 0 && (
           <EmptyState
-            icon={PackageOpen}
+            icon={Store}
             title="No brands available"
             description="There are no brands available at this time"
             size="lg"
@@ -101,32 +98,27 @@ export default function BrandsPage() {
               {brands.map((brand) => (
                 <BrandCard key={brand.id} brand={brand} />
               ))}
-
-              {/* Show skeleton cards while loading more */}
               {isLoadingMore &&
                 Array.from({ length: skeletonCount }).map((_, i) => (
-                  <BrandCardSkeleton key={`loading-${i}`} />
+                  <BrandCardSkeleton key={`more-${i}`} />
                 ))}
             </div>
 
-            {/* Loading indicator with icon */}
             {isLoadingMore && (
               <div className="flex items-center justify-center py-6 mt-2">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span className="text-sm">Loading more brands...</span>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm">Loading more...</span>
                 </div>
               </div>
             )}
 
-            {/* Showing X of Y */}
             {!hasMore && !isLoadingMore && brands.length > 0 && (
-              <p className="text-center text-xs text-muted-foreground py-4">
-                Showing {brands.length} of {totalBrands} brands
+              <p className="text-center text-xs text-muted-foreground py-6">
+                Showing all {totalBrands} brands
               </p>
             )}
 
-            {/* Infinite Scroll Trigger */}
             {hasMore && !isLoadingMore && (
               <div ref={observerTarget} className="h-10" />
             )}

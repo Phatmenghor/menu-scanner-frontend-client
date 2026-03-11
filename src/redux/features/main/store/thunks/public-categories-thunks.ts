@@ -1,12 +1,8 @@
-/**
- * Public Categories Thunks
- * API calls for public categories data
- */
-
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { axiosClient } from "@/utils/axios";
 import { PaginationResponseModel } from "@/redux/features/master-data/store/models/response/pagination-response";
 import { CategoriesResponseModel } from "@/redux/features/master-data/store/models/response/categories-response";
+import { AppDefault } from "@/constants/app-resource/default/default";
 
 export interface FetchPublicCategoriesParams {
   pageNo?: number;
@@ -16,30 +12,26 @@ export interface FetchPublicCategoriesParams {
   append?: boolean;
 }
 
-/**
- * Fetch public categories with pagination
- */
 export const fetchPublicCategories = createAsyncThunk<
   PaginationResponseModel<CategoriesResponseModel>,
   FetchPublicCategoriesParams,
   { rejectValue: string }
 >("publicCategories/fetchAll", async (params, { rejectWithValue }) => {
   try {
-    const response = await axiosClient.get<
-      PaginationResponseModel<CategoriesResponseModel>
-    >("/public/categories", {
-      params: {
+    const response = await axiosClient.post(
+      "/api/v1/public/categories/all",
+      {
         pageNo: params.pageNo || 1,
         pageSize: params.pageSize || 12,
         search: params.search || undefined,
         status: params.status || "ACTIVE",
-      },
-    });
-
-    return response.data;
+        businessId: AppDefault.BUSINESS_ID,
+      }
+    );
+    return response.data.data;
   } catch (error: any) {
     return rejectWithValue(
-      error.response?.data?.message || "Failed to fetch categories",
+      error.response?.data?.message || "Failed to fetch categories"
     );
   }
 });

@@ -19,7 +19,6 @@ export default function CategoriesPage() {
   const {
     categories,
     pagination,
-    loaded,
     hasMore,
     isInitialLoading,
     isLoadingMore,
@@ -30,22 +29,13 @@ export default function CategoriesPage() {
   const pageSize = 12;
   const skeletonCount = useSkeletonCount(SkeletonPresets.categoryGrid);
 
-  // Smart scroll: Keep position on navigation, reset on browser refresh
-  useScrollRestoration({
-    enabled: true,
-    restoreOnMount: true,
-    customKey: "categories",
-  });
-
-  // Maintain scroll position during load more (YouTube-like)
+  useScrollRestoration({ enabled: true, restoreOnMount: true, customKey: "categories" });
   const { containerRef } = useScrollAnchor(isLoadingMore);
 
-  // Initial load
   useEffect(() => {
     fetchCategories({ pageNo: 1, pageSize, status: "ACTIVE" });
   }, [pageSize, fetchCategories]);
 
-  // Load more handler
   const handleLoadMore = useCallback(() => {
     if (!isLoadingMore && hasMore && !isLoadingRef.current) {
       isLoadingRef.current = true;
@@ -73,7 +63,13 @@ export default function CategoriesPage() {
           title="Categories"
           icon={LayoutGrid}
           count={totalCategories}
-          subtitle={totalCategories > 0 ? `Explore ${totalCategories} categories` : "Browse all categories"}
+          subtitle={
+            isInitialLoading
+              ? "Loading categories..."
+              : totalCategories > 0
+              ? `${totalCategories} categories available`
+              : "Browse all categories"
+          }
         />
 
         {/* Initial Loading */}
@@ -102,32 +98,27 @@ export default function CategoriesPage() {
               {categories.map((category) => (
                 <CategoryCard key={category.id} category={category} />
               ))}
-
-              {/* Show skeleton cards while loading more */}
               {isLoadingMore &&
                 Array.from({ length: skeletonCount }).map((_, i) => (
-                  <CategoryCardSkeleton key={`loading-${i}`} />
+                  <CategoryCardSkeleton key={`more-${i}`} />
                 ))}
             </div>
 
-            {/* Loading indicator */}
             {isLoadingMore && (
               <div className="flex items-center justify-center py-6 mt-2">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span className="text-sm">Loading more categories...</span>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm">Loading more...</span>
                 </div>
               </div>
             )}
 
-            {/* Showing X of Y */}
             {!hasMore && !isLoadingMore && categories.length > 0 && (
-              <p className="text-center text-xs text-muted-foreground py-4">
-                Showing {categories.length} of {totalCategories} categories
+              <p className="text-center text-xs text-muted-foreground py-6">
+                Showing all {totalCategories} categories
               </p>
             )}
 
-            {/* Infinite Scroll Trigger */}
             {hasMore && !isLoadingMore && (
               <div ref={observerTarget} className="h-10" />
             )}
