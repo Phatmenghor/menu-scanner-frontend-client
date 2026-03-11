@@ -523,7 +523,10 @@ export default function ProductDetailPage() {
                   )}
 
                   {/* Qty + Clear + Add to Cart — same for all products */}
-                  {showQtySection && (
+                  {showQtySection && (() => {
+                    const key = sizeId || "no_size";
+                    const isPending = modifiedSizes.has(key) && displayQty !== cartQty;
+                    return (
                     <div className="space-y-3">
                       <h4 className="font-semibold text-sm">Quantity</h4>
                       <div className="flex items-center gap-2">
@@ -532,6 +535,7 @@ export default function ProductDetailPage() {
                           onChange={(qty) => handlePendingQtyChange(sizeId, qty)}
                           min={0}
                           size="sm"
+                          pending={isPending}
                         />
                         {(displayQty > 0 || cartQty > 0) && (
                           <CustomButton
@@ -551,23 +555,27 @@ export default function ProductDetailPage() {
                         <CustomButton
                           size="sm"
                           className="h-8 shrink-0 gap-1.5"
-                          variant={modifiedSizes.size > 0 ? "default" : "secondary"}
-                          disabled={isSaving || modifiedSizes.size === 0 || product.status === "OUT_OF_STOCK"}
+                          variant={modifiedSizes.size > 0 ? "default" : cartQty > 0 ? "default" : "secondary"}
+                          disabled={isSaving || (modifiedSizes.size === 0 && cartQty === 0) || product.status === "OUT_OF_STOCK"}
                           onClick={handleSave}
                         >
                           {isSaving
                             ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             : <ShoppingCart className="h-3.5 w-3.5" />}
-                          Add to Cart
+                          {modifiedSizes.size > 0
+                            ? "Add to Cart"
+                            : cartQty > 0
+                            ? `In Cart · ${formatCurrency(unitPrice * cartQty)}`
+                            : "Add to Cart"}
                         </CustomButton>
                       </div>
 
                       {/* Total — updates live as qty changes, shows discount if applicable */}
                       <div className="flex justify-between items-center py-3 border-t">
                         <span className="text-sm text-muted-foreground">Total</span>
-                        <div className="flex flex-col items-end gap-0.5">
+                        <div className="flex items-center gap-2">
                           {getOriginalPrice() && displayQty > 0 && (
-                            <span className="text-xs text-muted-foreground line-through">
+                            <span className="text-sm text-red-500 line-through">
                               {formatCurrency(getOriginalPrice()! * displayQty)}
                             </span>
                           )}
@@ -577,7 +585,8 @@ export default function ProductDetailPage() {
                         </div>
                       </div>
                     </div>
-                  )}
+                  );
+                  })()}
 
                 </div>
               );

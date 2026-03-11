@@ -12,6 +12,8 @@ interface QuantitySelectorProps {
   max?: number;
   size?: "sm" | "md";
   className?: string;
+  /** pending = qty changed but not yet saved to cart (amber); default = primary */
+  pending?: boolean;
 }
 
 export function QuantitySelector({
@@ -21,6 +23,7 @@ export function QuantitySelector({
   max = 999,
   size = "md",
   className,
+  pending = false,
 }: QuantitySelectorProps) {
   const [inputText, setInputText] = useState(String(value));
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -132,7 +135,10 @@ export function QuantitySelector({
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         className={cn(
-          "text-center font-bold bg-primary/10 text-primary rounded border border-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/30",
+          "text-center font-bold rounded border focus:outline-none focus:ring-2",
+          pending
+            ? "bg-amber-50 text-amber-600 border-amber-200 focus:ring-amber-300 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800"
+            : "bg-primary/10 text-primary border-primary/20 focus:ring-primary/30",
           isSmall ? "w-12 h-8 text-sm" : "w-16 h-10 text-lg",
         )}
       />

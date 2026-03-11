@@ -25,6 +25,7 @@ import { clearCart, fetchCart } from "@/redux/features/main/store/thunks/cart-th
 import { updateLocalCartItem } from "@/redux/features/main/store/slice/cart-slice";
 import { useCartDebounce, cartItemKey } from "@/hooks/use-cart-debounce";
 import { LoginModal } from "@/components/shared/modal/login-modal";
+import { DeleteConfirmationModal } from "@/components/shared/modal/delete-confirmation-modal";
 import { PageContainer } from "@/components/shared/common/page-container";
 import { PageHeader } from "@/components/shared/common/page-header";
 import { cn } from "@/lib/utils";
@@ -102,6 +103,10 @@ export default function CartPage() {
 
   const { debouncedUpdate, immediateUpdate } = useCartDebounce(dispatch);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [clearCartModalOpen, setClearCartModalOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (!authReady) return;
@@ -132,20 +137,15 @@ export default function CartPage() {
   );
 
   const handleClearCart = async () => {
-    if (!confirm("Clear your entire cart?")) return;
-    try {
-      await dispatch(clearCart()).unwrap();
-      showToast.success("Cart cleared");
-    } catch (error: any) {
-      showToast.error(error?.message || "Failed to clear cart");
-    }
+    await dispatch(clearCart()).unwrap();
+    showToast.success("Cart cleared");
   };
 
   const handleCheckout = () => {
     showToast.success("Proceeding to checkout...");
   };
 
-  if (!authReady || (loading.fetch && !loaded)) return <CartSkeleton />;
+  if (!mounted || !authReady || (loading.fetch && !loaded)) return <CartSkeleton />;
 
   if (!isAuthenticated) {
     return (
@@ -183,7 +183,7 @@ export default function CartPage() {
             <CustomButton
               variant="ghost"
               size="sm"
-              onClick={handleClearCart}
+              onClick={() => setClearCartModalOpen(true)}
               disabled={loading.clear}
               className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10 text-xs rounded-xl"
             >
@@ -349,6 +349,15 @@ export default function CartPage() {
           <ArrowRight className="h-4 w-4 ml-auto" />
         </CustomButton>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={clearCartModalOpen}
+        onClose={() => setClearCartModalOpen(false)}
+        onDelete={handleClearCart}
+        title="Clear Cart"
+        description="Are you sure you want to remove all items from your cart?"
+        variant="critical"
+      />
     </>
   );
 }

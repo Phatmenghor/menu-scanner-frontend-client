@@ -47,7 +47,7 @@ export const clearCart = createApiThunk<void, void>(
   "cart/clearCart",
   async (_, signal) => {
     const businessId = AppDefault.BUSINESS_ID;
-    await axiosClientWithAuth.delete(`/api/v1/cart/clear/${businessId}`, {
+    await axiosClientWithAuth.delete(`/api/v1/cart/${businessId}/clear`, {
       signal,
     });
   },
