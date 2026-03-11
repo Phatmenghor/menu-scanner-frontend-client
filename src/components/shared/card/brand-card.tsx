@@ -44,7 +44,7 @@ export function BrandCard({ brand, className }: BrandCardProps) {
                   width={80}
                   height={80}
                   className={cn(
-                    "w-full h-full object-contain p-2 transition-all duration-300 group-hover:scale-105",
+                    "w-full h-full object-cover transition-all duration-300 group-hover:scale-105",
                     imageLoaded ? "opacity-100" : "opacity-0"
                   )}
                   onLoad={() => setImageLoaded(true)}
