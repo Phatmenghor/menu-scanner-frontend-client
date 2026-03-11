@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 
 interface UseInfiniteScrollOptions {
   onLoadMore: () => void;
@@ -15,35 +15,30 @@ export const useInfiniteScroll = ({
   threshold = 0.1,
   rootMargin = "200px 0px",
 }: UseInfiniteScrollOptions) => {
-  const observerTarget = useRef<HTMLDivElement>(null);
+  const [targetEl, setTargetEl] = useState<HTMLDivElement | null>(null);
 
-  const handleObserver = useCallback(
-    (entries: IntersectionObserverEntry[]) => {
-      const [entry] = entries;
-      if (entry.isIntersecting && hasMore && !isLoading) {
-        onLoadMore();
-      }
-    },
-    [hasMore, isLoading, onLoadMore]
-  );
+  // Callback ref: fires when the sentinel div mounts/unmounts
+  // This ensures the observer is created after the element is in the DOM
+  const observerTarget = useCallback((node: HTMLDivElement | null) => {
+    setTargetEl(node);
+  }, []);
 
   useEffect(() => {
-    const element = observerTarget.current;
-    if (!element) return;
+    if (!targetEl) return;
 
-    const observer = new IntersectionObserver(handleObserver, {
-      threshold,
-      rootMargin,
-    });
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoading) {
+          onLoadMore();
+        }
+      },
+      { threshold, rootMargin }
+    );
 
-    observer.observe(element);
+    observer.observe(targetEl);
 
-    return () => {
-      if (element) {
-        observer.unobserve(element);
-      }
-    };
-  }, [handleObserver, threshold, rootMargin]);
+    return () => observer.disconnect();
+  }, [targetEl, hasMore, isLoading, onLoadMore, threshold, rootMargin]);
 
   return { observerTarget };
 };

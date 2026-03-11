@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback, useRef } from "react";
 import { usePublicBrandsState } from "@/redux/features/main/store/state/public-brands-state";
-import { Store, Loader2, ChevronDown } from "lucide-react";
+import { Store, Loader2 } from "lucide-react";
 import { BrandCard } from "@/components/shared/card/brand-card";
 import { BrandCardSkeleton } from "@/components/shared/skeletons/brand-card-skeleton";
 import { useInfiniteScroll } from "@/components/shared/common/use-infinite-scroll";
@@ -11,7 +11,6 @@ import { useSkeletonCount, SkeletonPresets } from "@/hooks/use-skeleton-count";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageContainer } from "@/components/shared/common/page-container";
 import { PageHeader } from "@/components/shared/common/page-header";
-import { Button } from "@/components/ui/button";
 
 export default function BrandsPage() {
   const isLoadingRef = useRef(false);
@@ -26,28 +25,26 @@ export default function BrandsPage() {
     totalBrands,
   } = usePublicBrandsState();
 
-  const pageSize = 12;
   const skeletonCount = useSkeletonCount(SkeletonPresets.categoryGrid);
 
   useScrollRestoration({ enabled: true, restoreOnMount: true, customKey: "brands" });
 
   useEffect(() => {
-    fetchBrands({ pageNo: 1, pageSize, status: "ACTIVE" });
-  }, [pageSize, fetchBrands]);
+    fetchBrands({ pageNo: 1, status: "ACTIVE" });
+  }, [fetchBrands]);
 
   const handleLoadMore = useCallback(() => {
     if (!isLoadingMore && hasMore && !isLoadingRef.current) {
       isLoadingRef.current = true;
       fetchBrands({
         pageNo: pagination.currentPage + 1,
-        pageSize,
         status: "ACTIVE",
         append: true,
       }).finally(() => {
         isLoadingRef.current = false;
       });
     }
-  }, [isLoadingMore, hasMore, pagination.currentPage, pageSize, fetchBrands]);
+  }, [isLoadingMore, hasMore, pagination.currentPage, fetchBrands]);
 
   const { observerTarget } = useInfiniteScroll({
     onLoadMore: handleLoadMore,
@@ -103,7 +100,6 @@ export default function BrandsPage() {
                 ))}
             </div>
 
-            {/* Loading spinner */}
             {isLoadingMore && (
               <div className="flex items-center justify-center py-6 mt-2">
                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -113,30 +109,15 @@ export default function BrandsPage() {
               </div>
             )}
 
-            {/* All loaded message */}
             {!hasMore && !isLoadingMore && brands.length > 0 && (
               <p className="text-center text-xs text-muted-foreground py-6">
                 Showing all {totalBrands} brands
               </p>
             )}
 
-            {/* Auto-scroll trigger (IntersectionObserver) */}
+            {/* Sentinel div — callback ref ensures observer connects after mount */}
             {hasMore && !isLoadingMore && (
               <div ref={observerTarget} className="h-4" />
-            )}
-
-            {/* Manual Load More button fallback */}
-            {hasMore && !isLoadingMore && (
-              <div className="flex justify-center py-4">
-                <Button
-                  variant="outline"
-                  onClick={handleLoadMore}
-                  className="gap-2"
-                >
-                  <ChevronDown className="h-4 w-4" />
-                  Load More
-                </Button>
-              </div>
             )}
           </div>
         )}

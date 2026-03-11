@@ -22,7 +22,7 @@ export const fetchPublicBrands = createAsyncThunk<
       "/api/v1/public/brands/all",
       {
         pageNo: params.pageNo || 1,
-        pageSize: params.pageSize || 12,
+        pageSize: params.pageSize,
         search: params.search || undefined,
         status: params.status || "ACTIVE",
         businessId: AppDefault.BUSINESS_ID,
