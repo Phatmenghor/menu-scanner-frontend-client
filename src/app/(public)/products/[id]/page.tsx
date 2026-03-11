@@ -19,7 +19,6 @@ import {
 import { toggleFavorite } from "@/redux/features/main/store/thunks/favorite-thunks";
 import { ProductCard } from "@/components/shared/card/product-card";
 import { LoginModal } from "@/components/shared/modal/login-modal";
-import { SizeSelectionModal } from "@/components/shared/modal/size-selection-modal";
 import { showToast } from "@/components/shared/common/show-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -77,7 +76,6 @@ export default function ProductDetailPage() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-  const [showSizeModal, setShowSizeModal] = useState(false);
 
   // ── Favorite sync: prefer Redux store when loaded, else API field ──────
   const isFavoritedFromStore = favLoaded && product
@@ -159,9 +157,11 @@ export default function ProductDetailPage() {
   }, [product?.id, product?.categoryId, productId, dispatch]);
 
   const selectImage = (url: string, index: number) => {
-    setSelectedImage(url);
     setCurrentImageIndex(index);
-    setImageLoaded(false);
+    if (url !== selectedImage) {
+      setSelectedImage(url);
+      setImageLoaded(false);
+    }
   };
 
   const prevImage = () => {
@@ -299,6 +299,7 @@ export default function ProductDetailPage() {
             <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-muted group shadow-sm">
               {!imageLoaded && <Skeleton className="absolute inset-0 rounded-2xl" />}
               <Image
+                key={`main-${currentImageIndex}`}
                 src={selectedImage || appImages.NoImage}
                 alt={product.name}
                 fill
@@ -405,16 +406,16 @@ export default function ProductDetailPage() {
             </h1>
 
             {/* Price */}
-            <div className="flex flex-wrap items-end gap-3">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
               <span className="text-3xl sm:text-4xl font-bold text-primary leading-none">
                 {formatCurrency(getDisplayPrice())}
               </span>
               {getOriginalPrice() && (
                 <>
-                  <span className="text-lg text-muted-foreground line-through leading-none mb-0.5">
+                  <span className="text-lg text-muted-foreground line-through leading-none">
                     {formatCurrency(getOriginalPrice()!)}
                   </span>
-                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full mb-0.5">
+                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full">
                     Save {formatCurrency(getOriginalPrice()! - getDisplayPrice())}
                   </span>
                 </>
@@ -428,7 +429,7 @@ export default function ProductDetailPage() {
               </p>
             )}
 
-            {/* Sizes — preview only; cart managed via modal */}
+            {/* Sizes — inline controls, no modal */}
             {product.hasSizes && product.sizes && product.sizes.length > 0 && (
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">
@@ -445,12 +446,12 @@ export default function ProductDetailPage() {
                         className={cn(
                           "relative border-2 rounded-xl px-4 py-2.5 text-left min-w-[76px] transition-all",
                           isActive
-                            ? "border-secondary bg-secondary/10 shadow-sm"
-                            : "border-border hover:border-secondary/50 hover:bg-muted/40"
+                            ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-sm"
+                            : "border-border hover:border-primary/50 hover:bg-muted/40"
                         )}
                       >
                         <div className="font-semibold text-sm">{size.name}</div>
-                        <div className="text-secondary-foreground font-bold text-sm">
+                        <div className="text-primary font-bold text-sm">
                           {formatCurrency(size.finalPrice)}
                         </div>
                         {size.hasPromotion && (
@@ -468,41 +469,52 @@ export default function ProductDetailPage() {
                   })}
                 </div>
 
-                {/* Add to Cart via modal — no immediate API call */}
-                {totalInCart === 0 ? (
-                  <CustomButton
-                    size="lg"
-                    variant="secondary"
-                    className="w-full h-12 text-base font-semibold gap-2 rounded-xl"
-                    disabled={product.status === "OUT_OF_STOCK"}
-                    onClick={() => setShowSizeModal(true)}
-                  >
-                    <ShoppingCart className="h-5 w-5" />
-                    Add to Cart
-                  </CustomButton>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <button
-                      className="h-11 w-11 shrink-0 rounded-xl border-2 border-border hover:bg-rose-50 hover:border-rose-300 hover:text-rose-500 dark:hover:bg-rose-950/30 flex items-center justify-center transition-all"
-                      onClick={() => setShowSizeModal(true)}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </button>
-                    <div className="w-14 h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-xl shrink-0">
-                      {totalInCart}
+                {/* Inline qty stepper + Add to Cart for selected size */}
+                {selectedSize && (() => {
+                  const sizeQty = getCartQuantityForSize(selectedSize.id);
+                  return (
+                    <div className="flex items-center gap-2">
+                      {/* Stepper */}
+                      <div className="flex items-center border-2 border-border rounded-xl overflow-hidden shrink-0">
+                        <button
+                          className="h-11 w-10 flex items-center justify-center hover:bg-muted/60 transition-colors disabled:opacity-40"
+                          onClick={() => handleQuantityChange(selectedSize.id, sizeQty - 1)}
+                          disabled={sizeQty === 0}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </button>
+                        <div className="h-11 min-w-[2.5rem] px-2 flex items-center justify-center text-primary font-bold text-base border-x border-border">
+                          {sizeQty}
+                        </div>
+                        <button
+                          className="h-11 w-10 flex items-center justify-center hover:bg-muted/60 transition-colors disabled:opacity-40"
+                          onClick={() => handleQuantityChange(selectedSize.id, sizeQty + 1)}
+                          disabled={product.status === "OUT_OF_STOCK"}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      </div>
+
+                      {/* Add to Cart or In Cart */}
+                      {sizeQty === 0 ? (
+                        <CustomButton
+                          size="lg"
+                          className="flex-1 h-11 gap-2 rounded-xl font-semibold"
+                          disabled={product.status === "OUT_OF_STOCK"}
+                          onClick={() => handleQuantityChange(selectedSize.id, 1)}
+                        >
+                          <ShoppingCart className="h-4 w-4" />
+                          Add to Cart
+                        </CustomButton>
+                      ) : (
+                        <div className="flex-1 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center gap-1.5 text-emerald-700 dark:text-emerald-400 text-xs font-semibold px-3 min-w-0">
+                          <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate">In Cart — {formatCurrency(selectedSize.finalPrice * sizeQty)}</span>
+                        </div>
+                      )}
                     </div>
-                    <button
-                      className="h-11 w-11 shrink-0 rounded-xl border-2 border-border hover:bg-primary hover:border-primary hover:text-white flex items-center justify-center transition-all"
-                      onClick={() => setShowSizeModal(true)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                    <div className="flex-1 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center gap-1.5 text-emerald-700 dark:text-emerald-400 text-xs font-semibold px-3 min-w-0">
-                      <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">In Cart ({totalInCart})</span>
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             )}
 
@@ -692,7 +704,6 @@ export default function ProductDetailPage() {
       )}
 
       <LoginModal open={showLoginModal} onOpenChange={setShowLoginModal} />
-      <SizeSelectionModal open={showSizeModal} onOpenChange={setShowSizeModal} product={product} />
     </div>
   );
 }

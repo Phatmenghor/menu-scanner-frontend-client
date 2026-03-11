@@ -26,6 +26,9 @@ export default function FavoritesPage() {
   const { dispatch, items, totalItems, loading, loaded } = useFavoriteState();
   const { dispatch: cartDispatch } = useCartState();
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (!authReady) return;
@@ -63,8 +66,8 @@ export default function FavoritesPage() {
     }
   };
 
-  // Loading skeleton
-  if (!authReady || (loading.fetch && !loaded)) {
+  // Loading skeleton (also shown on server to prevent hydration mismatch)
+  if (!mounted || !authReady || (loading.fetch && !loaded)) {
     return (
       <PageContainer className="py-4 sm:py-8">
         <div className="h-7 w-40 bg-muted rounded mb-4 animate-pulse" />
