@@ -61,14 +61,14 @@ const favoriteSlice = createSlice({
 
       // Service 2: Toggle Favorite (optimistic - update UI first, API in background)
       .addCase(toggleFavorite.pending, (state, action) => {
-        const productId = action.meta.arg.productId;
-        const existingIndex = state.items.findIndex(
-          (item) => item.id === productId,
-        );
-        if (existingIndex >= 0) {
-          state.items.splice(existingIndex, 1);
+        const { productId, isFavorited } = action.meta.arg;
+        if (isFavorited) {
+          // Currently favorited → remove optimistically
+          const idx = state.items.findIndex((item) => item.id === productId);
+          if (idx >= 0) state.items.splice(idx, 1);
           state.totalItems = Math.max(0, state.totalItems - 1);
         } else {
+          // Not favorited → add optimistically (count only; full item loaded on next fetch)
           state.totalItems += 1;
         }
       })
@@ -76,13 +76,14 @@ const favoriteSlice = createSlice({
         state.error = null;
       })
       .addCase(toggleFavorite.rejected, (state, action) => {
-        // Rollback count on failure
-        const productId = action.meta.arg.productId;
-        const stillExists = state.items.some((item) => item.id === productId);
-        if (stillExists) {
-          state.totalItems = Math.max(0, state.totalItems - 1);
-        } else {
+        // Rollback based on what we tried to do
+        const { isFavorited } = action.meta.arg;
+        if (isFavorited) {
+          // We tried to remove → add count back
           state.totalItems += 1;
+        } else {
+          // We tried to add → subtract count back
+          state.totalItems = Math.max(0, state.totalItems - 1);
         }
         state.error =
           (action.payload as string) || "Failed to toggle favorite";

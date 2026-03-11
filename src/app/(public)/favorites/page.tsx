@@ -39,7 +39,7 @@ export default function FavoritesPage() {
 
   const handleRemoveOne = async (productId: string) => {
     try {
-      await dispatch(toggleFavorite({ productId })).unwrap();
+      await dispatch(toggleFavorite({ productId, isFavorited: true })).unwrap();
       showToast.success("Removed from favorites");
     } catch (error: any) {
       showToast.error(error?.message || "Failed to remove from favorites");
@@ -59,7 +59,7 @@ export default function FavoritesPage() {
   const handleMoveToCart = async (productId: string) => {
     try {
       await cartDispatch(addToCart({ productId, quantity: 1 })).unwrap();
-      await dispatch(toggleFavorite({ productId })).unwrap();
+      await dispatch(toggleFavorite({ productId, isFavorited: true })).unwrap();
       showToast.success("Moved to cart");
     } catch (error: any) {
       showToast.error(error?.message || "Failed to move to cart");

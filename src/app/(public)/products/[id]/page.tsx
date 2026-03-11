@@ -289,7 +289,7 @@ export default function ProductDetailPage() {
     setIsFavorited((prev) => !prev);
     setIsTogglingFavorite(true);
     try {
-      await favoriteDispatch(toggleFavorite({ productId: product.id })).unwrap();
+      await favoriteDispatch(toggleFavorite({ productId: product.id, isFavorited })).unwrap();
     } catch (err: any) {
       setIsFavorited((prev) => !prev);
       showToast.error(err?.message || "Failed to update favorites");
