@@ -368,8 +368,8 @@ export default function ProductDetailPage() {
           Back
         </CustomButton>
 
-        {/* ── Main grid — 40 image / 60 info ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-8 lg:gap-10 mb-16">
+        {/* ── Main grid — 45 image / 55 info ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-[9fr_11fr] gap-8 lg:gap-10 mb-16">
 
           {/* ──── LEFT: Image Gallery (40%) ──── */}
           <div className="space-y-3">
@@ -545,17 +545,20 @@ export default function ProductDetailPage() {
                   })}
                 </div>
 
-                {/* Quantity + Clear (for selected size) */}
+                {/* Quantity + Clear + Add to Cart — single row */}
                 {selectedSize && (
                   <div className="space-y-3 pt-1">
                     <h4 className="font-semibold text-sm">Quantity</h4>
-                    <div className="flex items-center gap-2">
+
+                    {/* [-] [qty] [+] [Clear] [Add to Cart] */}
+                    <div className="flex items-center gap-2 flex-wrap">
                       <QuantitySelector
                         value={getDisplayQuantity(selectedSize.id)}
                         onChange={(qty) => handlePendingQtyChange(selectedSize.id, qty)}
                         min={0}
                         size="sm"
                       />
+
                       {(getDisplayQuantity(selectedSize.id) > 0 || getCartQuantityForSize(selectedSize.id) > 0) && (
                         <CustomButton
                           variant="outline"
@@ -570,29 +573,9 @@ export default function ProductDetailPage() {
                           Clear
                         </CustomButton>
                       )}
-                    </div>
 
-                    {/* Total */}
-                    <div className="flex justify-between items-center py-3 border-t">
-                      <span className="text-sm text-muted-foreground">Total</span>
-                      <span className="text-xl font-bold text-primary">
-                        {formatCurrency(selectedSize.finalPrice * getDisplayQuantity(selectedSize.id))}
-                      </span>
-                    </div>
-
-                    {/* Discard + Add to Cart */}
-                    <div className="flex gap-3">
                       <CustomButton
-                        variant="outline"
-                        className="flex-1"
-                        onClick={handleDiscard}
-                        disabled={isSaving || modifiedSizes.size === 0}
-                      >
-                        <X className="h-4 w-4 mr-1.5" />
-                        Discard
-                      </CustomButton>
-                      <CustomButton
-                        className="flex-1"
+                        className="flex-1 min-w-[120px]"
                         onClick={handleSave}
                         disabled={isSaving || modifiedSizes.size === 0}
                       >
@@ -601,6 +584,14 @@ export default function ProductDetailPage() {
                           : <ShoppingCart className="h-4 w-4 mr-1.5" />}
                         Add to Cart
                       </CustomButton>
+                    </div>
+
+                    {/* Total */}
+                    <div className="flex justify-between items-center py-3 border-t">
+                      <span className="text-sm text-muted-foreground">Total</span>
+                      <span className="text-xl font-bold text-primary">
+                        {formatCurrency(selectedSize.finalPrice * getDisplayQuantity(selectedSize.id))}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -768,7 +759,7 @@ function ProductDetailSkeleton() {
   return (
     <PageContainer className="py-6">
       <Skeleton className="h-9 w-20 mb-5 rounded-xl" />
-      <div className="grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-[9fr_11fr] gap-10">
         <div className="space-y-3">
           <Skeleton className="aspect-[4/3] w-full rounded-2xl" />
           <div className="flex gap-2.5">
