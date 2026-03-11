@@ -61,16 +61,21 @@ export function ProductListPage({
   const search = lockedPromotion ? null : searchParams.get("q");
   const categoryId = searchParams.get("categoryId");
   const brandId = searchParams.get("brandId");
-  const status = searchParams.get("status");
+  const statusParam = searchParams.get("status");
+  const statuses = statusParam?.split(",").filter(Boolean) ?? [];
   const sortBy = searchParams.get("sortBy");
+  const minPrice = searchParams.get("minPrice");
+  const maxPrice = searchParams.get("maxPrice");
 
   const currentFilters = JSON.stringify({
     search,
     hasPromotion: lockedPromotion ? true : searchParams.get("hasPromotion") === "true",
     categoryId,
     brandId,
-    status,
+    statuses,
     sortBy,
+    minPrice,
+    maxPrice,
     _page: basePath,
   });
 
@@ -88,13 +93,15 @@ export function ProductListPage({
           ...(hasPromotion && { hasPromotion: true }),
           ...(categoryId && { categoryId }),
           ...(brandId && { brandId }),
-          ...(status && { status }),
+          ...(statuses.length > 0 && { status: statuses }),
           ...(sortBy && { sortBy }),
+          ...(minPrice && { minPrice: Number(minPrice) }),
+          ...(maxPrice && { maxPrice: Number(maxPrice) }),
         }),
       );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [dispatch, search, lockedPromotion, searchParams, categoryId, brandId, status, sortBy],
+    [dispatch, search, lockedPromotion, searchParams, categoryId, brandId, statusParam, sortBy, minPrice, maxPrice],
   );
 
   useEffect(() => {

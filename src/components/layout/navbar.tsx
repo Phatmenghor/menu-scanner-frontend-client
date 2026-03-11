@@ -38,7 +38,7 @@ import { ROUTES } from "@/constants/app-routes/routes";
 const navigationLinks = [
   { name: "Home", href: "/" },
   { name: "Products", href: "/products" },
-  { name: "Promotions", href: "/products?hasPromotion=true" },
+  { name: "Promotions", href: "/promotions" },
   { name: "Categories", href: "/categories" },
   { name: "Brands", href: "/brands" },
 ];

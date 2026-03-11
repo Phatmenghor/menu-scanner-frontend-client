@@ -88,7 +88,7 @@ export const PromotionsSection = ({
 
       {products.length > limit && (
         <ViewAllButton
-          href="/products?hasPromotion=true"
+          href="/promotions"
           text="View All Deals"
         />
       )}
