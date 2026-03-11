@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback, useRef } from "react";
 import { usePublicBrandsState } from "@/redux/features/main/store/state/public-brands-state";
-import { Store, Loader2 } from "lucide-react";
+import { Store, Loader2, ChevronDown } from "lucide-react";
 import { BrandCard } from "@/components/shared/card/brand-card";
 import { BrandCardSkeleton } from "@/components/shared/skeletons/brand-card-skeleton";
 import { useInfiniteScroll } from "@/components/shared/common/use-infinite-scroll";
@@ -10,8 +10,8 @@ import { useScrollRestoration } from "@/hooks/use-scroll-restoration";
 import { useSkeletonCount, SkeletonPresets } from "@/hooks/use-skeleton-count";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageContainer } from "@/components/shared/common/page-container";
-import { useScrollAnchor } from "@/hooks/use-scroll-anchor";
 import { PageHeader } from "@/components/shared/common/page-header";
+import { Button } from "@/components/ui/button";
 
 export default function BrandsPage() {
   const isLoadingRef = useRef(false);
@@ -30,7 +30,6 @@ export default function BrandsPage() {
   const skeletonCount = useSkeletonCount(SkeletonPresets.categoryGrid);
 
   useScrollRestoration({ enabled: true, restoreOnMount: true, customKey: "brands" });
-  const { containerRef } = useScrollAnchor(isLoadingMore);
 
   useEffect(() => {
     fetchBrands({ pageNo: 1, pageSize, status: "ACTIVE" });
@@ -93,7 +92,7 @@ export default function BrandsPage() {
 
         {/* Brands Grid */}
         {!isInitialLoading && brands.length > 0 && (
-          <div ref={containerRef}>
+          <div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
               {brands.map((brand) => (
                 <BrandCard key={brand.id} brand={brand} />
@@ -104,6 +103,7 @@ export default function BrandsPage() {
                 ))}
             </div>
 
+            {/* Loading spinner */}
             {isLoadingMore && (
               <div className="flex items-center justify-center py-6 mt-2">
                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -113,14 +113,30 @@ export default function BrandsPage() {
               </div>
             )}
 
+            {/* All loaded message */}
             {!hasMore && !isLoadingMore && brands.length > 0 && (
               <p className="text-center text-xs text-muted-foreground py-6">
                 Showing all {totalBrands} brands
               </p>
             )}
 
+            {/* Auto-scroll trigger (IntersectionObserver) */}
             {hasMore && !isLoadingMore && (
-              <div ref={observerTarget} className="h-10" />
+              <div ref={observerTarget} className="h-4" />
+            )}
+
+            {/* Manual Load More button fallback */}
+            {hasMore && !isLoadingMore && (
+              <div className="flex justify-center py-4">
+                <Button
+                  variant="outline"
+                  onClick={handleLoadMore}
+                  className="gap-2"
+                >
+                  <ChevronDown className="h-4 w-4" />
+                  Load More
+                </Button>
+              </div>
             )}
           </div>
         )}

@@ -5,13 +5,15 @@ interface UseInfiniteScrollOptions {
   hasMore: boolean;
   isLoading: boolean;
   threshold?: number;
+  rootMargin?: string;
 }
 
 export const useInfiniteScroll = ({
   onLoadMore,
   hasMore,
   isLoading,
-  threshold = 0.8,
+  threshold = 0.1,
+  rootMargin = "200px 0px",
 }: UseInfiniteScrollOptions) => {
   const observerTarget = useRef<HTMLDivElement>(null);
 
@@ -31,6 +33,7 @@ export const useInfiniteScroll = ({
 
     const observer = new IntersectionObserver(handleObserver, {
       threshold,
+      rootMargin,
     });
 
     observer.observe(element);
@@ -40,7 +43,7 @@ export const useInfiniteScroll = ({
         observer.unobserve(element);
       }
     };
-  }, [handleObserver, threshold]);
+  }, [handleObserver, threshold, rootMargin]);
 
   return { observerTarget };
 };

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ShoppingBag } from "lucide-react";
 import { BrandResponseModel } from "@/redux/features/master-data/store/models/response/brand-response";
 
 interface BrandCardProps {
@@ -19,59 +19,63 @@ export function BrandCard({ brand, className }: BrandCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
 
   return (
-    <Link href={`/products?brandId=${brand.id}`} className="group">
+    <Link
+      href={`/products?brandId=${brand.id}`}
+      className="group block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-xl"
+      aria-label={`Browse ${brand.activeProducts} products from ${brand.name}`}
+    >
       <Card
         className={cn(
-          "overflow-hidden hover:shadow-xl hover:border-primary/50 transition-all duration-300 cursor-pointer h-full relative hover:-translate-y-1",
+          "overflow-hidden border border-border/50 hover:border-primary/50 transition-all duration-300 cursor-pointer h-full bg-card hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1",
           className
         )}
       >
-        <div className="relative w-full" style={{ aspectRatio: "16/10" }}>
-          {/* Background Pattern */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent" />
-
-          <CardContent className="absolute inset-0 p-4 sm:p-6 flex flex-col items-center justify-center">
-            {/* Logo Container */}
-            <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center overflow-hidden rounded-xl bg-white shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 border border-primary/10">
-              {!imageError && brand.imageUrl ? (
-                <>
-                  {!imageLoaded && (
-                    <Skeleton className="absolute inset-0 w-full h-full rounded-xl" />
+        <CardContent className="p-4 sm:p-5 flex flex-col items-center justify-center gap-3">
+          {/* Logo Container */}
+          <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 group-hover:from-primary/10 group-hover:to-primary/20 transition-all duration-300">
+            {!imageError && brand.imageUrl ? (
+              <>
+                {!imageLoaded && (
+                  <Skeleton className="absolute inset-0 w-full h-full rounded-xl" />
+                )}
+                <Image
+                  src={brand.imageUrl}
+                  alt={brand.name}
+                  width={80}
+                  height={80}
+                  className={cn(
+                    "w-full h-full object-contain p-2 transition-all duration-300 group-hover:scale-105",
+                    imageLoaded ? "opacity-100" : "opacity-0"
                   )}
-                  <Image
-                    src={brand.imageUrl}
-                    alt={brand.name}
-                    width={80}
-                    height={80}
-                    className={cn(
-                      "w-full h-full object-contain p-2 transition-opacity duration-500",
-                      imageLoaded ? "opacity-100" : "opacity-0"
-                    )}
-                    onLoad={() => setImageLoaded(true)}
-                    onError={() => setImageError(true)}
-                  />
-                </>
-              ) : (
-                <span className="text-2xl sm:text-3xl font-bold bg-gradient-to-br from-primary to-primary/60 bg-clip-text text-transparent">
-                  {brand.name.charAt(0)}
-                </span>
-              )}
-            </div>
-          </CardContent>
-
-          {/* Brand Info - Slides up on hover */}
-          <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out bg-gradient-to-t from-black/95 via-black/90 to-transparent p-3 sm:p-4 backdrop-blur-sm">
-            <h3 className="font-bold text-white text-center text-sm sm:text-base line-clamp-1 mb-1">
-              {brand.name}
-            </h3>
-            {brand.activeProducts > 0 && (
-              <div className="flex items-center justify-center gap-1 text-xs text-white/90">
-                <span className="font-medium">{brand.activeProducts} Products</span>
-                <ArrowRight className="h-3 w-3 animate-bounce" />
-              </div>
+                  onLoad={() => setImageLoaded(true)}
+                  onError={() => setImageError(true)}
+                />
+              </>
+            ) : (
+              <span className="text-3xl sm:text-4xl font-bold text-primary/80 group-hover:text-primary transition-colors">
+                {brand.name.charAt(0).toUpperCase()}
+              </span>
             )}
           </div>
-        </div>
+
+          {/* Brand Name - always visible */}
+          <div className="text-center w-full">
+            <h3 className="font-semibold text-sm sm:text-base line-clamp-2 text-foreground group-hover:text-primary transition-colors leading-snug">
+              {brand.name}
+            </h3>
+          </div>
+
+          {/* Product Count - always visible */}
+          {brand.activeProducts > 0 && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground group-hover:text-primary/80 transition-colors">
+              <ShoppingBag className="h-3 w-3" />
+              <span className="font-medium">
+                {brand.activeProducts} {brand.activeProducts === 1 ? "item" : "items"}
+              </span>
+              <ArrowRight className="h-3 w-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
+            </div>
+          )}
+        </CardContent>
       </Card>
     </Link>
   );
