@@ -526,7 +526,7 @@ export default function ProductDetailPage() {
                   {showQtySection && (
                     <div className="space-y-3">
                       <h4 className="font-semibold text-sm">Quantity</h4>
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
                         <QuantitySelector
                           value={displayQty}
                           onChange={(qty) => handlePendingQtyChange(sizeId, qty)}
@@ -547,24 +547,34 @@ export default function ProductDetailPage() {
                             Clear
                           </CustomButton>
                         )}
+                        <div className="flex-1" />
                         <CustomButton
-                          className="shrink-0 gap-2"
+                          size="sm"
+                          className="h-8 shrink-0 gap-1.5"
+                          variant={modifiedSizes.size > 0 ? "default" : "secondary"}
                           disabled={isSaving || modifiedSizes.size === 0 || product.status === "OUT_OF_STOCK"}
                           onClick={handleSave}
                         >
                           {isSaving
-                            ? <Loader2 className="h-4 w-4 animate-spin" />
-                            : <ShoppingCart className="h-4 w-4" />}
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : <ShoppingCart className="h-3.5 w-3.5" />}
                           Add to Cart
                         </CustomButton>
                       </div>
 
-                      {/* Total — updates live as qty changes */}
+                      {/* Total — updates live as qty changes, shows discount if applicable */}
                       <div className="flex justify-between items-center py-3 border-t">
                         <span className="text-sm text-muted-foreground">Total</span>
-                        <span className="text-xl font-bold text-primary">
-                          {formatCurrency(unitPrice * displayQty)}
-                        </span>
+                        <div className="flex flex-col items-end gap-0.5">
+                          {getOriginalPrice() && displayQty > 0 && (
+                            <span className="text-xs text-muted-foreground line-through">
+                              {formatCurrency(getOriginalPrice()! * displayQty)}
+                            </span>
+                          )}
+                          <span className="text-xl font-bold text-primary">
+                            {formatCurrency(unitPrice * displayQty)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   )}
