@@ -93,7 +93,7 @@ export function ProductListPage({
           ...(hasPromotion && { hasPromotion: true }),
           ...(categoryId && { categoryId }),
           ...(brandId && { brandId }),
-          ...(statuses.length > 0 && { status: statuses }),
+          ...(statuses.length > 0 && { statuses }),
           ...(sortBy && { sortBy }),
           ...(minPrice && { minPrice: Number(minPrice) }),
           ...(maxPrice && { maxPrice: Number(maxPrice) }),
