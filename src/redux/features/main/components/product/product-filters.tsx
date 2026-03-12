@@ -7,14 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Sheet,
   SheetContent,
@@ -43,7 +37,6 @@ import {
   Check,
   ChevronsUpDown,
   Flame,
-  ArrowUpDown,
   ListChecks,
   FilterX,
   DollarSign,
@@ -56,13 +49,6 @@ const PRODUCT_STATUSES = [
   { value: "ACTIVE", label: "Active" },
   { value: "INACTIVE", label: "Inactive" },
   { value: "OUT_OF_STOCK", label: "Out of Stock" },
-];
-
-const SORT_OPTIONS = [
-  { value: "newest", label: "Newest First" },
-  { value: "price-asc", label: "Price: Low to High" },
-  { value: "price-desc", label: "Price: High to Low" },
-  { value: "popular", label: "Most Popular" },
 ];
 
 interface ProductFiltersProps {
@@ -89,7 +75,6 @@ export function ProductFilters({
   const [selectedBrand, setSelectedBrand] = useState<string>("");
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [hasPromotion, setHasPromotion] = useState<boolean>(false);
-  const [sortBy, setSortBy] = useState<string>("");
   const [minPrice, setMinPrice] = useState<string>("");
   const [maxPrice, setMaxPrice] = useState<string>("");
 
@@ -109,7 +94,6 @@ export function ProductFilters({
       searchParams.get("status")?.split(",").filter(Boolean) || []
     );
     setHasPromotion(searchParams.get("hasPromotion") === "true");
-    setSortBy(searchParams.get("sortBy") || "");
     setMinPrice(searchParams.get("minPrice") || "");
     setMaxPrice(searchParams.get("maxPrice") || "");
   }, [searchParams]);
@@ -257,37 +241,35 @@ export function ProductFilters({
       {/* Promotion - top, hidden when locked */}
       {!lockedPromotion && (
         <>
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-orange-500/10">
-                <Flame className="h-3.5 w-3.5 text-orange-500" />
+          <div
+            className={cn(
+              "flex items-center justify-between rounded-lg px-3 py-3 border transition-colors cursor-pointer",
+              hasPromotion
+                ? "border-orange-400/60 bg-orange-500/5"
+                : "border-border/60 hover:border-border"
+            )}
+            onClick={() => updateFilter("hasPromotion", hasPromotion ? "" : "true")}
+          >
+            <div className="flex items-center gap-2.5">
+              <div className={cn(
+                "flex items-center justify-center w-7 h-7 rounded-lg transition-colors",
+                hasPromotion ? "bg-orange-500/20" : "bg-orange-500/10"
+              )}>
+                <Flame className={cn("h-3.5 w-3.5", hasPromotion ? "text-orange-500" : "text-orange-400")} />
               </div>
-              <label className="text-sm font-semibold">Promotion</label>
+              <div>
+                <p className="text-sm font-semibold leading-none">On Sale Only</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Show promotional items</p>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={!hasPromotion ? "default" : "outline"}
-                size="sm"
-                className="w-full"
-                onClick={() => updateFilter("hasPromotion", "")}
-              >
-                {!hasPromotion && <Check className="h-3 w-3 mr-1.5" />}
-                All
-              </Button>
-              <Button
-                variant={hasPromotion ? "default" : "outline"}
-                size="sm"
-                className={cn(
-                  "w-full gap-1.5",
-                  hasPromotion && "bg-orange-500 hover:bg-orange-600 border-orange-500"
-                )}
-                onClick={() => updateFilter("hasPromotion", hasPromotion ? "" : "true")}
-              >
-                {hasPromotion && <Check className="h-3 w-3" />}
-                <Flame className="h-3 w-3" />
-                On Sale
-              </Button>
-            </div>
+            <Switch
+              checked={hasPromotion}
+              onCheckedChange={(checked) =>
+                updateFilter("hasPromotion", checked ? "true" : "")
+              }
+              onClick={(e) => e.stopPropagation()}
+              className="data-[state=checked]:bg-orange-500"
+            />
           </div>
           <Separator />
         </>
@@ -307,9 +289,12 @@ export function ProductFilters({
               variant="outline"
               role="combobox"
               aria-expanded={categoryOpen}
-              className="w-full justify-between font-normal"
+              className={cn(
+                "w-full justify-between font-normal",
+                selectedCategory && "border-primary/60 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary"
+              )}
             >
-              <span className="truncate text-sm">
+              <span className="truncate text-sm font-medium">
                 {selectedCategoryName || "All Categories"}
               </span>
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -371,9 +356,12 @@ export function ProductFilters({
               variant="outline"
               role="combobox"
               aria-expanded={brandOpen}
-              className="w-full justify-between font-normal"
+              className={cn(
+                "w-full justify-between font-normal",
+                selectedBrand && "border-primary/60 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary"
+              )}
             >
-              <span className="truncate text-sm">
+              <span className="truncate text-sm font-medium">
                 {selectedBrandName || "All Brands"}
               </span>
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -506,35 +494,6 @@ export function ProductFilters({
         </div>
       </div>
 
-      <Separator />
-
-      {/* Sort By - bottom, Select */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/10">
-            <ArrowUpDown className="h-3.5 w-3.5 text-primary" />
-          </div>
-          <label className="text-sm font-semibold">Sort By</label>
-        </div>
-        <Select
-          value={sortBy || "default"}
-          onValueChange={(value) =>
-            updateFilter("sortBy", value === "default" ? "" : value)
-          }
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Default" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="default">Default</SelectItem>
-            {SORT_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
     </div>
   );
 
