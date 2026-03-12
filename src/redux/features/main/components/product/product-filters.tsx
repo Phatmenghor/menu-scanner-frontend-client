@@ -47,7 +47,6 @@ import { usePublicBrandsState } from "@/redux/features/main/store/state/public-b
 
 const PRODUCT_STATUSES = [
   { value: "ACTIVE", label: "Active" },
-  { value: "INACTIVE", label: "Inactive" },
   { value: "OUT_OF_STOCK", label: "Out of Stock" },
 ];
 
