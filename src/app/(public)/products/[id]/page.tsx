@@ -256,6 +256,7 @@ export default function ProductDetailPage() {
         const newQty = pendingQuantities.get(key) ?? getCartQuantityForSize(sizeId);
         const originalQty = getCartQuantityForSize(sizeId);
         if (newQty === originalQty) continue;
+        const optimisticTimestamp = Date.now();
         if (originalQty === 0 && newQty > 0) {
           const size = product.sizes?.find((s) => s.id === sizeId);
           const finalPrice = size?.finalPrice ?? product.displayPrice ?? 0;
@@ -265,11 +266,12 @@ export default function ProductDetailPage() {
             sizeName: size?.name ?? null, finalPrice,
             currentPrice: size?.hasPromotion ? size.price : (product.displayOriginPrice ?? finalPrice),
             hasPromotion: size ? size.hasPromotion : (product.hasPromotion ?? false),
+            optimisticTimestamp,
           }));
-          promises.push(cartDispatch(addToCart({ productId: product.id, productSizeId: sizeId, quantity: newQty })).unwrap());
+          promises.push(cartDispatch(addToCart({ productId: product.id, productSizeId: sizeId, quantity: newQty, optimisticTimestamp })).unwrap());
         } else {
-          cartDispatch(updateLocalCartItem({ productId: product.id, productSizeId: sizeId, quantity: newQty }));
-          promises.push(cartDispatch(updateCartItem({ productId: product.id, productSizeId: sizeId, quantity: newQty })).unwrap());
+          cartDispatch(updateLocalCartItem({ productId: product.id, productSizeId: sizeId, quantity: newQty, optimisticTimestamp }));
+          promises.push(cartDispatch(updateCartItem({ productId: product.id, productSizeId: sizeId, quantity: newQty, optimisticTimestamp })).unwrap());
         }
       }
       await Promise.all(promises);
