@@ -232,14 +232,16 @@ export default function CartPage() {
 
                     <div className="flex items-center gap-1.5 mb-2.5">
                       <span className="font-bold text-sm text-primary">{formatCurrency(item.finalPrice)}</span>
-                      {item.hasPromotion && item.currentPrice > item.finalPrice && (
+                      {(item.hasPromotion || item.hasActivePromotion) && item.currentPrice > item.finalPrice && (
                         <>
                           <span className="text-xs text-muted-foreground line-through">{formatCurrency(item.currentPrice)}</span>
-                          <Badge variant="destructive" className="text-[10px] px-1.5 py-0 leading-none">
-                            {item.promotionType === "PERCENTAGE"
-                              ? `-${item.promotionValue}%`
-                              : `-${formatCurrency(item.promotionValue || 0)}`}
-                          </Badge>
+                          {item.promotionValue && (
+                            <Badge variant="destructive" className="text-[10px] px-1.5 py-0 leading-none">
+                              {item.promotionType === "PERCENTAGE"
+                                ? `-${item.promotionValue}%`
+                                : `-${formatCurrency(item.promotionValue)}`}
+                            </Badge>
+                          )}
                         </>
                       )}
                     </div>
@@ -296,10 +298,15 @@ export default function CartPage() {
                   <span className="font-medium">{formatCurrency(subtotal)}</span>
                 </div>
                 {totalDiscount > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Discount</span>
-                    <span className="font-medium text-green-600">-{formatCurrency(totalDiscount)}</span>
-                  </div>
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Discount</span>
+                      <span className="font-medium text-emerald-600">-{formatCurrency(totalDiscount)}</span>
+                    </div>
+                    <p className="text-xs text-emerald-600 text-center py-1.5 bg-emerald-50 dark:bg-emerald-950/30 rounded">
+                      You save {formatCurrency(totalDiscount)}!
+                    </p>
+                  </>
                 )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Shipping</span>
@@ -310,11 +317,6 @@ export default function CartPage() {
                     <span className="font-bold">Total</span>
                     <span className="text-xl font-bold text-primary">{formatCurrency(finalTotal)}</span>
                   </div>
-                  {totalDiscount > 0 && (
-                    <p className="text-xs text-green-600 text-right mt-1">
-                      You save {formatCurrency(totalDiscount)}!
-                    </p>
-                  )}
                 </div>
               </div>
               <CustomButton className="w-full mb-2.5 gap-2 h-11 rounded-xl" onClick={handleCheckout}>
