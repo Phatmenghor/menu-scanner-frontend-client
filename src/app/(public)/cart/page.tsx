@@ -206,11 +206,11 @@ export default function CartPage() {
               >
                 <div className="flex gap-3">
                   {/* Thumbnail */}
-                  <Link href={`/products/${item.productId}`} className="flex-shrink-0">
+                  <Link href={`/products/${item.product.id}`} className="flex-shrink-0">
                     <div className="relative w-[72px] h-[72px] rounded-xl overflow-hidden bg-muted border">
                       <Image
-                        src={sanitizeImageUrl(item.productImageUrl, appImages.NoImage)}
-                        alt={item.productName}
+                        src={sanitizeImageUrl(item.product.imageUrl, appImages.NoImage)}
+                        alt={item.product.name}
                         fill
                         className="object-cover"
                       />
@@ -219,14 +219,14 @@ export default function CartPage() {
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <Link href={`/products/${item.productId}`}>
+                    <Link href={`/products/${item.product.id}`}>
                       <h3 className="font-medium text-sm leading-snug hover:text-primary transition-colors line-clamp-1 mb-0.5">
-                        {item.productName}
+                        {item.product.name}
                       </h3>
                     </Link>
-                    {item.sizeName && (
+                    {item.product.sizeName && (
                       <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full inline-block mb-1.5">
-                        {item.sizeName}
+                        {item.product.sizeName}
                       </span>
                     )}
 
